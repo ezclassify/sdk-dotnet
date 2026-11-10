@@ -161,6 +161,15 @@ public record GuideBreakdownEntry(
 );
 
 /// <summary>
+/// One selected rule, named by the guide that holds it. Guides in a Context are
+/// independent, so two of them may use the same rule id; a selection names the
+/// guide as well as the rule, and the two pairs are two rules.
+/// </summary>
+/// <param name="GuideId">Id of the guide that holds the rule.</param>
+/// <param name="RuleId">Id of the rule within that guide.</param>
+public record GuideRuleSelection(string GuideId, string RuleId);
+
+/// <summary>
 /// Whether a parent marking covers its children, checked category by category.
 /// A parent can fail in two directions, and each has its own list:
 /// <c>Missing</c> is what the children need that the parent does not carry, and
