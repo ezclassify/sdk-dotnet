@@ -310,6 +310,28 @@ public class WireCorpusReplayTests
                 Assert.Equal(body["result"]!["rendered"]!.GetValue<string>(), r.Result.Rendered);
                 Assert.Equal(body["result"]!["assertions"]![0]!["conceptId"]!.GetValue<string>(), Assert.Single(r.Result.Assertions).ConceptId);
             })),
+
+        // -- marking in a scheme the Context holds beside its primary ---------
+        ["ctx-scheme-process.selected-scheme"] = Ctx("ez-crosswalk", "ctx-scheme-process.selected-scheme",
+            async c => await c.SchemeView("ez-gated").ProcessAsync("SENSITIVE / EXPORT"),
+            Check<ContextSchemeProcessResult>((r, body) =>
+                SameMarking(body["result"]!, r.Result.Valid, r.Result.InputWasValid, r.Result.Rendered, r.Result.Assertions.Count))),
+        ["ctx-scheme-validate.selected-scheme"] = Ctx("ez-crosswalk", "ctx-scheme-validate.selected-scheme",
+            async c => await c.SchemeView("ez-gated").ValidateAsync("SENSITIVE / EXPORT"),
+            Check<ContextSchemeValidateResult>((r, body) =>
+                SameMarking(body["result"]!, r.Result.Valid, r.Result.InputWasValid, r.Result.Rendered, r.Result.Assertions.Count))),
+        ["ctx-scheme-aggregate.selected-scheme"] = Ctx("ez-crosswalk", "ctx-scheme-aggregate.selected-scheme",
+            async c => await c.SchemeView("ez-gated").AggregateAsync(new[] { "OPEN / EXPORT", "SENSITIVE" }),
+            Check<ContextSchemeAggregateResult>((r, body) =>
+            {
+                Assert.Equal(body["result"]!["valid"]!.GetValue<bool>(), r.Result.Valid);
+                Assert.Equal(body["result"]!["rendered"]!.GetValue<string>(), r.Result.Rendered);
+                Assert.Equal(
+                    body["result"]!["assertions"]!.AsArray().Select(a => a!["conceptId"]!.GetValue<string>()),
+                    r.Result.Assertions.Select(a => a.ConceptId));
+            })),
+        ["ctx-scheme-process.unknown-scheme"] = Ctx("ez-crosswalk", "ctx-scheme-process.unknown-scheme",
+            async c => await c.SchemeView("no-such-scheme").ProcessAsync("OPEN")),
         ["ctx-scheme-normalize.ok"] = Ctx("ez-full", "ctx-scheme-normalize.ok",
             async c => await c.Scheme!.NormalizeAsync("open")),
         ["ctx-scheme-render.ok"] = Ctx("ez-full", "ctx-scheme-render.ok",

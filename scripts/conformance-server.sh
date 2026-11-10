@@ -21,6 +21,7 @@ import os
 import json
 import urllib.request
 import urllib.error
+import urllib.parse
 import pathlib
 
 url = sys.argv[1].rstrip('/')
@@ -52,15 +53,35 @@ def subset_match(actual, expected):
 
 CTX_PATHS = {
     'ctxProcess':        lambda ci, cv: f'/v1/ctx/{ci}/{cv}/scheme/process',
+    'ctxValidate':       lambda ci, cv: f'/v1/ctx/{ci}/{cv}/scheme/validate',
+    'ctxAggregate':      lambda ci, cv: f'/v1/ctx/{ci}/{cv}/scheme/aggregate',
     'ctxScan':           lambda ci, cv: f'/v1/ctx/{ci}/{cv}/scheme/scan',
     'ctxDocumentAudit':  lambda ci, cv: f'/v1/ctx/{ci}/{cv}/document/audit',
 }
 
 CTX_BODIES = {
     'ctxProcess':        lambda args: {'input': args[0] if args else ''},
+    'ctxValidate':       lambda args: {'input': args[0] if args else ''},
+    'ctxAggregate':      lambda args: {'inputs': args[0] if args else []},
     'ctxScan':           lambda args: {'text':  args[0] if args else ''},
     'ctxDocumentAudit':  lambda args: {'text':  args[0] if args else ''},
 }
+
+# Only the scheme operations answer in a selected scheme; the document route
+# has no selector to carry.
+SCHEME_METHODS = {'ctxProcess', 'ctxValidate', 'ctxAggregate', 'ctxScan'}
+
+
+def case_path(case):
+    """The route a case calls, carrying its scheme selector as ?scheme=."""
+    method = case.get('method', '')
+    path = CTX_PATHS[method](case.get('ctxId', ''), case.get('ctxVersion', ''))
+    scheme = case.get('scheme')
+    if scheme is None:
+        return path
+    if method not in SCHEME_METHODS:
+        raise ValueError(f'{method} answers in no scheme, so it takes no selector')
+    return f'{path}?{urllib.parse.urlencode({"scheme": scheme})}'
 
 def request_headers():
     """Carry operator credentials without changing the closed request payload."""
@@ -109,15 +130,15 @@ for plan_file in sorted(plans_dir.glob('*.json')):
         ctx_ver  = tc.get('ctxVersion', '')
         args     = tc.get('args', [])
         expect   = tc.get('expect', {})
+        refused  = tc.get('refusedWith')
         name     = tc.get('name', f'{plan_file.stem}/{method}')
-        path_fn  = CTX_PATHS.get(method)
         body_fn  = CTX_BODIES.get(method)
-        if path_fn is None:
+        if body_fn is None:
             print(f'  FAIL  {name}: unsupported method {method}')
             failed += 1
             unsupported_methods.add(method)
             continue
-        api_path = path_fn(ctx_id, ctx_ver)
+        api_path = case_path(tc)
         body_bytes = json.dumps(body_fn(args)).encode()
         req = urllib.request.Request(
             url + api_path,
@@ -127,7 +148,14 @@ for plan_file in sorted(plans_dir.glob('*.json')):
         )
         try:
             with urllib.request.urlopen(req, timeout=10) as resp:
-                actual = response_value(json.load(resp), method)
+                answered = json.load(resp)
+            if refused is not None:
+                # A case that exists to be refused must not get an answer,
+                # least of all one from a scheme it did not select.
+                print(f'  FAIL  {name}: expected HTTP {refused}, got an answer')
+                failed += 1
+                continue
+            actual = response_value(answered, method)
             if subset_match(actual, expect):
                 print(f'  pass  {name}')
                 passed += 1
@@ -140,6 +168,10 @@ for plan_file in sorted(plans_dir.glob('*.json')):
                 failed += 1
         except urllib.error.HTTPError as exc:
             body_text = exc.read().decode(errors='replace')[:200]
+            if refused is not None and exc.code == refused:
+                print(f'  pass  {name}')
+                passed += 1
+                continue
             print(f'  FAIL  {name}: HTTP {exc.code} {body_text}')
             failed += 1
         except Exception as exc:
