@@ -509,6 +509,7 @@ public static class ResultParser
         JsonRead.RequireObject(limits, "scan limits");
         return new ScanResponseBody(
             Results: ParseScanMatchesElement(JsonRead.RequiredProperty(root, "results")),
+            Unread: JsonRead.RequiredList(root, "unread", ReadUnreadMark),
             Limits: new ScanLimits(
                 RegionsFound: JsonRead.RequiredInt(limits, "regionsFound"),
                 Status: new ScanStatus(JsonRead.RequiredString(limits, "status")),
@@ -530,6 +531,17 @@ public static class ResultParser
             Type: JsonRead.RequiredString(el, "type"),
             Wrapped: JsonRead.RequiredBool(el, "wrapped"),
             Inner: JsonRead.OptionalString(el, "inner")));
+    }
+
+    internal static UnreadMark ReadUnreadMark(JsonElement el)
+    {
+        JsonRead.RequireObject(el, "unread mark");
+        return new UnreadMark(
+            End: JsonRead.RequiredInt(el, "end"),
+            Inner: JsonRead.RequiredString(el, "inner"),
+            Leading: JsonRead.RequiredBool(el, "leading"),
+            Start: JsonRead.RequiredInt(el, "start"),
+            Text: JsonRead.RequiredString(el, "text"));
     }
 
     /// <summary>Parse a guide rule from a JSON element.</summary>
@@ -645,6 +657,7 @@ public static class ResultParser
                 Skipped: JsonRead.RequiredBool(rule, "skipped"),
                 ModernizedFrom: JsonRead.TolerantOptionalList(rule, "modernizedFrom", ReadConceptModernization),
                 Reason: JsonRead.OptionalString(rule, "reason"))),
+            Warnings: JsonRead.RequiredList(root, "warnings", ReadWarning),
             Provenance: root.TryGetProperty("provenance", out var provenance) && provenance.ValueKind == JsonValueKind.Object
                 ? ContextResultParser.ReadSourceReference(provenance)
                 : null

@@ -86,7 +86,7 @@ const OPAQUE = new Set([
 const GENERATED = new Set([
   'Assertion', 'ValidationError', 'Warning', 'Suggestion', 'SuggestResult',
   'ConceptColor', 'ValidateResult', 'ProcessResult', 'AggregateResult',
-  'DiffResult', 'ScanMatch', 'ScanLimits',
+  'DiffResult', 'ScanMatch', 'ScanLimits', 'UnreadMark',
   'GuideScanSpan', 'GuideRule', 'GuideScanResult', 'EvaluationResult',
   'AccessRuleResult', 'AccessDecision', 'ConceptModernization', 'InputSpan',
   'RecognitionCorrection', 'RecognitionResult', 'RecognitionWithCorrections',
@@ -405,6 +405,11 @@ const TARGETS = [
     file: 'scan-limits.schema.json',
     className: 'ScanLimits',
     summary: 'How far a scan got, and what stopped it when something did.',
+  },
+  {
+    file: 'unread-mark.schema.json',
+    className: 'UnreadMark',
+    summary: 'A wrapped mark a scan found but could not read.',
   },
   {
     file: 'guide-scan-span.schema.json',

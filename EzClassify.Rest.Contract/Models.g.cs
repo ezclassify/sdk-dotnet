@@ -1,4 +1,4 @@
-// Code generated from json-schemas@128fa98ab01e961965eee54c4249ef332176a52fa5a2edecba3e58a626e5836b by gen.mjs@5cf243baa1066cacdc9db5123130bfc7cc034a1a04ecc014f5cbca1e4f02e6ba. DO NOT EDIT.
+// Code generated from json-schemas@5583b92fcd0903bd11593a390f965c67127e7dd494e528cf8388b165762dd7d5 by gen.mjs@58c491f0d061e5e6150ea43b5e4b92174763bb39d79ee4056e4ac8355f3d5363. DO NOT EDIT.
 // Re-run via: make regen
 #nullable enable
 #pragma warning disable CS1573
@@ -294,6 +294,20 @@ public record ScanLimits(
     bool? RegionsCapped = null
 );
 
+/// <summary>A wrapped mark a scan found but could not read.</summary>
+/// <param name="End">End position in the input text</param>
+/// <param name="Inner">The text inside the wrapper: the capture group of the scheme's <c>embeddedMarking</c> pattern.</param>
+/// <param name="Leading">Whether the mark stands where a part mark goes: at the start of its paragraph. Both of these hold for a leading mark.</param>
+/// <param name="Start">Start position in the input text</param>
+/// <param name="Text">The wrapped text as found in the document, wrapper included.</param>
+public record UnreadMark(
+    int End,
+    string Inner,
+    bool Leading,
+    int Start,
+    string Text
+);
+
 /// <summary>A byte-offset span where a guide rule keyword or pattern matched in scanned text.</summary>
 /// <param name="End">Offset in the scanned text just past the end of the match, in UTF-16 code units.</param>
 /// <param name="Keyword">The keyword that matched, or the label of the matcher that did.</param>
@@ -403,9 +417,11 @@ public record AccessRuleResult(
 /// <summary>Overall access decision with per-rule breakdown for a labeled artifact.</summary>
 /// <param name="Granted">True when every rule that was not skipped granted access.</param>
 /// <param name="Rules">One result per rule in the policy, in policy order.</param>
+/// <param name="Warnings">Warnings from preparing and evaluating the target, including automatic changes. Present on granted and denied decisions; empty when none apply.</param>
 /// <param name="Provenance">Source provenance for the access-rule source that evaluated this decision.</param>
 public record AccessDecision(
     bool Granted,
     IReadOnlyList<AccessRuleResult> Rules,
+    IReadOnlyList<Warning> Warnings,
     SourceReference? Provenance = null
 );

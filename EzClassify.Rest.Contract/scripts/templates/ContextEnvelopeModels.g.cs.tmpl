@@ -88,12 +88,14 @@ public record ContextSchemeSuggestForCategoriesResult(ContextResolution Resoluti
 /// <summary>Resolved Context envelope returned by scheme aggregation.</summary>
 public record ContextSchemeAggregateResult(ContextResolution Resolution, AggregateResult Result, IReadOnlyList<AssessmentLimitation> OperationLimitations, DocumentResponseProjection? ResponseProjection = null);
 
-/// <summary>What a scan answers: the markings it found, and how far it got. An
-/// empty list is what a clean document and an abandoned scan both look like, so
-/// the limit report travels with the results rather than being inferred.</summary>
+/// <summary>What a scan answers: the markings it found, the wrapped marks it could
+/// not read, and how far it got. An empty list is what a clean document and an
+/// abandoned scan both look like, so the limit report travels with the results
+/// rather than being inferred.</summary>
 /// <param name="Results">The markings the scan found, in document order.</param>
+/// <param name="Unread">The wrapped marks the scan found but could not read, in document order.</param>
 /// <param name="Limits">How far the scan got, and what stopped it.</param>
-public record ScanResponseBody(IReadOnlyList<ScanMatch> Results, ScanLimits Limits);
+public record ScanResponseBody(IReadOnlyList<ScanMatch> Results, IReadOnlyList<UnreadMark> Unread, ScanLimits Limits);
 
 /// <summary>Resolved Context envelope returned by scheme scans.</summary>
 public record ContextSchemeScanResult(ContextResolution Resolution, ScanResponseBody Result, IReadOnlyList<AssessmentLimitation> OperationLimitations, DocumentResponseProjection? ResponseProjection = null);
