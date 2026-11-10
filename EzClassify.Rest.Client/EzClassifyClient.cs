@@ -125,11 +125,11 @@ public sealed class EzClassifyClient : IDisposable
     /// returns the same view.</para>
     ///
     /// <para>The selector is the key <see cref="DescribeContextAsync"/> lists
-    /// for the scheme, or its artifact id when that is unambiguous. It is sent
-    /// as given and never replaced with the primary: a selector the Context
-    /// does not hold fails each call with the server's not-found error.</para>
+    /// for the scheme. It is sent as given and never replaced with the
+    /// primary: a selector the Context does not hold fails each call with the
+    /// server's not-found error, code <c>scheme_not_found</c>.</para>
     /// </summary>
-    /// <param name="selector">Context-local key, or unambiguous artifact id, of the scheme.</param>
+    /// <param name="selector">Context-local key of the scheme.</param>
     /// <returns>The view bound to that scheme.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="selector"/> is null.</exception>
     /// <exception cref="ArgumentException"><paramref name="selector"/> is empty or whitespace.</exception>
