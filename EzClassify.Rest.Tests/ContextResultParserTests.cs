@@ -131,6 +131,24 @@ public class ContextResultParserTests
     }
 
     [Fact]
+    public void ParseSchemeSummary_ReadsTheSchemeDocumentsOwnWholeMarking()
+    {
+        // A scheme document may carry its own whole marking; the summary
+        // reports it as written, and omits it when the document declares none.
+        var marked = ContextResultParser.ParseSchemeSummary("""
+            {"id":"acme","version":"1.0.0","name":"Acme","description":"d","marking":"HIGH",
+             "referenceSurfaceLabel":{"singular":"Handbook","plural":"Handbooks"}}
+            """);
+        var plain = ContextResultParser.ParseSchemeSummary("""
+            {"id":"acme","version":"1.0.0","name":"Acme","description":"d",
+             "referenceSurfaceLabel":{"singular":"Handbook","plural":"Handbooks"}}
+            """);
+
+        Assert.Equal("HIGH", marked.Marking);
+        Assert.Null(plain.Marking);
+    }
+
+    [Fact]
     public void ParseSchemeFormats_ReadsAFormatWithoutAGlobalSeparator()
     {
         var formats = ContextResultParser.ParseSchemeFormats(DemoFormatsBody);

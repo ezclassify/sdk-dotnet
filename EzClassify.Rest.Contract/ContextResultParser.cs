@@ -671,6 +671,7 @@ public static class ContextResultParser
             DefaultRenderFormat: JsonRead.OptionalString(root, "defaultRenderFormat"),
             Definition: JsonRead.OptionalString(root, "definition"),
             Guidance: JsonRead.OptionalString(root, "guidance"),
+            Marking: JsonRead.OptionalString(root, "marking"),
             ColorFrom: JsonRead.OptionalString(root, "colorFrom"),
             ColorRules: root.TryGetProperty("colorRules", out var rules) && rules.ValueKind == JsonValueKind.Array
                 ? JsonRead.ElementList(rules, ParseMarkingColorRuleElement) : null,

@@ -1,4 +1,4 @@
-// Code generated from the canonical OpenAPI contract (ec41bd02937fcb24579b3a213a012f62cc94bee71047df577379639f276f3623) by gen.mjs@58c491f0d061e5e6150ea43b5e4b92174763bb39d79ee4056e4ac8355f3d5363. DO NOT EDIT.
+// Code generated from the canonical OpenAPI contract (40299fa7f6283c0f37a8eb1bbba45523f64b7b64ca6917918e4fcc2e5f1f6304) by gen.mjs@58c491f0d061e5e6150ea43b5e4b92174763bb39d79ee4056e4ac8355f3d5363. DO NOT EDIT.
 // Re-run via: make regen
 #nullable enable
 
@@ -654,6 +654,7 @@ public record MarkingColorRule(
 /// <param name="DefaultRenderFormat">Render format applied when a call names none. A remote adapter has no way to derive this from the formats sub-resource: format declaration order is not default order, so a client that guesses the first entry renders in the wrong format whenever the two differ.</param>
 /// <param name="Definition">Human-readable definition of the scheme, for tooltips and about panels.</param>
 /// <param name="Guidance">Usage guidance for the scheme, shown in reference views.</param>
+/// <param name="Marking">The scheme document's own overall marking, exactly as its <c>scheme.marking</c> writes it. Display only: never interpreted. Omitted when the document declares none.</param>
 /// <param name="ColorFrom">Single-category scheme-default color source, when category mode is used.</param>
 /// <param name="ColorRules">Ordered rule-driven color outcomes, when rule mode is used.</param>
 /// <param name="Vocabulary">Scheme-authored display vocabulary.</param>
@@ -673,6 +674,7 @@ public record SchemeSummary(
     string? DefaultRenderFormat,
     string? Definition = null,
     string? Guidance = null,
+    string? Marking = null,
     string? ColorFrom = null,
     IReadOnlyList<MarkingColorRule>? ColorRules = null,
     IReadOnlyDictionary<string, Term>? Vocabulary = null,

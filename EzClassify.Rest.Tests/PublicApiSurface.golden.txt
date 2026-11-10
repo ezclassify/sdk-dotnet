@@ -1439,7 +1439,7 @@ class EzClassify.SchemeScope : System.IEquatable<EzClassify.SchemeScope>
   property public System.String Label { get; init; }
 
 class EzClassify.SchemeSummary : System.IEquatable<EzClassify.SchemeSummary>
-  ctor public .ctor(System.String Id, System.String Version, System.String Name, System.String Description, System.Boolean? RoleAware, EzClassify.ReferenceSurfaceLabel ReferenceSurfaceLabel, System.Text.Json.JsonElement? EmbeddedMarking, System.String DefaultRenderFormat, System.String Definition = null, System.String Guidance = null, System.String ColorFrom = null, System.Collections.Generic.IReadOnlyList<EzClassify.MarkingColorRule> ColorRules = null, System.Collections.Generic.IReadOnlyDictionary<System.String, EzClassify.Term> Vocabulary = null, EzClassify.SchemeContextFormats ContextFormats = null, System.String DefaultScope = null, System.String ScopeLabel = null, System.String DefaultPartRenderFormat = null, System.String DefaultWholeRenderFormat = null)
+  ctor public .ctor(System.String Id, System.String Version, System.String Name, System.String Description, System.Boolean? RoleAware, EzClassify.ReferenceSurfaceLabel ReferenceSurfaceLabel, System.Text.Json.JsonElement? EmbeddedMarking, System.String DefaultRenderFormat, System.String Definition = null, System.String Guidance = null, System.String Marking = null, System.String ColorFrom = null, System.Collections.Generic.IReadOnlyList<EzClassify.MarkingColorRule> ColorRules = null, System.Collections.Generic.IReadOnlyDictionary<System.String, EzClassify.Term> Vocabulary = null, EzClassify.SchemeContextFormats ContextFormats = null, System.String DefaultScope = null, System.String ScopeLabel = null, System.String DefaultPartRenderFormat = null, System.String DefaultWholeRenderFormat = null)
   property public EzClassify.ReferenceSurfaceLabel ReferenceSurfaceLabel { get; init; }
   property public EzClassify.SchemeContextFormats ContextFormats { get; init; }
   property public System.Boolean? RoleAware { get; init; }
@@ -1454,6 +1454,7 @@ class EzClassify.SchemeSummary : System.IEquatable<EzClassify.SchemeSummary>
   property public System.String Description { get; init; }
   property public System.String Guidance { get; init; }
   property public System.String Id { get; init; }
+  property public System.String Marking { get; init; }
   property public System.String Name { get; init; }
   property public System.String ScopeLabel { get; init; }
   property public System.String Version { get; init; }
