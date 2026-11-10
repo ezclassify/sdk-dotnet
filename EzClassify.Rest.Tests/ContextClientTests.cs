@@ -36,6 +36,7 @@ internal sealed class CtxMockHandler : HttpMessageHandler
         "/scheme/scopes",
         "/scheme/label-presets",
         "/access/rules",
+        "/crosswalk/describe",
     };
 
     public string? ResolvedVersionHeader { get; set; } = "1.0.0";
@@ -1817,7 +1818,7 @@ public class ContextClientTests
     }
 
     [Fact]
-    public async Task GuideEvaluateMany_SendsAggregateScope()
+    public async Task GuideEvaluateMany_SendsEachSelectionWithItsGuide()
     {
         var routes = new Dictionary<string, (HttpStatusCode, string)>
         {
@@ -1828,13 +1829,52 @@ public class ContextClientTests
         var (client, handler) = await CtxClientFactory.ConnectAsync(routes);
         using (client)
         {
-            var result = await client.Guide!.EvaluateManyAsync(new[] { "r2" });
+            var result = await client.Guide!.EvaluateManyAsync(new[]
+            {
+                new GuideRuleSelection("g1", "r2"),
+                new GuideRuleSelection("g2", "r2"),
+            });
             Assert.Equal("H", result.Result.AggregatedMarking);
             var (_, path, body) = handler.Requests[^1];
             Assert.Equal("/v1/ctx/acme-marking/1.0.0/guide/evaluate", path);
-            Assert.Contains("\"allGuides\":true", body);
-            Assert.Contains("\"selectedRuleIds\":[\"r2\"]", body);
-            Assert.DoesNotContain("guideId", body);
+            Assert.Equal(
+                "{\"selections\":[{\"guideId\":\"g1\",\"ruleId\":\"r2\"},{\"guideId\":\"g2\",\"ruleId\":\"r2\"}]}",
+                body);
+        }
+    }
+
+    [Fact]
+    public async Task GuideEvaluateMany_RefusesABlankGuideBeforeSending()
+    {
+        var (client, handler) = await CtxClientFactory.ConnectAsync(new Dictionary<string, (HttpStatusCode, string)>());
+        using (client)
+        {
+            var sent = handler.Requests.Count;
+            await Assert.ThrowsAsync<ArgumentException>(() =>
+                client.Guide!.EvaluateManyAsync(new[] { new GuideRuleSelection(" ", "r2") }));
+            Assert.Equal(sent, handler.Requests.Count);
+        }
+    }
+
+    [Fact]
+    public async Task CrosswalkDescribe_ReadsTheFlatInventory()
+    {
+        var routes = new Dictionary<string, (HttpStatusCode, string)>
+        {
+            ["/crosswalk/describe"] = (HttpStatusCode.OK, """
+                { "crosswalks": [ { "id": "a-to-b", "version": "1.0.0", "name": "A to B", "source": "a", "target": "b", "mappings": [], "selections": [] } ] }
+                """),
+        };
+        var (client, handler) = await CtxClientFactory.ConnectAsync(routes);
+        using (client)
+        {
+            var crosswalks = await client.Crosswalk!.DescribeAsync();
+            var (method, path, _) = handler.Requests[^1];
+            Assert.Equal("GET", method);
+            Assert.Equal("/v1/ctx/acme-marking/1.0.0/crosswalk/describe", path);
+            var crosswalk = Assert.Single(crosswalks);
+            Assert.Equal("a-to-b", crosswalk.GetProperty("id").GetString());
+            Assert.Equal("a", crosswalk.GetProperty("source").GetString());
         }
     }
 

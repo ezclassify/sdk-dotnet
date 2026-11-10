@@ -63,6 +63,7 @@ internal static class CachePlanCalls
         // -- never cached --------------------------------------------------------
         ["context.audit|ctx-document-audit.ok"] = async (c, ct, _, _) => Of(await c.Document!.AuditAsync(Releasable, null, DocumentResponseProfile.Summary, ct)),
         ["context.accessRequirements|ctx-access-describe-requirements.ok"] = async (c, ct, _, _) => Of(await c.Access!.DescribeRequirementsAsync("OPEN", ct)),
+        ["context.describeCrosswalks|ctx-crosswalk-describe.ok"] = async (c, ct, _, _) => Of(await c.Crosswalk!.DescribeAsync(ct)),
         ["context.translate|ctx-crosswalk-translate.translated"] = async (c, ct, _, _) => Of(await c.Crosswalk!.TranslateAsync("ez-test-to-ez-gated", "OPEN", ct)),
         ["context.translate|ctx-crosswalk-translate.forbidden"] = async (c, ct, _, _) => Of(await c.Crosswalk!.TranslateAsync("ez-test-to-ez-gated", "SENSITIVE", ct)),
 
@@ -73,7 +74,6 @@ internal static class CachePlanCalls
         ["scheme.collectNotices|ctx-scheme-notices.ok"] = async (c, ct, _, _) => Of(await c.Scheme!.NoticesAsync(new[] { Open }, ct)),
         ["guide.scan|ctx-guide-scan.ok"] = async (c, ct, _, _) => Of(await c.Guide!.ScanAsync("This paragraph is confidential.", cancellationToken: ct)),
         ["guide.evaluate|ctx-guide-evaluate.ok"] = async (c, ct, _, _) => Of(await c.Guide!.EvaluateAsync("ez-test", new[] { "rule-sensitive" }, ct)),
-        ["guide.evaluateAll|ctx-guide-evaluate.all-guides"] = async (c, ct, _, _) => Of(await c.Guide!.EvaluateManyAsync(new[] { "rule-sensitive" }, ct)),
         ["guide.describeRule|ctx-guide-describe-rule.ok"] = async (c, ct, _, _) => Of(await c.Guide!.DescribeRuleAsync("rule-sensitive", cancellationToken: ct)),
         ["guide.filterRules|ctx-guide-filter-rules.ok"] = async (c, ct, _, _) => Of(await c.Guide!.FilterRulesAsync("sensitive", cancellationToken: ct)),
         ["guide.buildGuideView|ctx-guide-view.ok"] = async (c, ct, _, _) => Of(await c.Guide!.ViewAsync(cancellationToken: ct)),

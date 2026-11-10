@@ -1,4 +1,4 @@
-// Code generated from json-schemas@5583b92fcd0903bd11593a390f965c67127e7dd494e528cf8388b165762dd7d5 by gen.mjs@58c491f0d061e5e6150ea43b5e4b92174763bb39d79ee4056e4ac8355f3d5363. DO NOT EDIT.
+// Code generated from json-schemas@a6fdb27627b5a6afd15dca53a8e2af5f5881d4c941849c936b9e83f28ada0127 by gen.mjs@58c491f0d061e5e6150ea43b5e4b92174763bb39d79ee4056e4ac8355f3d5363. DO NOT EDIT.
 // Re-run via: make regen
 #nullable enable
 #pragma warning disable CS1573

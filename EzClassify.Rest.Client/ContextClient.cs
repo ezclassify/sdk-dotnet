@@ -728,18 +728,37 @@ public sealed class ContextGuideOps
         return ContextResultParser.ParseContextGuideEvaluationResult(json);
     }
 
-    /// <summary>Evaluate selected rules across every guide in the Context.</summary>
-    /// <param name="selectedRuleIds">Rules the analyst selected across the guide set.</param>
+    /// <summary>
+    /// Roll up rules selected from several guides. Each selection names the guide
+    /// that holds its rule, so two guides that use the same rule id hold two rules.
+    /// Each guide evaluates the rules selected from it, with its own dependencies
+    /// and overrides, and the outcomes are rolled up per target scheme.
+    /// </summary>
+    /// <param name="selections">The selected rules, each with its guide.</param>
     /// <param name="cancellationToken">Cancels the request.</param>
     /// <returns>The Context envelope carrying the combined evaluation result.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="selections"/> is null.</exception>
+    /// <exception cref="ArgumentException">A selection is null, or its guide or rule id is empty.</exception>
     /// <exception cref="EzClassifyClientException">The server rejected the request, could not be reached, or did not answer within the request timeout.</exception>
     public async Task<ContextGuideEvaluationResult> EvaluateManyAsync(
-        IEnumerable<string> selectedRuleIds,
+        IEnumerable<GuideRuleSelection> selections,
         CancellationToken cancellationToken = default)
     {
+        if (selections is null) throw new ArgumentNullException(nameof(selections));
+        var wire = new List<object>();
+        foreach (var selection in selections)
+        {
+            if (selection is null)
+                throw new ArgumentException("A selection must not be null.", nameof(selections));
+            if (string.IsNullOrWhiteSpace(selection.GuideId))
+                throw new ArgumentException("A selection's guide id must not be empty.", nameof(selections));
+            if (string.IsNullOrWhiteSpace(selection.RuleId))
+                throw new ArgumentException("A selection's rule id must not be empty.", nameof(selections));
+            wire.Add(new { guideId = selection.GuideId, ruleId = selection.RuleId });
+        }
         var json = await _client.PostCtxAsync(
             "guide/evaluate",
-            new { allGuides = true, selectedRuleIds = new List<string>(selectedRuleIds) },
+            new { selections = wire },
             cancellationToken).ConfigureAwait(false);
         return ContextResultParser.ParseContextGuideEvaluationResult(json);
     }
@@ -953,6 +972,22 @@ public sealed class ContextCrosswalkOps
     private readonly EzClassifyClient _client;
 
     internal ContextCrosswalkOps(EzClassifyClient client) => _client = client;
+
+    /// <summary>
+    /// Describe every crosswalk the Context holds, in declaration order: its source
+    /// and target as the scheme selectors the Context description lists, and the
+    /// mappings and selections a translation applies. Each entry stays JSON, as a
+    /// translation result does. The answer goes through the response cache like
+    /// <see cref="ContextAccessOps.RulesAsync"/>.
+    /// </summary>
+    /// <param name="cancellationToken">Cancels the request.</param>
+    /// <returns>Every crosswalk in the Context, empty when it declares none.</returns>
+    /// <exception cref="EzClassifyClientException">The server rejected the request, could not be reached, or did not answer within the request timeout.</exception>
+    public async Task<IReadOnlyList<JsonElement>> DescribeAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return await _client.CachedGetCtxAsync("context.describeCrosswalks", "crosswalk/describe", ContextResultParser.ParseContextCrosswalks, cancellationToken).ConfigureAwait(false);
+    }
 
     /// <summary>Translate a rendered source marking through a declared directional crosswalk.</summary>
     /// <param name="crosswalkId">Declared directional crosswalk to translate through.</param>

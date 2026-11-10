@@ -577,6 +577,21 @@ public static class ContextResultParser
     }
 
     /// <summary>
+    /// Parse every crosswalk from the <c>crosswalk/describe</c> response. Each
+    /// entry stays JSON, as a translation result does: its mappings and
+    /// selections carry the same reviewed decisions.
+    /// </summary>
+    /// <exception cref="JsonException">The body lacks a member the contract requires.</exception>
+    public static IReadOnlyList<JsonElement> ParseContextCrosswalks(string json)
+    {
+        using var doc = JsonDocument.Parse(json);
+        var root = doc.RootElement;
+        JsonRead.RequireObject(root, "crosswalk inventory response");
+        ResponseCheck.Require("CtxCrosswalkDescribeResponseBody", root);
+        return JsonRead.RequiredList(root, "crosswalks", element => element.Clone());
+    }
+
+    /// <summary>
     /// Parse the body of <c>GET /v1/ctx/{ctxId}/{version}</c>. The wire omits
     /// <c>guides</c>, <c>crosswalks</c>, <c>access</c> and a scheme's
     /// <c>layers</c> rather than sending empty collections, and "the Context

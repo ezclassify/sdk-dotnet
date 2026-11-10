@@ -107,7 +107,7 @@ public class RequestSchemaConformanceTests
                 "default-label", outputFormat: "banner")),
             ["guide.scan"] = ("guide/scan", c => c.Guide!.ScanAsync("secret text", guideId: "g1")),
             ["guide.evaluate"] = ("guide/evaluate", c => c.Guide!.EvaluateAsync("g1", new[] { "r1" })),
-            ["guide.evaluateMany"] = ("guide/evaluate", c => c.Guide!.EvaluateManyAsync(new[] { "r1" })),
+            ["guide.evaluateMany"] = ("guide/evaluate", c => c.Guide!.EvaluateManyAsync(new[] { new GuideRuleSelection("g1", "r1") })),
             ["guide.filter-rules"] = ("guide/filter-rules", c => c.Guide!.FilterRulesAsync("sec", guideId: "g1")),
             ["guide.describe-rule"] = ("guide/describe-rule", c => c.Guide!.DescribeRuleAsync("r1", guideId: "g1")),
             ["guide.view"] = ("guide/view", c => c.Guide!.ViewAsync(guideId: "g1")),
@@ -191,6 +191,7 @@ public class RequestSchemaConformanceTests
             [RoutePrefix + "scheme/label-presets"] = c => c.Scheme!.LabelPresetsAsync(),
             [RoutePrefix + "scheme/describe-concept"] = c => c.Scheme!.DescribeConceptAsync("HIGH", "level", view: "short"),
             [RoutePrefix + "access/rules"] = c => c.Access!.RulesAsync(),
+            [RoutePrefix + "crosswalk/describe"] = c => c.Crosswalk!.DescribeAsync(),
         };
 
     /// <summary>

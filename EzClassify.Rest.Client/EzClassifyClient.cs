@@ -709,7 +709,7 @@ public sealed class EzClassifyClient : IDisposable
         var ttl = operation switch
         {
             "scheme.scan" => TimeSpan.FromMinutes(2),
-            "scheme.describeConcept" or "access.describeAllAccessRules" => TimeSpan.FromHours(1),
+            "scheme.describeConcept" or "access.describeAllAccessRules" or "context.describeCrosswalks" => TimeSpan.FromHours(1),
             _ => TimeSpan.FromMinutes(5),
         };
         var key = operation + "|ctx:" + _contextId + "@" + _ctxVersionSegment + "|" + opPath + "|"

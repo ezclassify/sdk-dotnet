@@ -1,4 +1,4 @@
-// Code generated from the canonical OpenAPI contract (40299fa7f6283c0f37a8eb1bbba45523f64b7b64ca6917918e4fcc2e5f1f6304) by gen.mjs@58c491f0d061e5e6150ea43b5e4b92174763bb39d79ee4056e4ac8355f3d5363. DO NOT EDIT.
+// Code generated from the canonical OpenAPI contract (ea62aae52a82a257b03e2498b7268e25295212ca2ccc4c3f25257ffe23060d1f) by gen.mjs@58c491f0d061e5e6150ea43b5e4b92174763bb39d79ee4056e4ac8355f3d5363. DO NOT EDIT.
 // Re-run via: make regen
 #nullable enable
 
@@ -207,6 +207,15 @@ public record GuideBreakdownEntry(
     bool WasOverridden,
     RuleReference? OverriddenBy = null
 );
+
+/// <summary>
+/// One selected rule, named by the guide that holds it. Guides in a Context are
+/// independent, so two of them may use the same rule id; a selection names the
+/// guide as well as the rule, and the two pairs are two rules.
+/// </summary>
+/// <param name="GuideId">Id of the guide that holds the rule.</param>
+/// <param name="RuleId">Id of the rule within that guide.</param>
+public record GuideRuleSelection(string GuideId, string RuleId);
 
 /// <summary>
 /// Whether a parent marking covers its children, checked category by category.

@@ -22,6 +22,7 @@ class sealed EzClassify.ContextCacheOptions : System.IEquatable<EzClassify.Conte
 class sealed EzClassify.ContextCrosswalkOps
   method public System.Threading.Tasks.Task<EzClassify.ContextCrosswalkTranslationResult> TranslateAsync(System.String crosswalkId, System.Collections.Generic.IEnumerable<EzClassify.Assertion> assertions, System.Threading.CancellationToken cancellationToken = default)
   method public System.Threading.Tasks.Task<EzClassify.ContextCrosswalkTranslationResult> TranslateAsync(System.String crosswalkId, System.String marking, System.Threading.CancellationToken cancellationToken = default)
+  method public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<System.Text.Json.JsonElement>> DescribeAsync(System.Threading.CancellationToken cancellationToken = default)
 
 class sealed EzClassify.ContextDocumentOps
   method public System.Threading.Tasks.Task<EzClassify.ContextDocumentAuditResult> AuditAsync(System.String text, EzClassify.GuideDeterminationInput guideDeterminations, EzClassify.DocumentResponseProfile? responseProfile = null, System.Threading.CancellationToken cancellationToken = default)
@@ -29,7 +30,7 @@ class sealed EzClassify.ContextDocumentOps
 
 class sealed EzClassify.ContextGuideOps
   method public System.Threading.Tasks.Task<EzClassify.ContextGuideEvaluationResult> EvaluateAsync(System.String guideId, System.Collections.Generic.IEnumerable<System.String> selectedRuleIds, System.Threading.CancellationToken cancellationToken = default)
-  method public System.Threading.Tasks.Task<EzClassify.ContextGuideEvaluationResult> EvaluateManyAsync(System.Collections.Generic.IEnumerable<System.String> selectedRuleIds, System.Threading.CancellationToken cancellationToken = default)
+  method public System.Threading.Tasks.Task<EzClassify.ContextGuideEvaluationResult> EvaluateManyAsync(System.Collections.Generic.IEnumerable<EzClassify.GuideRuleSelection> selections, System.Threading.CancellationToken cancellationToken = default)
   method public System.Threading.Tasks.Task<EzClassify.ContextGuideFilterRulesResult> FilterRulesAsync(System.String query, System.String guideId = null, System.Threading.CancellationToken cancellationToken = default)
   method public System.Threading.Tasks.Task<EzClassify.ContextGuideRuleDescriptionResult> DescribeRuleAsync(System.String ruleId, System.String guideId = null, System.Threading.CancellationToken cancellationToken = default)
   method public System.Threading.Tasks.Task<EzClassify.ContextGuideScanResult> ScanAsync(System.String text, System.String guideId = null, System.Threading.CancellationToken cancellationToken = default)
@@ -576,6 +577,7 @@ class static EzClassify.ContextResultParser
   method public static System.Collections.Generic.IReadOnlyList<EzClassify.LabelPresetView> ParseSchemeLabelPresets(System.String json)
   method public static System.Collections.Generic.IReadOnlyList<EzClassify.Notice> ParseNotices(System.String json)
   method public static System.Collections.Generic.IReadOnlyList<EzClassify.SchemeScope> ParseSchemeScopes(System.String json)
+  method public static System.Collections.Generic.IReadOnlyList<System.Text.Json.JsonElement> ParseContextCrosswalks(System.String json)
   method public static System.String ParseNormalizeResult(System.String json)
   method public static System.String ParseRenderResult(System.String json)
 
@@ -1062,6 +1064,11 @@ class EzClassify.GuideRule : System.IEquatable<EzClassify.GuideRule>
   property public System.String Rationale { get; init; }
   property public System.Text.Json.JsonElement Outcome { get; init; }
   property public System.Text.Json.JsonElement? When { get; init; }
+
+class EzClassify.GuideRuleSelection : System.IEquatable<EzClassify.GuideRuleSelection>
+  ctor public .ctor(System.String GuideId, System.String RuleId)
+  property public System.String GuideId { get; init; }
+  property public System.String RuleId { get; init; }
 
 class EzClassify.GuideRuleView : System.IEquatable<EzClassify.GuideRuleView>
   ctor public .ctor(System.String Id, System.String Name, System.String OutcomeText, System.Boolean IsComputed, System.Collections.Generic.IReadOnlyList<System.String> Keywords, System.Collections.Generic.IReadOnlyList<System.String> MatcherLabels, System.Collections.Generic.IReadOnlyList<System.String> DependsOn, System.Collections.Generic.IReadOnlyList<System.String> DependsOnNames, System.Collections.Generic.IReadOnlyList<System.String> Overrides, System.Collections.Generic.IReadOnlyList<System.String> OverrideNames, System.String Description = null, System.String WhenText = null, System.String Rationale = null)

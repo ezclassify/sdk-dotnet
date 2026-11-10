@@ -372,8 +372,8 @@ public class WireCorpusReplayTests
             async c => await c.Guide!.ScanAsync("This paragraph is confidential.")),
         ["ctx-guide-evaluate.ok"] = Ctx("ez-full", "ctx-guide-evaluate.ok",
             async c => await c.Guide!.EvaluateAsync("ez-test", new[] { "rule-sensitive" })),
-        ["ctx-guide-evaluate.all-guides"] = Ctx("ez-full", "ctx-guide-evaluate.all-guides",
-            async c => await c.Guide!.EvaluateManyAsync(new[] { "rule-sensitive" })),
+        ["ctx-guide-evaluate.selections"] = Ctx("ez-full", "ctx-guide-evaluate.selections",
+            async c => await c.Guide!.EvaluateManyAsync(new[] { new GuideRuleSelection("ez-test", "rule-sensitive") })),
         ["ctx-guide-describe-rule.ok"] = Ctx("ez-full", "ctx-guide-describe-rule.ok",
             async c => await c.Guide!.DescribeRuleAsync("rule-sensitive")),
         ["ctx-guide-describe-rule.unknown-guide"] = Ctx("ez-full", "ctx-guide-describe-rule.unknown-guide",
@@ -394,6 +394,8 @@ public class WireCorpusReplayTests
         // -- crosswalks ---------------------------------------------------------
         ["ctx-crosswalk-translate.marking"] = Ctx("ez-full", "ctx-crosswalk-translate.marking",
             async c => await c.Crosswalk!.TranslateAsync("ez-test-to-ez-gated", "OPEN")),
+        ["ctx-crosswalk-describe.ok"] = Ctx("ez-crosswalk", "ctx-crosswalk-describe.ok",
+            async c => await c.Crosswalk!.DescribeAsync()),
         ["ctx-crosswalk-translate.translated"] = Ctx("ez-crosswalk", "ctx-crosswalk-translate.translated",
             async c => await c.Crosswalk!.TranslateAsync("ez-test-to-ez-gated", "OPEN"),
             Check<ContextCrosswalkTranslationResult>((r, body) =>
