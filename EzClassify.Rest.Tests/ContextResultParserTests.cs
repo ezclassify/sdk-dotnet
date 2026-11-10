@@ -195,7 +195,8 @@ public class ContextResultParserTests
               "activation":{"matched":true,"assertions":[{"categoryId":"level","conceptId":"HIGH"}],"contextPaths":["distribution.team"]},
               "comparisons":[{"left":{"source":"subject","path":"membership"},"operator":"contains","right":{"source":"literal","value":"HIGH"},"matched":false,"missing":["HIGH"]}],
               "rule":{{Rule}},"reason":"membership required",
-              "modernizedFrom":[{"conceptId":"HIGH","replacedConceptId":"OLD-HIGH","conceptDisplay":"HIGH","replacedConceptDisplay":"OLD HIGH"}]}]}
+              "modernizedFrom":[{"conceptId":"HIGH","replacedConceptId":"OLD-HIGH","conceptDisplay":"HIGH","replacedConceptDisplay":"OLD HIGH"}]}],
+             "warnings":[]}
             """;
         var result = ResultParser.ParseAccessDecision(json);
 

@@ -83,13 +83,19 @@ public class DocumentSemanticConformanceTests
         Assert.Equal(cases.Count, coverage.Count);
         Assert.Equal("recorded-operation-output", ReadObject(Path.Combine(semanticRoot, "fixtures", "recordings.json"))["status"]!.GetValue<string>());
 
+        // Case numbers are stable identities: a retired case leaves a gap
+        // rather than renumbering the rest. They still ascend, and each
+        // request id is the number's own.
         var semanticIds = new HashSet<string>(StringComparer.Ordinal);
+        var previous = 0;
         for (var index = 0; index < cases.Count; index++)
         {
             var contractCase = cases[index]!.AsObject();
             var requestId = contractCase["requestId"]!.GetValue<string>();
-            Assert.Equal(index + 1, contractCase["number"]!.GetValue<int>());
-            Assert.Equal($"case-{index + 1:D2}", requestId);
+            var number = contractCase["number"]!.GetValue<int>();
+            Assert.True(number > previous, $"case {number} does not follow case {previous}");
+            Assert.Equal($"case-{number:D2}", requestId);
+            previous = number;
             Assert.True(contractCase["required"]!.GetValue<bool>());
             Assert.Equal("recorded", contractCase["implementation"]!.GetValue<string>());
             Assert.True(semanticIds.Add(contractCase["semanticId"]!.GetValue<string>()));

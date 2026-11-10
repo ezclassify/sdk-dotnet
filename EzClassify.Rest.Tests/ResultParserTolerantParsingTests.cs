@@ -1058,7 +1058,7 @@ public class ResultParserAccessDecisionTests
     public void ParseAccessDecision_Provenance_CarriedThrough()
     {
         var decision = ResultParser.ParseAccessDecision(
-            """{"granted":true,"rules":[],"provenance":{"providerId":"policy","attribution":{"name":"Policy","license":"internal"},"reproducibility":"reproducible","snapshotId":"3"}}""");
+            """{"granted":true,"rules":[],"warnings":[],"provenance":{"providerId":"policy","attribution":{"name":"Policy","license":"internal"},"reproducibility":"reproducible","snapshotId":"3"}}""");
 
         Assert.NotNull(decision.Provenance);
         Assert.Equal("3", decision.Provenance!.SnapshotId);

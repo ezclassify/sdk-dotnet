@@ -73,7 +73,7 @@ public class AssertionRoundTripTests
         // assertion projection that drops it silently changes the decision input.
         var routes = new Dictionary<string, (HttpStatusCode, string)>
         {
-            ["/access/check"] = (HttpStatusCode.OK, """{ "granted": false, "rules": [] }"""),
+            ["/access/check"] = (HttpStatusCode.OK, """{ "granted": false, "rules": [], "warnings": [] }"""),
         };
         using var metadata = JsonDocument.Parse("""{"origin":"import","weight":2}""");
         var provenance = new SourceReference(
@@ -118,7 +118,7 @@ public class AssertionRoundTripTests
         // Negative control: absent optional fields stay off the wire rather than going out as null.
         var routes = new Dictionary<string, (HttpStatusCode, string)>
         {
-            ["/access/check"] = (HttpStatusCode.OK, """{ "granted": false, "rules": [] }"""),
+            ["/access/check"] = (HttpStatusCode.OK, """{ "granted": false, "rules": [], "warnings": [] }"""),
         };
         var (client, handler) = await CtxClientFactory.ConnectAsync(routes);
         using (client)

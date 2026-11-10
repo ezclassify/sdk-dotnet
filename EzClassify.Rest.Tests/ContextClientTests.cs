@@ -226,7 +226,7 @@ public class ContextClientTests
     {
         var routes = new Dictionary<string, (HttpStatusCode, string)>
         {
-            ["/access/check"] = (HttpStatusCode.OK, """{ "granted": false, "rules": [] }"""),
+            ["/access/check"] = (HttpStatusCode.OK, """{ "granted": false, "rules": [], "warnings": [] }"""),
         };
         var (client, handler) = await CtxClientFactory.ConnectAsync(routes);
         using (client)
@@ -817,6 +817,7 @@ public class ContextClientTests
                     [ { "marking": "H", "start": 5, "end": 6, "type": "marking", "wrapped": false, "role": "part",
                         "result": { "valid": true, "rendered": "H", "inputWasValid": true, "assertions": [], "errors": [], "warnings": [], "appliedFixes": [], "notices": [],
                                     "assessment": { "emitted": [], "omitted": [], "collapsed": [], "conflicts": [], "unrepresentable": [] } } } ],
+                  "unread": [],
                   "limits": { "status": "complete", "regionsFound": 1 } }
                 """),
         };
@@ -1902,7 +1903,7 @@ public class ContextClientTests
     {
         var routes = new Dictionary<string, (HttpStatusCode, string)>
         {
-            ["/access/check"] = (HttpStatusCode.OK, """{ "granted": true, "rules": [ { "name": "Membership", "granted": true, "skipped": false, "ruleIndex": 0, "activation":{"matched":true,"assertions":[],"contextPaths":[]}, "comparisons":[], "rule":{"artifact":{"kind":"access","id":"ap","version":"1.0.0"},"ruleId":"r1","ruleDigest":"sha256:r1"} } ] }"""),
+            ["/access/check"] = (HttpStatusCode.OK, """{ "granted": true, "rules": [ { "name": "Membership", "granted": true, "skipped": false, "ruleIndex": 0, "activation":{"matched":true,"assertions":[],"contextPaths":[]}, "comparisons":[], "rule":{"artifact":{"kind":"access","id":"ap","version":"1.0.0"},"ruleId":"r1","ruleDigest":"sha256:r1"} } ], "warnings": [] }"""),
         };
         var (client, handler) = await CtxClientFactory.ConnectAsync(routes);
         using (client)
@@ -1925,7 +1926,7 @@ public class ContextClientTests
     {
         var routes = new Dictionary<string, (HttpStatusCode, string)>
         {
-            ["/access/check"] = (HttpStatusCode.OK, """{ "granted": false, "rules": [] }"""),
+            ["/access/check"] = (HttpStatusCode.OK, """{ "granted": false, "rules": [], "warnings": [] }"""),
         };
         var (client, handler) = await CtxClientFactory.ConnectAsync(routes);
         using (client)

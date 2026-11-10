@@ -92,6 +92,7 @@ public class UnknownResponseEnumTests
                 "result":{"valid":true,"rendered":"H","inputWasValid":true,"assertions":[],"errors":[],"warnings":[],"appliedFixes":[],"notices":[],
                           "assessment":{"emitted":[],"omitted":[],"collapsed":[],"conflicts":[],"unrepresentable":[{"output":"marking/xml","reason":"unwritable-here"}]},
                           "recognition":{"status":"settled","role":"region","unmatched":[]}}}],
+             "unread":[],
              "limits":{"status":"paused","limitHit":"memory","regionsFound":1}}
             """));
         using (client)
