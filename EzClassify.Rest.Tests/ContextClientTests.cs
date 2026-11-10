@@ -1666,74 +1666,123 @@ public class ContextClientTests
         }
     }
 
-    // These sub-resources take the same optional scheme selector, so the query
-    // plumbing is proved once per route rather than duplicated per assertion.
-    // The label presets and apply-preset take none: the server refuses a query
-    // parameter an operation does not declare.
-    public static TheoryData<string, string> SchemeSelectorRoutes() => new()
-    {
-        { "/1.0.0/scheme", "/v1/ctx/acme-marking/1.0.0/scheme?scheme=source" },
-        { "/scheme/concepts", "/v1/ctx/acme-marking/1.0.0/scheme/concepts?scheme=source" },
-        { "/scheme/categories", "/v1/ctx/acme-marking/1.0.0/scheme/categories?scheme=source" },
-        { "/scheme/formats", "/v1/ctx/acme-marking/1.0.0/scheme/formats?scheme=source" },
-        { "/scheme/grammar", "/v1/ctx/acme-marking/1.0.0/scheme/grammar?scheme=source" },
-        { "/scheme/scopes", "/v1/ctx/acme-marking/1.0.0/scheme/scopes?scheme=source" },
-    };
-
-    [Theory]
-    [MemberData(nameof(SchemeSelectorRoutes))]
-    public async Task SchemeSubResources_SendSchemeSelectorAsQuery(string route, string expectedPath)
-    {
-        var (client, handler) = await CtxClientFactory.ConnectAsync(RoutesFor(route));
-        using (client)
+    // --- scheme views --------------------------------------------------------
+    //
+    // Every scheme operation and read, with the route it posts or gets. A view
+    // bound to a selector must address that scheme on every one of them, and the
+    // primary view on none, so the wire behavior is proved once per call rather
+    // than per assertion. Only the request matters here: the stub answers with
+    // bodies most parsers reject.
+    private static readonly IReadOnlyDictionary<string, Func<ContextSchemeOps, Task>> SchemeCalls =
+        new Dictionary<string, Func<ContextSchemeOps, Task>>(StringComparer.Ordinal)
         {
-            await InvokeSubResource(client, route, scheme: "source");
-            Assert.Equal(expectedPath, handler.Requests[^1].Path);
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(SchemeSelectorRoutes))]
-    public async Task SchemeSubResources_OmitSchemeSelectorWhenNotSupplied(string route, string expectedPath)
-    {
-        var (client, handler) = await CtxClientFactory.ConnectAsync(RoutesFor(route));
-        using (client)
-        {
-            await InvokeSubResource(client, route, scheme: null);
-            Assert.Equal(expectedPath.Replace("?scheme=source", ""), handler.Requests[^1].Path);
-            Assert.DoesNotContain("scheme=", handler.Requests[^1].Path);
-        }
-    }
-
-    [Fact]
-    public async Task LabelPresetsAndApplyPreset_SendNoQuery()
-    {
-        var routes = new Dictionary<string, (HttpStatusCode, string)>
-        {
-            ["/scheme/label-presets"] = (HttpStatusCode.OK, "[]"),
-            ["/scheme/apply-preset"] = (HttpStatusCode.OK, ValidateJson),
+            ["scheme/process"] = ops => ops.ProcessAsync("H"),
+            ["scheme/validate"] = ops => ops.ValidateAsync("H"),
+            ["scheme/explain"] = ops => ops.ExplainAsync("H"),
+            ["scheme/suggest"] = ops => ops.SuggestAsync("H//"),
+            ["scheme/suggest-for-categories"] = ops => ops.SuggestForCategoriesAsync(Array.Empty<Assertion>(), new[] { "level" }),
+            ["scheme/aggregate"] = ops => ops.AggregateAsync(new[] { "H", "L" }),
+            ["scheme/scan"] = ops => ops.ScanAsync("text H text"),
+            ["scheme/render"] = ops => ops.RenderAsync(Array.Empty<Assertion>()),
+            ["scheme/normalize"] = ops => ops.NormalizeAsync("h"),
+            ["scheme/check-coverage"] = ops => ops.CheckCoverageAsync(new[] { "L" }, "H"),
+            ["scheme/describe-concept"] = ops => ops.DescribeConceptAsync("HIGH", "level"),
+            ["scheme/diff"] = ops => ops.DiffAsync("H", "L"),
+            ["scheme/filter-concepts"] = ops => ops.FilterConceptsAsync("hi"),
+            ["scheme/notices"] = ops => ops.NoticesAsync(Array.Empty<Assertion>()),
+            ["scheme/view"] = ops => ops.ViewAsync(),
+            ["scheme"] = ops => ops.SummaryAsync(),
+            ["scheme/concepts"] = ops => ops.ConceptsAsync(),
+            ["scheme/categories"] = ops => ops.CategoriesAsync(),
+            ["scheme/formats"] = ops => ops.FormatsAsync(),
+            ["scheme/grammar"] = ops => ops.GrammarAsync(),
+            ["scheme/scopes"] = ops => ops.ScopesAsync(),
+            ["scheme/label-presets"] = ops => ops.LabelPresetsAsync(),
+            ["scheme/apply-preset"] = ops => ops.ApplyPresetAsync("default-label"),
         };
-        var (client, handler) = await CtxClientFactory.ConnectAsync(routes);
+
+    public static IEnumerable<object[]> SchemeCallRoutes() => SchemeCalls.Keys.Select(route => new object[] { route });
+
+    private static async Task<string> SentPathAsync(CtxMockHandler handler, Func<Task> invoke)
+    {
+        var before = handler.Requests.Count;
+        try
+        {
+            await invoke();
+        }
+        catch (Exception)
+        {
+            // The stub body fails most parsers. The request already went out,
+            // and the count below proves exactly one did.
+        }
+        var sent = handler.Requests.Skip(before).ToList();
+        Assert.Single(sent);
+        return sent[0].Path;
+    }
+
+    private static (string Route, string[] Query) Split(string path)
+    {
+        const string prefix = "/v1/ctx/acme-marking/1.0.0/";
+        Assert.StartsWith(prefix, path);
+        var rest = path[prefix.Length..];
+        var at = rest.IndexOf('?');
+        return at < 0
+            ? (rest, Array.Empty<string>())
+            : (rest[..at], rest[(at + 1)..].Split('&'));
+    }
+
+    [Theory]
+    [MemberData(nameof(SchemeCallRoutes))]
+    public async Task SchemeView_AddressesItsSchemeOnEveryCall(string route)
+    {
+        var (client, handler) = await CtxClientFactory.ConnectAsync();
         using (client)
         {
-            await client.Scheme!.LabelPresetsAsync();
-            await client.Scheme.ApplyPresetAsync("default-label", "portion");
-            var sent = handler.Requests.Skip(1).Select(request => request.Path).ToArray();
-            Assert.Equal(new[]
-            {
-                "/v1/ctx/acme-marking/1.0.0/scheme/label-presets",
-                "/v1/ctx/acme-marking/1.0.0/scheme/apply-preset",
-            }, sent);
+            var path = await SentPathAsync(handler, () => SchemeCalls[route](client.SchemeView("source")));
+            var (sentRoute, query) = Split(path);
+            Assert.Equal(route, sentRoute);
+            Assert.Single(query, pair => pair.StartsWith("scheme=", StringComparison.Ordinal));
+            Assert.Contains("scheme=source", query);
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(SchemeCallRoutes))]
+    public async Task PrimaryView_SendsNoSchemeSelector(string route)
+    {
+        var (client, handler) = await CtxClientFactory.ConnectAsync();
+        using (client)
+        {
+            var path = await SentPathAsync(handler, () => SchemeCalls[route](client.Scheme!));
+            var (sentRoute, query) = Split(path);
+            Assert.Equal(route, sentRoute);
+            Assert.DoesNotContain(query, pair => pair.StartsWith("scheme=", StringComparison.Ordinal));
         }
     }
 
     [Fact]
-    public async Task SchemeSubResources_EscapeSchemeSelector()
+    public async Task SchemeView_KeepsTheQueryACallAlreadyCarries()
     {
-        var (client, handler) = await CtxClientFactory.ConnectAsync(RoutesFor("/scheme/concepts"));
+        var (client, handler) = await CtxClientFactory.ConnectAsync();
         using (client)
         {
-            await client.Scheme!.ConceptsAsync("acme/target v2");
+            var path = await SentPathAsync(handler, () => client.SchemeView("source").DescribeConceptAsync("HIGH", "level", view: "short"));
+            Assert.Equal(
+                "/v1/ctx/acme-marking/1.0.0/scheme/describe-concept?conceptId=HIGH&categoryId=level&view=short&scheme=source",
+                path);
+        }
+    }
+
+    [Fact]
+    public async Task SchemeView_EscapesTheSelector()
+    {
+        var (client, handler) = await CtxClientFactory.ConnectAsync(new Dictionary<string, (HttpStatusCode, string)>
+        {
+            ["/scheme/concepts"] = (HttpStatusCode.OK, "[]"),
+        });
+        using (client)
+        {
+            await client.SchemeView("acme/target v2").ConceptsAsync();
             Assert.Equal(
                 "/v1/ctx/acme-marking/1.0.0/scheme/concepts?scheme=acme%2Ftarget%20v2",
                 handler.Requests[^1].Path);
@@ -1741,37 +1790,83 @@ public class ContextClientTests
     }
 
     [Fact]
-    public async Task SchemeSubResources_BlankSchemeSelectorIsTreatedAsAbsent()
+    public async Task SchemeView_IsOneViewPerSelector()
     {
-        var (client, handler) = await CtxClientFactory.ConnectAsync(RoutesFor("/scheme/concepts"));
+        var (client, _) = await CtxClientFactory.ConnectAsync();
         using (client)
         {
-            await client.Scheme!.ConceptsAsync("   ");
-            Assert.Equal("/v1/ctx/acme-marking/1.0.0/scheme/concepts", handler.Requests[^1].Path);
+            Assert.Same(client.SchemeView("source"), client.SchemeView("source"));
+            Assert.NotSame(client.SchemeView("source"), client.SchemeView("target"));
+            Assert.NotSame(client.Scheme, client.SchemeView("source"));
         }
     }
 
-    private static Dictionary<string, (HttpStatusCode, string)> RoutesFor(string route) => new()
+    [Fact]
+    public async Task SchemeView_CachesResultsPerSelector()
     {
-        [route] = (HttpStatusCode.OK, route switch
+        var routes = new Dictionary<string, (HttpStatusCode, string)>
         {
-            "/1.0.0/scheme" => SummaryJson,
-            "/scheme/grammar" => """{ "caseSensitive": false, "stripWhitespace": true }""",
-            "/scheme/apply-preset" => ValidateJson,
-            _ => "[]",
-        }),
-    };
+            ["/scheme/process"] = (HttpStatusCode.OK, ProcessJson),
+        };
+        var (client, handler) = await CtxClientFactory.ConnectAsync(routes);
+        using (client)
+        {
+            foreach (var _ in Enumerable.Range(0, 2))
+            {
+                await client.Scheme!.ProcessAsync("H");
+                await client.SchemeView("source").ProcessAsync("H");
+                await client.SchemeView("target").ProcessAsync("H");
+            }
 
-    private static Task InvokeSubResource(EzClassifyClient client, string route, string? scheme) => route switch
+            var sent = handler.Requests.Where(request => request.Path.Contains("/scheme/process")).Select(request => request.Path).ToArray();
+            Assert.Equal(new[]
+            {
+                "/v1/ctx/acme-marking/1.0.0/scheme/process",
+                "/v1/ctx/acme-marking/1.0.0/scheme/process?scheme=source",
+                "/v1/ctx/acme-marking/1.0.0/scheme/process?scheme=target",
+            }, sent);
+        }
+    }
+
+    [Fact]
+    public async Task SchemeView_UnknownSelectorFailsWithoutFallingBackToThePrimary()
     {
-        "/1.0.0/scheme" => client.Scheme!.SummaryAsync(scheme),
-        "/scheme/concepts" => client.Scheme!.ConceptsAsync(scheme),
-        "/scheme/categories" => client.Scheme!.CategoriesAsync(scheme),
-        "/scheme/formats" => client.Scheme!.FormatsAsync(scheme),
-        "/scheme/grammar" => client.Scheme!.GrammarAsync(scheme),
-        "/scheme/scopes" => client.Scheme!.ScopesAsync(scheme),
-        _ => throw new ArgumentOutOfRangeException(nameof(route), route, "Unmapped sub-resource route"),
-    };
+        var routes = new Dictionary<string, (HttpStatusCode, string)>
+        {
+            ["scheme=missing"] = (HttpStatusCode.NotFound, """{ "error": "not_found", "code": "NOT_FOUND", "detail": "scheme: missing" }"""),
+            ["/scheme/process"] = (HttpStatusCode.OK, ProcessJson),
+        };
+        var (client, handler) = await CtxClientFactory.ConnectAsync(routes);
+        using (client)
+        {
+            var error = await Assert.ThrowsAsync<EzClassifyClientException>(() => client.SchemeView("missing").ProcessAsync("H"));
+            Assert.Equal(404, error.StatusCode);
+            var sent = handler.Requests.Skip(1).Select(request => request.Path).ToArray();
+            Assert.Equal(new[] { "/v1/ctx/acme-marking/1.0.0/scheme/process?scheme=missing" }, sent);
+        }
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task SchemeView_RefusesABlankSelector(string selector)
+    {
+        var (client, handler) = await CtxClientFactory.ConnectAsync();
+        using (client)
+        {
+            Assert.Throws<ArgumentException>(() => client.SchemeView(selector));
+            Assert.Throws<ArgumentNullException>(() => client.SchemeView(null!));
+            Assert.Single(handler.Requests);
+        }
+    }
+
+    [Fact]
+    public void SchemeView_RequiresAContextBoundClient()
+    {
+        using var http = new HttpClient(new CtxMockHandler()) { BaseAddress = new Uri("http://localhost:8080") };
+        using var root = new EzClassifyClient(http);
+        Assert.Throws<InvalidOperationException>(() => root.SchemeView("source"));
+    }
 
     // --- guide ops ---------------------------------------------------------
 

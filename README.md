@@ -98,7 +98,7 @@ The SDK sends `X-EzClassify-Application-Grant` only to Context discovery, versio
 
 Pass a concrete version to pin one, or omit the version to let the server choose: the token's default, or the newest published. An omitted version binds the same way as `latest`, and the concrete immutable version the server resolved is on `ResolvedVersion`. The bound groups are `Scheme`, `Guide`, `Access`, `Crosswalk`, and `Document`; they are null on the root discovery client, hence the `!`.
 
-The bound client caches repeated scheme `Process`, `Validate`, `Explain`, `Suggest`, `SuggestForCategories`, `Aggregate`, `AggregateAssertions`, `Scan`, `Render`, `Normalize`, `DescribeConcept`, `Diff`, and `ApplyPreset` results, plus `Access.Rules` and `Crosswalk.DescribeAsync`. Everything else reaches the server on every call: the guide operations, `CheckCoverage`, `Notices`, `FilterConcepts`, the scheme views and reads (`SummaryAsync`, `ConceptsAsync`, and the rest of the scheme resources), `DescribeRule`, `DescribeRequirements`, crosswalk translation, and document audit and assessment.
+The bound client caches repeated scheme `Process`, `Validate`, `Explain`, `Suggest`, `SuggestForCategories`, `Aggregate`, `AggregateAssertions`, `Scan`, `Render`, `Normalize`, `DescribeConcept`, `Diff`, and `ApplyPreset` results, plus `Access.Rules` and `Crosswalk.DescribeAsync`. Everything else reaches the server on every call: the guide operations, `CheckCoverage`, `Notices`, `FilterConcepts`, `ViewAsync` and the scheme reads (`SummaryAsync`, `ConceptsAsync`, and the rest of the scheme resources), `DescribeRule`, `DescribeRequirements`, crosswalk translation, and document audit and assessment.
 
 Every field of a request is part of its cache key, so two `ProcessAsync` calls that name different `outputs` or `suggestFor` are two entries. The operation is part of the key too: `ExplainAsync` and `ProcessAsync` never share an entry, and neither do `Access.CheckAsync` and `Access.CheckByMarkingAsync`. Identical concurrent calls share one request. Canceling one caller's `CancellationToken` settles only that caller; the request itself is canceled when its last caller has gone, and a cancellation after the answer arrived evicts nothing. A failed call is not cached, and neither is a 200 that is missing a member the contract requires: the next call retries. Results are read-only, so changing the collections in one caller's result cannot change what another caller, or a later cached read, receives.
 
@@ -124,6 +124,7 @@ Cache options are fixed when the client connects. Scope each client to one calle
 | validate / process / explain / suggest / aggregate / scan | `Scheme.*` |
 | render / normalize / diff / coverage / concept describe | `Scheme.*` |
 | scheme reads: summary, concepts, categories, formats, grammar, scopes, label presets | `Scheme.SummaryAsync`, `ConceptsAsync`, `CategoriesAsync`, `FormatsAsync`, `GrammarAsync`, `ScopesAsync`, `LabelPresetsAsync` |
+| the same operations and reads on another scheme the Context holds | `SchemeView(selector).*` |
 | access checks / requirements / rule discovery | `Access.*` |
 | guide scan / evaluate / rule describe | `Guide.*` |
 | crosswalk translation, and the crosswalks the Context holds | `Crosswalk.TranslateAsync`, `Crosswalk.DescribeAsync` |
@@ -138,7 +139,7 @@ The defaults are in the scheme's metadata, so a picker does not have to guess th
 
 The rest of each request's optional fields are named options too, under their wire names: `assertions`, `outputs`, and `suggestFor` on `ProcessAsync`; `assertions` on `ExplainAsync`; and `includeGated` on both `SuggestAsync` overloads. Fields that carry a JSON object take it as a JSON string, the way `userAttributesJson` does, so `contextJson` on validate, process, explain, aggregate, and the access checks is forwarded as written. `ValidateAsync`, `ProcessAsync`, and `ExplainAsync` also take `parts`, the part markings the whole must cover: a part the whole does not cover is an error, and every proposed fix and rank floor is worked out against the whole and those parts together. An option you leave null stays off the wire and the server applies its default; `false` is sent.
 
-The scheme reads answer with the view types a local engine's scheme view carries: `ConceptsAsync` returns `ConceptView`, `CategoriesAsync` returns `CategoryView`, `FormatsAsync` returns `FormatView`, `LabelPresetsAsync` returns `LabelPresetView`, and `ScopesAsync` returns `SchemeScope` entries in declaration order, empty when the scheme declares none. All but `LabelPresetsAsync` take an optional `scheme` key that selects one of the Context's schemes, such as a crosswalk's source or target. Label presets are the primary scheme's, the one `ApplyPresetAsync` expands them in, and the client sends no scheme key for either.
+The scheme reads answer with the view types a local engine's scheme view carries: `ConceptsAsync` returns `ConceptView`, `CategoriesAsync` returns `CategoryView`, `FormatsAsync` returns `FormatView`, `LabelPresetsAsync` returns `LabelPresetView`, and `ScopesAsync` returns `SchemeScope` entries in declaration order, empty when the scheme declares none. They read the scheme of the view they are called on.
 
 Requests are closed. The server answers 400 with code `INVALID_INPUT` to a query parameter or body field the operation does not declare, and `Detail` names it, as in `query: scheme`. The client sends only declared ones.
 
@@ -159,6 +160,19 @@ catch (EzClassifyClientException error) when (error.StatusCode == 429)
 When you pass a base URL, the client creates and owns its `HttpClient`. On `net8.0` that client recycles pooled connections every two minutes so a long-lived process picks up a DNS change when the rest-api address moves. Pass your own `HttpClient`, or one from `IHttpClientFactory`, and that setting is yours.
 
 Every call finishes within the request timeout, which is the `HttpClient.Timeout` of the transport: 100 seconds on the client it creates for a base URL, and whatever your own `HttpClient` is set to when you hand it over. The client reads it once, at construction. If your `HttpClient` has no timeout (`Timeout.InfiniteTimeSpan`), as in a common `IHttpClientFactory` setup where Polly or another resilience handler owns the per-try timeouts, the whole request still gets the same 100 seconds. The deadline covers the whole request: sending it, waiting for the response, and reading the full body, so a server that sends its headers and then stalls fails on time, and so does a handler that ignores cancellation. A call that runs past it throws `EzClassifyClientException` with a `TimeoutException` as its `InnerException`. Your own `CancellationToken` still wins when it fires first, and that surfaces as `OperationCanceledException`. A handler that gives up sooner wins the same way. When a resilience pipeline stops trying before the deadline, the call ends then, with the handler's own exception (Polly's `TimeoutRejectedException`, for example) or, if the handler lets its cancellation through, an `EzClassifyClientException` that says the transport canceled the request.
+
+### Marking in another scheme the Context holds
+
+A Context with crosswalks holds more than one scheme. `Scheme` works in the primary one. `SchemeView(selector)` returns the same operations and reads bound to another, by the selector `DescribeContextAsync` lists for it:
+
+```csharp
+var description = await ctx.DescribeContextAsync();
+var other = description.Schemes[1].Selector;
+
+var result = await ctx.SchemeView(other).ProcessAsync(markingText);
+```
+
+Every call on the view sends the selector as `?scheme=`, including the label presets and `ApplyPresetAsync`, so a marking is read and written in that scheme. Its cached results are kept apart from every other scheme's, and the same selector returns the same view. A selector the Context does not hold is not replaced with the primary: each call fails with the server's 404.
 
 ## Reading a marking and writing one
 

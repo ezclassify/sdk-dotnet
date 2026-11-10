@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
@@ -103,10 +104,46 @@ public sealed class EzClassifyClient : IDisposable
     internal TimeSpan RequestTimeout => _requestTimeout;
 
     /// <summary>
-    /// Scheme-domain operations bound to the connected Context
-    /// (<c>/v1/ctx/{ctxId}/{version}/scheme/*</c>). Null on the root discovery client.
+    /// Scheme-domain operations on the connected Context's primary scheme
+    /// (<c>/v1/ctx/{ctxId}/{version}/scheme/*</c>). Null on the root discovery
+    /// client. <see cref="SchemeView(string)"/> reaches the other schemes the
+    /// Context holds.
     /// </summary>
     public ContextSchemeOps? Scheme { get; }
+
+    // One view per selector, so repeated lookups hand back the same instance.
+    private readonly ConcurrentDictionary<string, ContextSchemeOps> _schemeViews = new(StringComparer.Ordinal);
+
+    /// <summary>
+    /// The scheme-domain operations on one scheme the connected Context holds.
+    ///
+    /// <para>A Context that carries crosswalks holds more than one scheme, and a
+    /// caller marks in any of them. Every operation and read on the returned
+    /// view sends <paramref name="selector"/> as <c>?scheme=</c>, so a marking
+    /// processed there is read and written in that scheme, and its cached
+    /// results are kept apart from every other scheme's. The same selector
+    /// returns the same view.</para>
+    ///
+    /// <para>The selector is the key <see cref="DescribeContextAsync"/> lists
+    /// for the scheme, or its artifact id when that is unambiguous. It is sent
+    /// as given and never replaced with the primary: a selector the Context
+    /// does not hold fails each call with the server's not-found error.</para>
+    /// </summary>
+    /// <param name="selector">Context-local key, or unambiguous artifact id, of the scheme.</param>
+    /// <returns>The view bound to that scheme.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="selector"/> is null.</exception>
+    /// <exception cref="ArgumentException"><paramref name="selector"/> is empty or whitespace.</exception>
+    /// <exception cref="InvalidOperationException">This is the root discovery client, which is bound to no Context.</exception>
+    public ContextSchemeOps SchemeView(string selector)
+    {
+        if (selector is null) throw new ArgumentNullException(nameof(selector));
+        if (selector.Trim().Length == 0)
+            throw new ArgumentException("A scheme selector must not be empty.", nameof(selector));
+        if (_contextId is null)
+            throw new InvalidOperationException(
+                "SchemeView requires a Context-bound client; create one with ConnectAsync.");
+        return _schemeViews.GetOrAdd(selector, key => new ContextSchemeOps(this, key));
+    }
 
     /// <summary>
     /// Guide-domain operations bound to the connected Context
@@ -276,7 +313,7 @@ public sealed class EzClassifyClient : IDisposable
                 "Access-decision caching requires a concrete Context version.", nameof(cacheOptions));
         _cacheEnabled = cacheOptions.Enabled;
         _cacheAccessDecisions = cacheOptions.CacheAccessDecisions;
-        Scheme = new ContextSchemeOps(this);
+        Scheme = new ContextSchemeOps(this, selector: null);
         Guide = new ContextGuideOps(this);
         Access = new ContextAccessOps(this);
         Crosswalk = new ContextCrosswalkOps(this);

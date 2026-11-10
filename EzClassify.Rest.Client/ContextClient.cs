@@ -8,16 +8,34 @@ using System.Threading.Tasks;
 namespace EzClassify;
 
 /// <summary>
-/// Scheme-domain operations bound to a connected Context. Reached via
-/// <see cref="EzClassifyClient.Scheme"/>. Every call routes through
-/// <c>/v1/ctx/{ctxId}/{version}/scheme/*</c>; the Context is selected by the
-/// path, so request bodies carry payload only.
+/// Scheme-domain operations bound to one scheme of a connected Context. Every
+/// call routes through <c>/v1/ctx/{ctxId}/{version}/scheme/*</c>; the Context
+/// is selected by the path, so request bodies carry payload only.
+///
+/// <para><see cref="EzClassifyClient.Scheme"/> is the view of the Context's
+/// primary scheme. <see cref="EzClassifyClient.SchemeView(string)"/> returns
+/// the view of any other scheme the Context holds, and every operation and
+/// read on that view addresses that scheme with <c>?scheme=</c>. The view
+/// picks the scheme, so no operation takes a scheme argument.</para>
 /// </summary>
 public sealed class ContextSchemeOps
 {
     private readonly EzClassifyClient _client;
+    // Null for the primary view, which sends no selector and lets the server
+    // address the Context's primary scheme.
+    private readonly string? _selector;
 
-    internal ContextSchemeOps(EzClassifyClient client) => _client = client;
+    internal ContextSchemeOps(EzClassifyClient client, string? selector)
+    {
+        _client = client;
+        _selector = selector;
+    }
+
+    // The operation path with this view's selector appended. A path that
+    // already carries a query gets it as one more parameter.
+    private string Route(string opPath) => _selector is null
+        ? opPath
+        : opPath + (opPath.Contains('?') ? "&" : "?") + "scheme=" + Uri.EscapeDataString(_selector);
 
     /// <summary>
     /// Process a marking for someone who is writing it: the author's call.
@@ -70,7 +88,7 @@ public sealed class ContextSchemeOps
         var body = CtxPayload.AuthorBody(input, outputFormat, surface, inputFormat, assertions, contextDoc, parts);
         CtxPayload.PutIfSet(body, "outputs", outputs);
         CtxPayload.PutIfSet(body, "suggestFor", suggestFor);
-        return await _client.CachedPostCtxAsync("scheme.process", "scheme/process",
+        return await _client.CachedPostCtxAsync("scheme.process", Route("scheme/process"),
             body, ContextResultParser.ParseContextSchemeProcessResult, cancellationToken).ConfigureAwait(false);
     }
 
@@ -112,7 +130,7 @@ public sealed class ContextSchemeOps
         var body = new Dictionary<string, object?> { ["input"] = input };
         CtxPayload.PutIfSet(body, "inputFormat", inputFormat);
         CtxPayload.PutReaderOptions(body, surface, outputFormat, parts, contextDoc);
-        return await _client.CachedPostCtxAsync("scheme.validate", "scheme/validate", body, ContextResultParser.ParseContextSchemeValidateResult, cancellationToken).ConfigureAwait(false);
+        return await _client.CachedPostCtxAsync("scheme.validate", Route("scheme/validate"), body, ContextResultParser.ParseContextSchemeValidateResult, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -149,7 +167,7 @@ public sealed class ContextSchemeOps
         // answers 400 to a body carrying both, so there is no empty input here.
         var body = new Dictionary<string, object?> { ["assertions"] = CtxPayload.Assertions(assertions) };
         CtxPayload.PutReaderOptions(body, surface, outputFormat, parts, contextDoc);
-        return await _client.CachedPostCtxAsync("scheme.validate", "scheme/validate", body, ContextResultParser.ParseContextSchemeValidateResult, cancellationToken).ConfigureAwait(false);
+        return await _client.CachedPostCtxAsync("scheme.validate", Route("scheme/validate"), body, ContextResultParser.ParseContextSchemeValidateResult, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -185,7 +203,7 @@ public sealed class ContextSchemeOps
     {
         using var contextDoc = CtxPayload.OptionalJsonObjectArgument(contextJson, nameof(contextJson));
         var body = CtxPayload.AuthorBody(input, outputFormat, surface, inputFormat, assertions, contextDoc, parts);
-        return await _client.CachedPostCtxAsync("scheme.explain", "scheme/explain",
+        return await _client.CachedPostCtxAsync("scheme.explain", Route("scheme/explain"),
             body, ContextResultParser.ParseContextSchemeExplainResult, cancellationToken).ConfigureAwait(false);
     }
 
@@ -216,7 +234,7 @@ public sealed class ContextSchemeOps
         var body = new Dictionary<string, object?> { ["input"] = input };
         CtxPayload.PutIfSet(body, "inputFormat", inputFormat);
         PutSuggestOptions(body, outputFormat, filter, surface, includeGated);
-        return await _client.CachedPostCtxAsync("scheme.suggest", "scheme/suggest", body,
+        return await _client.CachedPostCtxAsync("scheme.suggest", Route("scheme/suggest"), body,
             ContextResultParser.ParseContextSchemeSuggestResult, cancellationToken).ConfigureAwait(false);
     }
 
@@ -244,7 +262,7 @@ public sealed class ContextSchemeOps
         if (assertions is null) throw new ArgumentNullException(nameof(assertions));
         var body = new Dictionary<string, object?> { ["assertions"] = CtxPayload.Assertions(assertions) };
         PutSuggestOptions(body, outputFormat, filter, surface, includeGated);
-        return await _client.CachedPostCtxAsync("scheme.suggest", "scheme/suggest", body,
+        return await _client.CachedPostCtxAsync("scheme.suggest", Route("scheme/suggest"), body,
             ContextResultParser.ParseContextSchemeSuggestResult, cancellationToken).ConfigureAwait(false);
     }
 
@@ -295,7 +313,7 @@ public sealed class ContextSchemeOps
         CtxPayload.PutIfSet(body, "surface", surface);
         // The coverage check runs inside the cached call: an answer missing a
         // category must not be filed for every later caller with the same request.
-        return await _client.CachedPostCtxAsync("scheme.suggestForCategories", "scheme/suggest-for-categories", body,
+        return await _client.CachedPostCtxAsync("scheme.suggestForCategories", Route("scheme/suggest-for-categories"), body,
             json => AnswersEveryCategory(ContextResultParser.ParseContextSchemeSuggestForCategoriesResult(json), requested),
             cancellationToken).ConfigureAwait(false);
     }
@@ -344,7 +362,7 @@ public sealed class ContextSchemeOps
         CtxPayload.PutIfSet(body, "outputFormat", outputFormat);
         CtxPayload.PutIfSet(body, "surface", surface);
         CtxPayload.PutIfSet(body, "context", contextDoc);
-        return await _client.CachedPostCtxAsync("scheme.aggregate", "scheme/aggregate", body, ContextResultParser.ParseContextSchemeAggregateResult, cancellationToken).ConfigureAwait(false);
+        return await _client.CachedPostCtxAsync("scheme.aggregate", Route("scheme/aggregate"), body, ContextResultParser.ParseContextSchemeAggregateResult, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -382,7 +400,7 @@ public sealed class ContextSchemeOps
         CtxPayload.PutIfSet(body, "outputFormat", outputFormat);
         CtxPayload.PutIfSet(body, "surface", surface);
         CtxPayload.PutIfSet(body, "context", contextDoc);
-        return await _client.CachedPostCtxAsync("scheme.aggregateAssertions", "scheme/aggregate", body, ContextResultParser.ParseContextSchemeAggregateResult, cancellationToken).ConfigureAwait(false);
+        return await _client.CachedPostCtxAsync("scheme.aggregateAssertions", Route("scheme/aggregate"), body, ContextResultParser.ParseContextSchemeAggregateResult, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -408,7 +426,7 @@ public sealed class ContextSchemeOps
         var body = new Dictionary<string, object?> { ["text"] = text };
         CtxPayload.PutIfSet(body, "inputFormat", inputFormat);
         CtxPayload.PutIfSet(body, "outputFormat", outputFormat);
-        return await _client.CachedPostCtxAsync("scheme.scan", "scheme/scan", body, ContextResultParser.ParseContextSchemeScanResult, cancellationToken).ConfigureAwait(false);
+        return await _client.CachedPostCtxAsync("scheme.scan", Route("scheme/scan"), body, ContextResultParser.ParseContextSchemeScanResult, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Render assertions directly into a marking string without re-parsing.</summary>
@@ -430,7 +448,7 @@ public sealed class ContextSchemeOps
         {
             body["preservation"] = preservation.Value.ToWire();
         }
-        return await _client.CachedPostCtxAsync("scheme.render", "scheme/render", body, ContextResultParser.ParseContextSchemeRenderResult, cancellationToken).ConfigureAwait(false);
+        return await _client.CachedPostCtxAsync("scheme.render", Route("scheme/render"), body, ContextResultParser.ParseContextSchemeRenderResult, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Return the canonical normalized form of a marking string.</summary>
@@ -449,7 +467,7 @@ public sealed class ContextSchemeOps
         var body = new Dictionary<string, object?> { ["input"] = input };
         CtxPayload.PutIfSet(body, "inputFormat", inputFormat);
         CtxPayload.PutIfSet(body, "outputFormat", outputFormat);
-        return await _client.CachedPostCtxAsync("scheme.normalize", "scheme/normalize", body, ContextResultParser.ParseContextSchemeNormalizeResult, cancellationToken).ConfigureAwait(false);
+        return await _client.CachedPostCtxAsync("scheme.normalize", Route("scheme/normalize"), body, ContextResultParser.ParseContextSchemeNormalizeResult, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Check whether a set of child markings is covered by a parent marking.</summary>
@@ -474,7 +492,7 @@ public sealed class ContextSchemeOps
         };
         CtxPayload.PutIfSet(body, "inputFormat", inputFormat);
         CtxPayload.PutIfSet(body, "outputFormat", outputFormat);
-        var json = await _client.PostCtxAsync("scheme/check-coverage", body, cancellationToken).ConfigureAwait(false);
+        var json = await _client.PostCtxAsync(Route("scheme/check-coverage"), body, cancellationToken).ConfigureAwait(false);
         return ContextResultParser.ParseContextSchemeCoverageResult(json);
     }
 
@@ -493,7 +511,7 @@ public sealed class ContextSchemeOps
     {
         var query = $"?conceptId={Uri.EscapeDataString(conceptId)}&categoryId={Uri.EscapeDataString(categoryId)}";
         if (!string.IsNullOrEmpty(view)) query += $"&view={Uri.EscapeDataString(view!)}";
-        return await _client.CachedGetCtxAsync("scheme.describeConcept", "scheme/describe-concept" + query, ContextResultParser.ParseContextSchemeConceptDescriptionResult, cancellationToken).ConfigureAwait(false);
+        return await _client.CachedGetCtxAsync("scheme.describeConcept", Route("scheme/describe-concept" + query), ContextResultParser.ParseContextSchemeConceptDescriptionResult, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Diff two marking strings, returning added, removed, and common assertions.</summary>
@@ -511,7 +529,7 @@ public sealed class ContextSchemeOps
     {
         var body = new Dictionary<string, object?> { ["a"] = a, ["b"] = b };
         CtxPayload.PutIfSet(body, "inputFormat", inputFormat);
-        return await _client.CachedPostCtxAsync("scheme.diff", "scheme/diff", body, ContextResultParser.ParseContextSchemeDiffResult, cancellationToken).ConfigureAwait(false);
+        return await _client.CachedPostCtxAsync("scheme.diff", Route("scheme/diff"), body, ContextResultParser.ParseContextSchemeDiffResult, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Substring-filter the context's concepts. Returns matched ids and per-category counts.</summary>
@@ -521,7 +539,7 @@ public sealed class ContextSchemeOps
     /// <exception cref="EzClassifyClientException">The server rejected the request, could not be reached, or did not answer within the request timeout.</exception>
     public async Task<ContextSchemeFilterConceptsResult> FilterConceptsAsync(string query, CancellationToken cancellationToken = default)
     {
-        var json = await _client.PostCtxAsync("scheme/filter-concepts", new { query }, cancellationToken).ConfigureAwait(false);
+        var json = await _client.PostCtxAsync(Route("scheme/filter-concepts"), new { query }, cancellationToken).ConfigureAwait(false);
         return ContextResultParser.ParseContextSchemeFilterConceptsResult(json);
     }
 
@@ -543,119 +561,106 @@ public sealed class ContextSchemeOps
         CancellationToken cancellationToken = default)
     {
         var json = await _client.PostCtxAsync(
-            "scheme/notices",
+            Route("scheme/notices"),
             new { assertions = CtxPayload.Assertions(assertions) },
             cancellationToken).ConfigureAwait(false);
         return ContextResultParser.ParseContextSchemeNoticesResult(json);
     }
 
-    /// <summary>Build a render-ready structural view of the context's composed scheme.</summary>
+    /// <summary>Build a render-ready structural view of the scheme this view is bound to.</summary>
     /// <param name="cancellationToken">Cancels the request.</param>
     /// <returns>The Context envelope carrying the structural view.</returns>
     /// <exception cref="EzClassifyClientException">The server rejected the request, could not be reached, or did not answer within the request timeout.</exception>
     public async Task<ContextSchemeViewResult> ViewAsync(CancellationToken cancellationToken = default)
     {
-        var json = await _client.PostCtxAsync("scheme/view", new { }, cancellationToken).ConfigureAwait(false);
+        var json = await _client.PostCtxAsync(Route("scheme/view"), new { }, cancellationToken).ConfigureAwait(false);
         return ContextResultParser.ParseContextSchemeViewResult(json);
     }
 
     // --- scheme sub-resources ------------------------------------------------
     //
-    // Reads of the composed scheme rather than operations over it. They answer
+    // Reads of the scheme rather than operations over it. They answer
     // flat, outside the Context envelope every operation above returns: there is
     // no engine run to resolve, so there is no resolution block to report. The
     // resolved version still rides the response header and lands on
     // EzClassifyClient.ResolvedVersion like any other context call.
     //
-    // Each but the label presets takes an optional scheme key. It selects which
-    // of the context's schemes to read, defaulting to the primary one; naming a
-    // crosswalk's source or target scheme is what it exists for. The label
-    // presets are the primary scheme's, the one apply-preset expands them in, and
-    // the server refuses a scheme key there. There is no layers parameter on
-    // this surface: the layers belong to the context.
+    // Like the operations, each reads the scheme this view is bound to. There
+    // is no layers parameter on this surface: the layers belong to the context.
 
-    /// <summary>Get the summary metadata for the context's composed scheme.</summary>
-    /// <param name="scheme">
-    /// Context-local key, or unambiguous artifact id, of the scheme to read.
-    /// Defaults to the context's primary scheme when omitted.
-    /// </param>
+    /// <summary>Get the summary metadata for this view's scheme.</summary>
     /// <param name="cancellationToken">Cancels the request.</param>
     /// <exception cref="EzClassifyClientException">The server rejected the request, could not be reached, or did not answer within the request timeout.</exception>
-    public async Task<SchemeSummary> SummaryAsync(string? scheme = null, CancellationToken cancellationToken = default)
+    public async Task<SchemeSummary> SummaryAsync(CancellationToken cancellationToken = default)
     {
-        var json = await _client.GetCtxAsync("scheme" + CtxPayload.SchemeQuery(scheme), cancellationToken).ConfigureAwait(false);
+        var json = await _client.GetCtxAsync(Route("scheme"), cancellationToken).ConfigureAwait(false);
         return ContextResultParser.ParseSchemeSummary(json);
     }
 
-    /// <summary>List the concepts of the context's composed scheme as concept views.</summary>
-    /// <param name="scheme">Context-local key or artifact id of the scheme to read; defaults to the primary scheme.</param>
+    /// <summary>List the concepts of this view's scheme as concept views.</summary>
     /// <param name="cancellationToken">Cancels the request.</param>
     /// <exception cref="EzClassifyClientException">The server rejected the request, could not be reached, or did not answer within the request timeout.</exception>
-    public async Task<IReadOnlyList<ConceptView>> ConceptsAsync(string? scheme = null, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<ConceptView>> ConceptsAsync(CancellationToken cancellationToken = default)
     {
-        var json = await _client.GetCtxAsync("scheme/concepts" + CtxPayload.SchemeQuery(scheme), cancellationToken).ConfigureAwait(false);
+        var json = await _client.GetCtxAsync(Route("scheme/concepts"), cancellationToken).ConfigureAwait(false);
         return ContextResultParser.ParseSchemeConcepts(json);
     }
 
-    /// <summary>List the categories of the context's composed scheme as category views, in declared order.</summary>
-    /// <param name="scheme">Context-local key or artifact id of the scheme to read; defaults to the primary scheme.</param>
+    /// <summary>List the categories of this view's scheme as category views, in declared order.</summary>
     /// <param name="cancellationToken">Cancels the request.</param>
     /// <exception cref="EzClassifyClientException">The server rejected the request, could not be reached, or did not answer within the request timeout.</exception>
-    public async Task<IReadOnlyList<CategoryView>> CategoriesAsync(string? scheme = null, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<CategoryView>> CategoriesAsync(CancellationToken cancellationToken = default)
     {
-        var json = await _client.GetCtxAsync("scheme/categories" + CtxPayload.SchemeQuery(scheme), cancellationToken).ConfigureAwait(false);
+        var json = await _client.GetCtxAsync(Route("scheme/categories"), cancellationToken).ConfigureAwait(false);
         return ContextResultParser.ParseSchemeCategories(json);
     }
 
-    /// <summary>List the formats the context's composed scheme writes, as format views.</summary>
-    /// <param name="scheme">Context-local key or artifact id of the scheme to read; defaults to the primary scheme.</param>
+    /// <summary>List the formats this view's scheme writes, as format views.</summary>
     /// <param name="cancellationToken">Cancels the request.</param>
     /// <exception cref="EzClassifyClientException">The server rejected the request, could not be reached, or did not answer within the request timeout.</exception>
-    public async Task<IReadOnlyList<FormatView>> FormatsAsync(string? scheme = null, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<FormatView>> FormatsAsync(CancellationToken cancellationToken = default)
     {
-        var json = await _client.GetCtxAsync("scheme/formats" + CtxPayload.SchemeQuery(scheme), cancellationToken).ConfigureAwait(false);
+        var json = await _client.GetCtxAsync(Route("scheme/formats"), cancellationToken).ConfigureAwait(false);
         return ContextResultParser.ParseSchemeFormats(json);
     }
 
-    /// <summary>Get the parse grammar of the context's composed scheme.</summary>
-    /// <param name="scheme">Context-local key or artifact id of the scheme to read; defaults to the primary scheme.</param>
+    /// <summary>Get the parse grammar of this view's scheme.</summary>
     /// <param name="cancellationToken">Cancels the request.</param>
     /// <exception cref="EzClassifyClientException">The server rejected the request, could not be reached, or did not answer within the request timeout.</exception>
-    public async Task<SchemeGrammar> GrammarAsync(string? scheme = null, CancellationToken cancellationToken = default)
+    public async Task<SchemeGrammar> GrammarAsync(CancellationToken cancellationToken = default)
     {
-        var json = await _client.GetCtxAsync("scheme/grammar" + CtxPayload.SchemeQuery(scheme), cancellationToken).ConfigureAwait(false);
+        var json = await _client.GetCtxAsync(Route("scheme/grammar"), cancellationToken).ConfigureAwait(false);
         return ContextResultParser.ParseSchemeGrammar(json);
     }
 
     /// <summary>
-    /// Get the scopes the context's composed scheme declares, in declaration
+    /// Get the scopes this view's scheme declares, in declaration
     /// order: the order a selector offers them in. Empty when it declares none.
     /// </summary>
-    /// <param name="scheme">Context-local key or artifact id of the scheme to read; defaults to the primary scheme.</param>
     /// <param name="cancellationToken">Cancels the request.</param>
     /// <exception cref="EzClassifyClientException">The server rejected the request, could not be reached, or did not answer within the request timeout.</exception>
-    public async Task<IReadOnlyList<SchemeScope>> ScopesAsync(string? scheme = null, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<SchemeScope>> ScopesAsync(CancellationToken cancellationToken = default)
     {
-        var json = await _client.GetCtxAsync("scheme/scopes" + CtxPayload.SchemeQuery(scheme), cancellationToken).ConfigureAwait(false);
+        var json = await _client.GetCtxAsync(Route("scheme/scopes"), cancellationToken).ConfigureAwait(false);
         return ContextResultParser.ParseSchemeScopes(json);
     }
 
     /// <summary>
-    /// List the label presets of the context's primary scheme, the scheme
-    /// <see cref="ApplyPresetAsync(string, string?, CancellationToken)"/> expands
-    /// them in. Each entry carries name and scope only; expand one with that
-    /// call. Empty when the scheme declares none.
+    /// List the label presets of this view's scheme. Each entry carries name
+    /// and scope only; expand one with
+    /// <see cref="ApplyPresetAsync(string, string?, CancellationToken)"/> on the
+    /// same view. Empty when the scheme declares none.
     /// </summary>
     /// <param name="cancellationToken">Cancels the request.</param>
     /// <exception cref="EzClassifyClientException">The server rejected the request, could not be reached, or did not answer within the request timeout.</exception>
     public async Task<IReadOnlyList<LabelPresetView>> LabelPresetsAsync(CancellationToken cancellationToken = default)
     {
-        var json = await _client.GetCtxAsync("scheme/label-presets", cancellationToken).ConfigureAwait(false);
+        var json = await _client.GetCtxAsync(Route("scheme/label-presets"), cancellationToken).ConfigureAwait(false);
         return ContextResultParser.ParseSchemeLabelPresets(json);
     }
 
     /// <summary>
-    /// Expand a label preset against the context's composed scheme.
+    /// Expand a label preset against this view's scheme.
     ///
     /// <para>Unlike the sibling sub-resources this one answers in the standard
     /// Context operation envelope: expanding a preset runs its marking through
@@ -678,7 +683,7 @@ public sealed class ContextSchemeOps
 
         var body = new Dictionary<string, object?> { ["presetId"] = presetId };
         CtxPayload.PutIfSet(body, "outputFormat", outputFormat);
-        return await _client.CachedPostCtxAsync("scheme.applyPreset", "scheme/apply-preset", body, ContextResultParser.ParseContextSchemeValidateResult, cancellationToken).ConfigureAwait(false);
+        return await _client.CachedPostCtxAsync("scheme.applyPreset", Route("scheme/apply-preset"), body, ContextResultParser.ParseContextSchemeValidateResult, cancellationToken).ConfigureAwait(false);
     }
 }
 
@@ -1125,15 +1130,6 @@ internal static class CtxPayload
     /// </summary>
     internal static JsonDocument? OptionalJsonObjectArgument(string? json, string paramName) =>
         json is null ? null : JsonObjectArgument(json, paramName);
-
-    /// <summary>
-    /// Build the optional <c>?scheme=</c> query for a scheme sub-resource, or an
-    /// empty string when the caller wants the context's primary scheme. A
-    /// whitespace-only key is treated as absent rather than sent as a blank
-    /// selector the server would answer 404 for.
-    /// </summary>
-    public static string SchemeQuery(string? scheme) =>
-        string.IsNullOrWhiteSpace(scheme) ? "" : $"?scheme={Uri.EscapeDataString(scheme!)}";
 
     /// <summary>
     /// The body process and explain share: text and chosen facts settled as one

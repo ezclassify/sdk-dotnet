@@ -60,50 +60,51 @@ public class RequestSchemaConformanceTests
     /// One case per client call that sends a body, keyed by a readable name.
     /// Each supplies every optional argument the call takes, so the whole
     /// option surface reaches the wire. Overloads that build a different body
-    /// get their own case.
+    /// get their own case. Scheme calls run on a non-primary scheme view, so
+    /// the selector it sends is checked against the contract with the rest.
     /// </summary>
     private static readonly IReadOnlyDictionary<string, (string Route, Func<EzClassifyClient, Task> Invoke)> Cases =
         new Dictionary<string, (string, Func<EzClassifyClient, Task>)>(StringComparer.Ordinal)
         {
-            ["scheme.process"] = ("scheme/process", c => c.Scheme!.ProcessAsync(
+            ["scheme.process"] = ("scheme/process", c => c.SchemeView("source").ProcessAsync(
                 "H//A", outputFormat: "banner", surface: "portion", inputFormat: "portion",
                 assertions: new[] { Level }, contextJson: PartOf, parts: new[] { "H//B" },
                 outputs: new[] { "marking/short", "marking/long" }, suggestFor: new[] { "audience" })),
-            ["scheme.explain"] = ("scheme/explain", c => c.Scheme!.ExplainAsync(
+            ["scheme.explain"] = ("scheme/explain", c => c.SchemeView("source").ExplainAsync(
                 "H//A", outputFormat: "banner", surface: "portion", inputFormat: "portion",
                 assertions: new[] { Level }, contextJson: PartOf, parts: new[] { "H//B" })),
-            ["scheme.validate"] = ("scheme/validate", c => c.Scheme!.ValidateAsync(
+            ["scheme.validate"] = ("scheme/validate", c => c.SchemeView("source").ValidateAsync(
                 "H//A", surface: "portion", outputFormat: "banner", inputFormat: "portion",
                 parts: new[] { "H//B" }, contextJson: PartOf)),
             // Validate takes the marking as text or as facts, and each overload
             // builds its own body.
-            ["scheme.validate-facts"] = ("scheme/validate", c => c.Scheme!.ValidateAsync(
+            ["scheme.validate-facts"] = ("scheme/validate", c => c.SchemeView("source").ValidateAsync(
                 new[] { Level }, surface: "portion", outputFormat: "banner",
                 parts: new[] { "H//B" }, contextJson: PartOf)),
-            ["scheme.suggest"] = ("scheme/suggest", c => c.Scheme!.SuggestAsync(
+            ["scheme.suggest"] = ("scheme/suggest", c => c.SchemeView("source").SuggestAsync(
                 "H//", outputFormat: "banner", filter: "aud", surface: "portion", inputFormat: "portion",
                 includeGated: true)),
-            ["scheme.suggest-facts"] = ("scheme/suggest", c => c.Scheme!.SuggestAsync(
+            ["scheme.suggest-facts"] = ("scheme/suggest", c => c.SchemeView("source").SuggestAsync(
                 new[] { Level }, outputFormat: "banner", filter: "aud", surface: "portion", includeGated: true)),
-            ["scheme.suggest-for-categories"] = ("scheme/suggest-for-categories", c => c.Scheme!.SuggestForCategoriesAsync(
+            ["scheme.suggest-for-categories"] = ("scheme/suggest-for-categories", c => c.SchemeView("source").SuggestForCategoriesAsync(
                 new[] { Level }, new[] { "level", "audience" }, outputFormat: "banner", surface: "portion")),
-            ["scheme.aggregate"] = ("scheme/aggregate", c => c.Scheme!.AggregateAsync(
+            ["scheme.aggregate"] = ("scheme/aggregate", c => c.SchemeView("source").AggregateAsync(
                 new[] { "H", "L" }, outputFormat: "banner", surface: "portion", inputFormat: "portion", contextJson: PartOf)),
-            ["scheme.aggregate-assertions"] = ("scheme/aggregate", c => c.Scheme!.AggregateAssertionsAsync(
+            ["scheme.aggregate-assertions"] = ("scheme/aggregate", c => c.SchemeView("source").AggregateAssertionsAsync(
                 new[] { new[] { Level } }, outputFormat: "banner", surface: "portion", contextJson: PartOf)),
-            ["scheme.scan"] = ("scheme/scan", c => c.Scheme!.ScanAsync(
+            ["scheme.scan"] = ("scheme/scan", c => c.SchemeView("source").ScanAsync(
                 "text H text", outputFormat: "banner", inputFormat: "portion")),
-            ["scheme.render"] = ("scheme/render", c => c.Scheme!.RenderAsync(
+            ["scheme.render"] = ("scheme/render", c => c.SchemeView("source").RenderAsync(
                 new[] { Level }, outputFormat: "banner", preservation: RenderPreservation.Full)),
-            ["scheme.normalize"] = ("scheme/normalize", c => c.Scheme!.NormalizeAsync(
+            ["scheme.normalize"] = ("scheme/normalize", c => c.SchemeView("source").NormalizeAsync(
                 "h", outputFormat: "banner", inputFormat: "portion")),
-            ["scheme.check-coverage"] = ("scheme/check-coverage", c => c.Scheme!.CheckCoverageAsync(
+            ["scheme.check-coverage"] = ("scheme/check-coverage", c => c.SchemeView("source").CheckCoverageAsync(
                 new[] { "L" }, "H", outputFormat: "banner", inputFormat: "portion")),
-            ["scheme.diff"] = ("scheme/diff", c => c.Scheme!.DiffAsync("H", "L", inputFormat: "portion")),
-            ["scheme.filter-concepts"] = ("scheme/filter-concepts", c => c.Scheme!.FilterConceptsAsync("hi")),
-            ["scheme.notices"] = ("scheme/notices", c => c.Scheme!.NoticesAsync(new[] { Level })),
-            ["scheme.view"] = ("scheme/view", c => c.Scheme!.ViewAsync()),
-            ["scheme.apply-preset"] = ("scheme/apply-preset", c => c.Scheme!.ApplyPresetAsync(
+            ["scheme.diff"] = ("scheme/diff", c => c.SchemeView("source").DiffAsync("H", "L", inputFormat: "portion")),
+            ["scheme.filter-concepts"] = ("scheme/filter-concepts", c => c.SchemeView("source").FilterConceptsAsync("hi")),
+            ["scheme.notices"] = ("scheme/notices", c => c.SchemeView("source").NoticesAsync(new[] { Level })),
+            ["scheme.view"] = ("scheme/view", c => c.SchemeView("source").ViewAsync()),
+            ["scheme.apply-preset"] = ("scheme/apply-preset", c => c.SchemeView("source").ApplyPresetAsync(
                 "default-label", outputFormat: "banner")),
             ["guide.scan"] = ("guide/scan", c => c.Guide!.ScanAsync("secret text", guideId: "g1")),
             ["guide.evaluate"] = ("guide/evaluate", c => c.Guide!.EvaluateAsync("g1", new[] { "r1" })),
@@ -182,14 +183,14 @@ public class RequestSchemaConformanceTests
             ["/v1/health"] = c => c.PingAsync(),
             ["/v1/ctx"] = c => c.ListContextsAsync(),
             ["/v1/ctx/{ctxId}"] = c => c.ListContextVersionsAsync("acme-marking"),
-            [RoutePrefix + "scheme"] = c => c.Scheme!.SummaryAsync("source"),
-            [RoutePrefix + "scheme/concepts"] = c => c.Scheme!.ConceptsAsync("source"),
-            [RoutePrefix + "scheme/categories"] = c => c.Scheme!.CategoriesAsync("source"),
-            [RoutePrefix + "scheme/formats"] = c => c.Scheme!.FormatsAsync("source"),
-            [RoutePrefix + "scheme/grammar"] = c => c.Scheme!.GrammarAsync("source"),
-            [RoutePrefix + "scheme/scopes"] = c => c.Scheme!.ScopesAsync("source"),
-            [RoutePrefix + "scheme/label-presets"] = c => c.Scheme!.LabelPresetsAsync(),
-            [RoutePrefix + "scheme/describe-concept"] = c => c.Scheme!.DescribeConceptAsync("HIGH", "level", view: "short"),
+            [RoutePrefix + "scheme"] = c => c.SchemeView("source").SummaryAsync(),
+            [RoutePrefix + "scheme/concepts"] = c => c.SchemeView("source").ConceptsAsync(),
+            [RoutePrefix + "scheme/categories"] = c => c.SchemeView("source").CategoriesAsync(),
+            [RoutePrefix + "scheme/formats"] = c => c.SchemeView("source").FormatsAsync(),
+            [RoutePrefix + "scheme/grammar"] = c => c.SchemeView("source").GrammarAsync(),
+            [RoutePrefix + "scheme/scopes"] = c => c.SchemeView("source").ScopesAsync(),
+            [RoutePrefix + "scheme/label-presets"] = c => c.SchemeView("source").LabelPresetsAsync(),
+            [RoutePrefix + "scheme/describe-concept"] = c => c.SchemeView("source").DescribeConceptAsync("HIGH", "level", view: "short"),
             [RoutePrefix + "access/rules"] = c => c.Access!.RulesAsync(),
             [RoutePrefix + "crosswalk/describe"] = c => c.Crosswalk!.DescribeAsync(),
         };
