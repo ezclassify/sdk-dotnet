@@ -284,6 +284,7 @@ public static class ContextResultParser
             Label: JsonRead.RequiredString(category, "label"),
             Items: JsonRead.RequiredList(category, "items", ReadConceptView))),
         Uncategorized: JsonRead.RequiredList(root, "uncategorized", ReadConceptView),
+        Marking: JsonRead.OptionalString(root, "marking"),
         Vocabulary: OptionalVocabulary(root));
 
     internal static GuideView ReadGuideView(JsonElement root) => new(
@@ -295,6 +296,7 @@ public static class ContextResultParser
             Label: JsonRead.RequiredString(category, "label"),
             Items: JsonRead.RequiredList(category, "items", ReadGuideRuleView))),
         Uncategorized: JsonRead.RequiredList(root, "uncategorized", ReadGuideRuleView),
+        Marking: JsonRead.OptionalString(root, "marking"),
         Vocabulary: OptionalVocabulary(root));
 
     private static IReadOnlyDictionary<string, Term>? OptionalVocabulary(JsonElement root) =>
@@ -574,6 +576,20 @@ public static class ContextResultParser
         JsonRead.RequireObject(root, "access rules response");
         ResponseCheck.Require("CtxAccessRulesResponseBody", root);
         return JsonRead.RequiredList(root, "rules", ReadAccessRuleDescription);
+    }
+
+    /// <summary>
+    /// Parse the access policy's own overall marking from the same response
+    /// <see cref="ParseContextAccessRules"/> reads, or null when the policy declares none.
+    /// </summary>
+    /// <exception cref="JsonException">The body lacks a member the contract requires.</exception>
+    public static string? ParseContextAccessMarking(string json)
+    {
+        using var doc = JsonDocument.Parse(json);
+        var root = doc.RootElement;
+        JsonRead.RequireObject(root, "access rules response");
+        ResponseCheck.Require("CtxAccessRulesResponseBody", root);
+        return JsonRead.OptionalString(root, "marking");
     }
 
     /// <summary>

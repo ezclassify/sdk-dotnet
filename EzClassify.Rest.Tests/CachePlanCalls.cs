@@ -66,6 +66,7 @@ internal static class CachePlanCalls
         ["context.describeCrosswalks|ctx-crosswalk-describe.ok"] = async (c, ct, _, _) => Of(await c.Crosswalk!.DescribeAsync(ct)),
         ["context.translate|ctx-crosswalk-translate.translated"] = async (c, ct, _, _) => Of(await c.Crosswalk!.TranslateAsync("ez-test-to-ez-gated", "OPEN", ct)),
         ["context.translate|ctx-crosswalk-translate.forbidden"] = async (c, ct, _, _) => Of(await c.Crosswalk!.TranslateAsync("ez-test-to-ez-gated", "SENSITIVE", ct)),
+        ["context.translate|ctx-crosswalk-translate.not-selected"] = async (c, ct, _, _) => Of(await c.Crosswalk!.TranslateAsync("ez-gated-to-ez-test", "SENSITIVE / EXPORT", ct)),
 
         // -- uncached ------------------------------------------------------------
         ["scheme.buildSchemeView|ctx-scheme-view.ok"] = async (c, ct, _, _) => Of(await c.Scheme!.ViewAsync(ct)),

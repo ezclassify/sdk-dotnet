@@ -43,6 +43,34 @@ public class ContextResultParserTolerantParsingTests
     }
 
     [Fact]
+    public void SchemeView_ReportsTheDocumentsOverallMarking()
+    {
+        var marked = ContextResultParser.ParseSchemeView("""
+          {"id":"acme","name":"Acme","description":"d","marking":"UNCLASSIFIED","categories":[],"uncategorized":[]}
+          """);
+        var unmarked = ContextResultParser.ParseSchemeView("""
+          {"id":"acme","name":"Acme","description":"d","categories":[],"uncategorized":[]}
+          """);
+
+        Assert.Equal("UNCLASSIFIED", marked.Marking);
+        Assert.Null(unmarked.Marking);
+    }
+
+    [Fact]
+    public void GuideView_ReportsTheDocumentsOverallMarking()
+    {
+        var marked = ContextResultParser.ParseGuideView("""
+          {"id":"g","name":"Guide","description":"","marking":"UNCLASSIFIED","categories":[],"uncategorized":[]}
+          """);
+        var unmarked = ContextResultParser.ParseGuideView("""
+          {"id":"g","name":"Guide","description":"","categories":[],"uncategorized":[]}
+          """);
+
+        Assert.Equal("UNCLASSIFIED", marked.Marking);
+        Assert.Null(unmarked.Marking);
+    }
+
+    [Fact]
     public void GuideView_ReadsEachRuleRow()
     {
         var view = ContextResultParser.ParseGuideView("""

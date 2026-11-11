@@ -294,6 +294,7 @@ public record SchemeView(
     string Description,
     IReadOnlyList<SchemeViewCategory> Categories,
     IReadOnlyList<ConceptView> Uncategorized,
+    string? Marking = null,
     IReadOnlyDictionary<string, Term>? Vocabulary = null
 );
 
@@ -314,6 +315,7 @@ public record GuideView(
     string Description,
     IReadOnlyList<GuideViewCategory> Categories,
     IReadOnlyList<GuideRuleView> Uncategorized,
+    string? Marking = null,
     IReadOnlyDictionary<string, Term>? Vocabulary = null
 );
 

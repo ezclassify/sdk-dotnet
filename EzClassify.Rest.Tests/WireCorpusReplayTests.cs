@@ -418,6 +418,19 @@ public class WireCorpusReplayTests
             async c => await c.Crosswalk!.TranslateAsync("ez-test-to-ez-gated", "OPEN")),
         ["ctx-crosswalk-describe.ok"] = Ctx("ez-crosswalk", "ctx-crosswalk-describe.ok",
             async c => await c.Crosswalk!.DescribeAsync()),
+        ["ctx-crosswalk-describe.marked"] = Ctx("ez-marked-crosswalk", "ctx-crosswalk-describe.marked",
+            async c => await c.Crosswalk!.DescribeAsync(),
+            Check<IReadOnlyList<JsonElement>>((crosswalks, body) =>
+                Assert.Equal(body["crosswalks"]![0]!["marking"]!.GetValue<string>(), Assert.Single(crosswalks).GetProperty("marking").GetString()))),
+        ["ctx-crosswalk-translate.not-selected"] = Ctx("ez-marked-crosswalk", "ctx-crosswalk-translate.not-selected",
+            async c => await c.Crosswalk!.TranslateAsync("ez-gated-to-ez-test", "SENSITIVE / EXPORT"),
+            Check<ContextCrosswalkTranslationResult>((r, body) =>
+            {
+                var lost = Assert.Single(r.Result.GetProperty("outcomes").EnumerateArray(), o => o.GetProperty("disposition").GetString() == "not-selected");
+                Assert.Equal("handling:open-export", lost.GetProperty("mappingId").GetString());
+                Assert.Empty(lost.GetProperty("targets").EnumerateArray());
+                Assert.DoesNotContain(r.Result.GetProperty("outcomes").EnumerateArray(), o => o.GetProperty("disposition").GetString() == "omit");
+            })),
         ["ctx-crosswalk-translate.translated"] = Ctx("ez-crosswalk", "ctx-crosswalk-translate.translated",
             async c => await c.Crosswalk!.TranslateAsync("ez-test-to-ez-gated", "OPEN"),
             Check<ContextCrosswalkTranslationResult>((r, body) =>

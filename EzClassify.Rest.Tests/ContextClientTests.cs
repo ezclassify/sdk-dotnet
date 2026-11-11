@@ -2187,6 +2187,36 @@ public class ContextClientTests
     }
 
     [Fact]
+    public async Task AccessMarking_ComesFromTheRulesResponseInOneRequest()
+    {
+        var routes = new Dictionary<string, (HttpStatusCode, string)>
+        {
+            ["/access/rules"] = (HttpStatusCode.OK, """{ "marking": "UNCLASSIFIED", "rules": [] }"""),
+        };
+        var (client, handler) = await CtxClientFactory.ConnectAsync(routes);
+        using (client)
+        {
+            Assert.Equal("UNCLASSIFIED", await client.Access!.MarkingAsync());
+            Assert.Empty(await client.Access.RulesAsync());
+            Assert.Single(handler.Requests.FindAll(request => request.Path == "/v1/ctx/acme-marking/1.0.0/access/rules"));
+        }
+    }
+
+    [Fact]
+    public async Task AccessMarking_IsNullWhenThePolicyDeclaresNone()
+    {
+        var routes = new Dictionary<string, (HttpStatusCode, string)>
+        {
+            ["/access/rules"] = (HttpStatusCode.OK, """{ "rules": [] }"""),
+        };
+        var (client, _) = await CtxClientFactory.ConnectAsync(routes);
+        using (client)
+        {
+            Assert.Null(await client.Access!.MarkingAsync());
+        }
+    }
+
+    [Fact]
     public async Task CrosswalkTranslate_SupportsMarkingAndStructuredSources()
     {
         var routes = new Dictionary<string, (HttpStatusCode, string)>

@@ -125,7 +125,7 @@ Cache options are fixed when the client connects. Scope each client to one calle
 | render / normalize / diff / coverage / concept describe | `Scheme.*` |
 | scheme reads: summary, concepts, categories, formats, grammar, scopes, label presets | `Scheme.SummaryAsync`, `ConceptsAsync`, `CategoriesAsync`, `FormatsAsync`, `GrammarAsync`, `ScopesAsync`, `LabelPresetsAsync` |
 | the same operations and reads on another scheme the Context holds | `Schemes.Get(key).*` |
-| access checks / requirements / rule discovery | `Access.*` |
+| access checks / requirements / rule discovery, and the policy's own marking | `Access.*`, `Access.MarkingAsync` |
 | guide scan / evaluate / rule describe | `Guide.*` |
 | crosswalk translation, and the crosswalks the Context holds | `Crosswalk.TranslateAsync`, `Crosswalk.DescribeAsync` |
 | Context composition and component versions | `DescribeContextAsync` |

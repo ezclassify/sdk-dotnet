@@ -13,6 +13,7 @@ class sealed EzClassify.ContextAccessOps
   method public System.Threading.Tasks.Task<EzClassify.ContextAccessRuleDescriptionResult> DescribeRuleAsync(System.String ruleId, System.Threading.CancellationToken cancellationToken = default)
   method public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<EzClassify.AccessRuleDescription>> RulesAsync(System.Threading.CancellationToken cancellationToken = default)
   method public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<System.String>> RuleIdsAsync(System.Threading.CancellationToken cancellationToken = default)
+  method public System.Threading.Tasks.Task<System.String> MarkingAsync(System.Threading.CancellationToken cancellationToken = default)
 
 class sealed EzClassify.ContextCacheOptions : System.IEquatable<EzClassify.ContextCacheOptions>
   ctor public .ctor(System.Boolean Enabled = true, System.Boolean CacheAccessDecisions = false)
@@ -582,6 +583,7 @@ class static EzClassify.ContextResultParser
   method public static System.Collections.Generic.IReadOnlyList<EzClassify.Notice> ParseNotices(System.String json)
   method public static System.Collections.Generic.IReadOnlyList<EzClassify.SchemeScope> ParseSchemeScopes(System.String json)
   method public static System.Collections.Generic.IReadOnlyList<System.Text.Json.JsonElement> ParseContextCrosswalks(System.String json)
+  method public static System.String ParseContextAccessMarking(System.String json)
   method public static System.String ParseNormalizeResult(System.String json)
   method public static System.String ParseRenderResult(System.String json)
 
@@ -1122,12 +1124,13 @@ class EzClassify.GuideUnitEvaluation : System.IEquatable<EzClassify.GuideUnitEva
   property public System.String ScopeId { get; init; }
 
 class EzClassify.GuideView : System.IEquatable<EzClassify.GuideView>
-  ctor public .ctor(System.String Id, System.String Name, System.String Description, System.Collections.Generic.IReadOnlyList<EzClassify.GuideViewCategory> Categories, System.Collections.Generic.IReadOnlyList<EzClassify.GuideRuleView> Uncategorized, System.Collections.Generic.IReadOnlyDictionary<System.String, EzClassify.Term> Vocabulary = null)
+  ctor public .ctor(System.String Id, System.String Name, System.String Description, System.Collections.Generic.IReadOnlyList<EzClassify.GuideViewCategory> Categories, System.Collections.Generic.IReadOnlyList<EzClassify.GuideRuleView> Uncategorized, System.String Marking = null, System.Collections.Generic.IReadOnlyDictionary<System.String, EzClassify.Term> Vocabulary = null)
   property public System.Collections.Generic.IReadOnlyDictionary<System.String, EzClassify.Term> Vocabulary { get; init; }
   property public System.Collections.Generic.IReadOnlyList<EzClassify.GuideRuleView> Uncategorized { get; init; }
   property public System.Collections.Generic.IReadOnlyList<EzClassify.GuideViewCategory> Categories { get; init; }
   property public System.String Description { get; init; }
   property public System.String Id { get; init; }
+  property public System.String Marking { get; init; }
   property public System.String Name { get; init; }
 
 class EzClassify.GuideViewCategory : System.IEquatable<EzClassify.GuideViewCategory>
@@ -1472,12 +1475,13 @@ class EzClassify.SchemeSummary : System.IEquatable<EzClassify.SchemeSummary>
   property public System.Text.Json.JsonElement? EmbeddedMarking { get; init; }
 
 class EzClassify.SchemeView : System.IEquatable<EzClassify.SchemeView>
-  ctor public .ctor(System.String Id, System.String Name, System.String Description, System.Collections.Generic.IReadOnlyList<EzClassify.SchemeViewCategory> Categories, System.Collections.Generic.IReadOnlyList<EzClassify.ConceptView> Uncategorized, System.Collections.Generic.IReadOnlyDictionary<System.String, EzClassify.Term> Vocabulary = null)
+  ctor public .ctor(System.String Id, System.String Name, System.String Description, System.Collections.Generic.IReadOnlyList<EzClassify.SchemeViewCategory> Categories, System.Collections.Generic.IReadOnlyList<EzClassify.ConceptView> Uncategorized, System.String Marking = null, System.Collections.Generic.IReadOnlyDictionary<System.String, EzClassify.Term> Vocabulary = null)
   property public System.Collections.Generic.IReadOnlyDictionary<System.String, EzClassify.Term> Vocabulary { get; init; }
   property public System.Collections.Generic.IReadOnlyList<EzClassify.ConceptView> Uncategorized { get; init; }
   property public System.Collections.Generic.IReadOnlyList<EzClassify.SchemeViewCategory> Categories { get; init; }
   property public System.String Description { get; init; }
   property public System.String Id { get; init; }
+  property public System.String Marking { get; init; }
   property public System.String Name { get; init; }
 
 class EzClassify.SchemeViewCategory : System.IEquatable<EzClassify.SchemeViewCategory>

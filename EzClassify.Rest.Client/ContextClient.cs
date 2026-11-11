@@ -878,8 +878,30 @@ public sealed class ContextAccessOps
     public async Task<IReadOnlyList<AccessRuleDescription>> RulesAsync(
         CancellationToken cancellationToken = default)
     {
-        return await _client.CachedGetCtxAsync("access.describeAllAccessRules", "access/rules", ContextResultParser.ParseContextAccessRules, cancellationToken).ConfigureAwait(false);
+        return (await PolicyAsync(cancellationToken).ConfigureAwait(false)).Rules;
     }
+
+    /// <summary>
+    /// The access policy document's own overall marking, as the document writes
+    /// it. It is display text: nothing in the client or the server interprets it.
+    /// It comes from the same response as <see cref="RulesAsync"/>, so reading both
+    /// takes one request.
+    /// </summary>
+    /// <param name="cancellationToken">Cancels the request.</param>
+    /// <returns>The marking, or null when the policy declares none.</returns>
+    /// <exception cref="EzClassifyClientException">The server rejected the request, could not be reached, or did not answer within the request timeout.</exception>
+    public async Task<string?> MarkingAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return (await PolicyAsync(cancellationToken).ConfigureAwait(false)).Marking;
+    }
+
+    private Task<(IReadOnlyList<AccessRuleDescription> Rules, string? Marking)> PolicyAsync(CancellationToken cancellationToken) =>
+        _client.CachedGetCtxAsync<(IReadOnlyList<AccessRuleDescription> Rules, string? Marking)>(
+            "access.describeAllAccessRules",
+            "access/rules",
+            json => (ContextResultParser.ParseContextAccessRules(json), ContextResultParser.ParseContextAccessMarking(json)),
+            cancellationToken);
 
     /// <summary>List access-rule ids in declaration order.</summary>
     /// <param name="cancellationToken">Cancels the request.</param>
@@ -1025,7 +1047,8 @@ public sealed class ContextCrosswalkOps
     /// <summary>
     /// Describe every crosswalk the Context holds, in declaration order: its source
     /// and target as the scheme selectors the Context description lists, and the
-    /// mappings and selections a translation applies. Each entry stays JSON, as a
+    /// mappings and selections a translation applies, and its own overall
+    /// <c>marking</c> when the document declares one. Each entry stays JSON, as a
     /// translation result does. The answer goes through the response cache like
     /// <see cref="ContextAccessOps.RulesAsync"/>.
     /// </summary>
@@ -1039,6 +1062,11 @@ public sealed class ContextCrosswalkOps
     }
 
     /// <summary>Translate a rendered source marking through a declared directional crosswalk.</summary>
+    /// <remarks>
+    /// Each outcome's <c>disposition</c> is a mapping's decision, <c>unmapped</c>, or
+    /// <c>not-selected</c> for a candidate that lost a selection. A <c>not-selected</c>
+    /// outcome is not an <c>omit</c>, which is a reviewed decision to drop the assertion.
+    /// </remarks>
     /// <param name="crosswalkId">Declared directional crosswalk to translate through.</param>
     /// <param name="marking">Rendered source marking.</param>
     /// <param name="cancellationToken">Cancels the request.</param>
@@ -1061,6 +1089,11 @@ public sealed class ContextCrosswalkOps
     }
 
     /// <summary>Translate structured source assertions through a declared directional crosswalk.</summary>
+    /// <remarks>
+    /// Each outcome's <c>disposition</c> is a mapping's decision, <c>unmapped</c>, or
+    /// <c>not-selected</c> for a candidate that lost a selection. A <c>not-selected</c>
+    /// outcome is not an <c>omit</c>, which is a reviewed decision to drop the assertion.
+    /// </remarks>
     /// <param name="crosswalkId">Declared directional crosswalk to translate through.</param>
     /// <param name="assertions">Structured source assertions.</param>
     /// <param name="cancellationToken">Cancels the request.</param>

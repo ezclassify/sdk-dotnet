@@ -1,4 +1,4 @@
-// Code generated from the canonical OpenAPI contract (06944c4b1b609eb4ece629b7201054566c151e35d312d21ccc79b13c3ba802fa) by gen.mjs@58c491f0d061e5e6150ea43b5e4b92174763bb39d79ee4056e4ac8355f3d5363. DO NOT EDIT.
+// Code generated from the canonical OpenAPI contract (3af39c1fd74837f93a6f141bc8f6a3b35786d05ca402f63075b4cdb5830ba430) by gen.mjs@58c491f0d061e5e6150ea43b5e4b92174763bb39d79ee4056e4ac8355f3d5363. DO NOT EDIT.
 // Re-run via: make regen
 #nullable enable
 
@@ -393,6 +393,7 @@ public record SchemeViewCategory(
 /// <param name="Description">The scheme's description. Empty when the scheme declares none.</param>
 /// <param name="Categories">The scheme's categories in declared order, each with the concepts that belong to it. A category with no concepts is left out.</param>
 /// <param name="Uncategorized">Concepts that belong to none of the scheme's loaded categories. Usually empty.</param>
+/// <param name="Marking">The scheme document's own overall marking, exactly as its <c>scheme.marking</c> writes it. Display only: never interpreted. Absent when the document declares none.</param>
 /// <param name="Vocabulary">Display-term overrides the scheme declares, unresolved.</param>
 public record SchemeView(
     string Id,
@@ -400,6 +401,7 @@ public record SchemeView(
     string Description,
     IReadOnlyList<SchemeViewCategory> Categories,
     IReadOnlyList<ConceptView> Uncategorized,
+    string? Marking = null,
     IReadOnlyDictionary<string, Term>? Vocabulary = null
 );
 
@@ -422,6 +424,7 @@ public record GuideViewCategory(
 /// <param name="Description">The guide's description. Empty when the guide declares none.</param>
 /// <param name="Categories">The guide's categories in declared order, each with its checkable rules, followed by the <c>_compound</c> category that holds every rule with a <c>when</c> condition. A category with no rules is left out.</param>
 /// <param name="Uncategorized">Checkable rules that name no category, or a category the guide does not declare.</param>
+/// <param name="Marking">The guide document's own overall marking, exactly as its <c>guide.marking</c> writes it. Display only: never interpreted. Absent when the document declares none.</param>
 /// <param name="Vocabulary">Display-term overrides the guide declares, unresolved.</param>
 public record GuideView(
     string Id,
@@ -429,6 +432,7 @@ public record GuideView(
     string Description,
     IReadOnlyList<GuideViewCategory> Categories,
     IReadOnlyList<GuideRuleView> Uncategorized,
+    string? Marking = null,
     IReadOnlyDictionary<string, Term>? Vocabulary = null
 );
 
