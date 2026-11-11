@@ -1,4 +1,4 @@
-// Code generated from json-schemas@a6fdb27627b5a6afd15dca53a8e2af5f5881d4c941849c936b9e83f28ada0127 by gen.mjs@58c491f0d061e5e6150ea43b5e4b92174763bb39d79ee4056e4ac8355f3d5363. DO NOT EDIT.
+// Code generated from json-schemas@6a81db41722b997e618ea8b54fc2abc4c4ec53e01d7c61c22761b5864a11271e by gen.mjs@58c491f0d061e5e6150ea43b5e4b92174763bb39d79ee4056e4ac8355f3d5363. DO NOT EDIT.
 // Re-run via: make regen
 #nullable enable
 #pragma warning disable CS1573
@@ -345,16 +345,16 @@ public record GuideRule(
 );
 
 /// <summary>A guide rule matched by text scanning, with keyword spans.</summary>
+/// <param name="GuideId">The id of the guide the rule belongs to. Rule ids are unique only within a guide, so a selection built from this hit names this guide.</param>
 /// <param name="MatchedKeywords">Each keyword or matcher label that fired, once each.</param>
 /// <param name="Rule">The guide rule that matched.</param>
 /// <param name="Spans">Every place in the text where the rule fired, in the order found.</param>
-/// <param name="GuideId">The id of the guide the rule belongs to, when the scan covered more than one.</param>
 /// <param name="Provenance">Source provenance for the guide-rule source that supplied the matched rule.</param>
 public record GuideScanResult(
+    string GuideId,
     IReadOnlyList<string> MatchedKeywords,
     GuideRule Rule,
     IReadOnlyList<GuideScanSpan> Spans,
-    string? GuideId = null,
     SourceReference? Provenance = null
 );
 

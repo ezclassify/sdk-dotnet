@@ -1,4 +1,4 @@
-// Code generated from the canonical OpenAPI contract (92c75fc39feaaa8f378b400e51aebfb4bce926a3265baca1287cd0f88c815f36) by gen.mjs@58c491f0d061e5e6150ea43b5e4b92174763bb39d79ee4056e4ac8355f3d5363. DO NOT EDIT.
+// Code generated from the canonical OpenAPI contract (22e2343f3f97e503169e177489e823fb77a30e1ac2a483c38427f05322edb1f3) by gen.mjs@58c491f0d061e5e6150ea43b5e4b92174763bb39d79ee4056e4ac8355f3d5363. DO NOT EDIT.
 // Re-run via: make regen
 #nullable enable
 
@@ -441,7 +441,7 @@ internal static class ResponseShapes
         ["GuideRule"] = ShapeNode.Obj(required: "id name outcome", members: new[] { ("keywords", ShapeNode.Arr(null)), ("match", ShapeNode.Arr(ShapeNode.Ref("MatchNode"))), ("outcome", ShapeNode.Ref("GuideRuleOutcome")), ("when", ShapeNode.Ref("RuleWhen")), ("overrides", ShapeNode.Arr(null)) }),
         ["GuideRuleOutcome"] = ShapeNode.Obj(required: "", members: new[] { ("concepts", ShapeNode.Arr(ShapeNode.Ref("ConceptRef"))) }),
         ["GuideRuleView"] = ShapeNode.Obj(required: "id name outcomeText isComputed keywords matcherLabels dependsOn dependsOnNames overrides overrideNames", members: new[] { ("keywords", ShapeNode.Arr(null)), ("matcherLabels", ShapeNode.Arr(null)), ("dependsOn", ShapeNode.Arr(null)), ("dependsOnNames", ShapeNode.Arr(null)), ("overrides", ShapeNode.Arr(null)), ("overrideNames", ShapeNode.Arr(null)) }),
-        ["GuideScanResult"] = ShapeNode.Obj(required: "rule matchedKeywords spans", members: new[] { ("rule", ShapeNode.Ref("GuideRule")), ("matchedKeywords", ShapeNode.Arr(null)), ("spans", ShapeNode.Arr(ShapeNode.Ref("GuideScanSpan"))), ("provenance", ShapeNode.Ref("SourceReference")) }),
+        ["GuideScanResult"] = ShapeNode.Obj(required: "rule guideId matchedKeywords spans", members: new[] { ("rule", ShapeNode.Ref("GuideRule")), ("matchedKeywords", ShapeNode.Arr(null)), ("spans", ShapeNode.Arr(ShapeNode.Ref("GuideScanSpan"))), ("provenance", ShapeNode.Ref("SourceReference")) }),
         ["GuideScanSpan"] = ShapeNode.Obj(required: "keyword start end"),
         ["GuideScopeCoverage"] = ShapeNode.Obj(required: "scopeId determinedCoverage projectedCoverage", nullable: "determinedCoverage projectedCoverage", members: new[] { ("determinedCoverage", ShapeNode.Any(false, (ShapeNode.Ref("CheckCoverageResult"), null))), ("projectedCoverage", ShapeNode.Any(false, (ShapeNode.Ref("CheckCoverageResult"), null))) }),
         ["GuideUnitEvaluation"] = ShapeNode.Obj(required: "determined end findingIds offsetEncoding projected scopeId start", nullable: "determined projected", members: new[] { ("findingIds", ShapeNode.Arr(null)), ("determined", ShapeNode.Any(false, (ShapeNode.Ref("GuideCompiledResult"), null))), ("projected", ShapeNode.Any(false, (ShapeNode.Ref("GuideCompiledResult"), null))) }),

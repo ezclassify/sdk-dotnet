@@ -871,7 +871,7 @@ public class ResultParserGuideScanResultsTests
     public void ParseGuideScanResults_SpanConfidenceAbsent_YieldsNull()
     {
         var results = ResultParser.ParseGuideScanResults(
-            """[{"rule":{"id":"r1","name":"Rule","outcome":{}},"matchedKeywords":[],"spans":[{"end":5,"keyword":"k","start":1}]}]""");
+            """[{"rule":{"id":"r1","name":"Rule","outcome":{}},"guideId":"g1","matchedKeywords":[],"spans":[{"end":5,"keyword":"k","start":1}]}]""");
 
         Assert.Null(results[0].Spans[0].Confidence);
         Assert.Null(results[0].Provenance);
@@ -881,24 +881,31 @@ public class ResultParserGuideScanResultsTests
     public void ParseGuideScanResults_SpanKeywordNull_IsRefused()
     {
         var ex = Assert.Throws<JsonException>(() => ResultParser.ParseGuideScanResults(
-            """[{"rule":{"id":"r1","name":"Rule","outcome":{}},"matchedKeywords":[],"spans":[{"end":5,"keyword":null,"start":1}]}]"""));
+            """[{"rule":{"id":"r1","name":"Rule","outcome":{}},"guideId":"g1","matchedKeywords":[],"spans":[{"end":5,"keyword":null,"start":1}]}]"""));
         Assert.Equal("$[0].spans[0].keyword", ex.Path);
     }
 
     [Fact]
-    public void ParseGuideScanResults_GuideIdNull_ReturnsNull()
+    public void ParseGuideScanResults_GuideIdNull_IsRefused()
     {
-        var results = ResultParser.ParseGuideScanResults(
-            """[{"rule":{"id":"r1","name":"Rule","outcome":{}},"matchedKeywords":[],"guideId":null,"spans":[]}]""");
+        var ex = Assert.Throws<JsonException>(() => ResultParser.ParseGuideScanResults(
+            """[{"rule":{"id":"r1","name":"Rule","outcome":{}},"matchedKeywords":[],"guideId":null,"spans":[]}]"""));
+        Assert.Equal("$[0].guideId", ex.Path);
+    }
 
-        Assert.Null(results[0].GuideId);
+    [Fact]
+    public void ParseGuideScanResults_GuideIdAbsent_IsRefused()
+    {
+        var ex = Assert.Throws<JsonException>(() => ResultParser.ParseGuideScanResults(
+            """[{"rule":{"id":"r1","name":"Rule","outcome":{}},"matchedKeywords":[],"spans":[]}]"""));
+        Assert.Equal("$[0].guideId", ex.Path);
     }
 
     [Fact]
     public void ParseGuideScanResults_NullMatchedKeyword_IsRefused()
     {
         var ex = Assert.Throws<JsonException>(() => ResultParser.ParseGuideScanResults(
-            """[{"rule":{"id":"r1","name":"Rule","outcome":{}},"matchedKeywords":[null,"visible"],"spans":[]}]"""));
+            """[{"rule":{"id":"r1","name":"Rule","outcome":{}},"guideId":"g1","matchedKeywords":[null,"visible"],"spans":[]}]"""));
         Assert.Equal("matchedKeywords must contain strings", ex.Message);
     }
 
@@ -1162,7 +1169,7 @@ public class ResultParserMalformedShapeTests
     public void ParseGuideScanResults_NullSpansAndKeywords_AreRefused()
     {
         var ex = Assert.Throws<JsonException>(() => ResultParser.ParseGuideScanResults(
-            """[{"rule":{"id":"r1","name":"Rule","outcome":{}},"matchedKeywords":null,"spans":null}]"""));
+            """[{"rule":{"id":"r1","name":"Rule","outcome":{}},"guideId":"g1","matchedKeywords":null,"spans":null}]"""));
         Assert.Equal("$[0].matchedKeywords", ex.Path);
     }
 

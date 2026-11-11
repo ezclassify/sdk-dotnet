@@ -587,7 +587,7 @@ public static class ResultParser
                 Start: JsonRead.RequiredInt(span, "start"),
                 Confidence: span.TryGetProperty("confidence", out var confidence) && confidence.ValueKind == JsonValueKind.Number
                     ? confidence.GetDouble() : (double?)null)),
-            GuideId: JsonRead.OptionalString(el, "guideId"),
+            GuideId: JsonRead.RequiredString(el, "guideId"),
             Provenance: el.TryGetProperty("provenance", out var provenance) && provenance.ValueKind == JsonValueKind.Object
                 ? ContextResultParser.ReadSourceReference(provenance) : null));
     }

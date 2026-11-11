@@ -1091,7 +1091,7 @@ class EzClassify.GuideRuleView : System.IEquatable<EzClassify.GuideRuleView>
   property public System.String WhenText { get; init; }
 
 class EzClassify.GuideScanResult : System.IEquatable<EzClassify.GuideScanResult>
-  ctor public .ctor(System.Collections.Generic.IReadOnlyList<System.String> MatchedKeywords, EzClassify.GuideRule Rule, System.Collections.Generic.IReadOnlyList<EzClassify.GuideScanSpan> Spans, System.String GuideId = null, EzClassify.SourceReference Provenance = null)
+  ctor public .ctor(System.String GuideId, System.Collections.Generic.IReadOnlyList<System.String> MatchedKeywords, EzClassify.GuideRule Rule, System.Collections.Generic.IReadOnlyList<EzClassify.GuideScanSpan> Spans, EzClassify.SourceReference Provenance = null)
   property public EzClassify.GuideRule Rule { get; init; }
   property public EzClassify.SourceReference Provenance { get; init; }
   property public System.Collections.Generic.IReadOnlyList<EzClassify.GuideScanSpan> Spans { get; init; }
