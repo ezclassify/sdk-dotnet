@@ -23,7 +23,7 @@
         },
         {
           "path": "EzClassify.Rest.Contract/scripts/templates/ContextModels.g.cs.tmpl",
-          "sha256": "4d37c00600d79b32b6f398329be798a706a2303793533f99fdb09547d9882cf5"
+          "sha256": "4e3a7072f1f5edecdca9eece672b4ad3c3e8c00979645c662d01ccaef0affebb"
         },
         {
           "path": "EzClassify.Rest.Contract/scripts/templates/DocumentAssessmentModels.g.cs.tmpl",
