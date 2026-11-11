@@ -124,7 +124,7 @@ Cache options are fixed when the client connects. Scope each client to one calle
 | validate / process / explain / suggest / aggregate / scan | `Scheme.*` |
 | render / normalize / diff / coverage / concept describe | `Scheme.*` |
 | scheme reads: summary, concepts, categories, formats, grammar, scopes, label presets | `Scheme.SummaryAsync`, `ConceptsAsync`, `CategoriesAsync`, `FormatsAsync`, `GrammarAsync`, `ScopesAsync`, `LabelPresetsAsync` |
-| the same operations and reads on another scheme the Context holds | `SchemeView(selector).*` |
+| the same operations and reads on another scheme the Context holds | `Schemes.Get(key).*` |
 | access checks / requirements / rule discovery | `Access.*` |
 | guide scan / evaluate / rule describe | `Guide.*` |
 | crosswalk translation, and the crosswalks the Context holds | `Crosswalk.TranslateAsync`, `Crosswalk.DescribeAsync` |
@@ -163,16 +163,16 @@ Every call finishes within the request timeout, which is the `HttpClient.Timeout
 
 ### Marking in another scheme the Context holds
 
-A Context with crosswalks holds more than one scheme. `Scheme` works in the primary one. `SchemeView(selector)` returns the same operations and reads bound to another, by the selector `DescribeContextAsync` lists for it:
+A Context with crosswalks holds more than one scheme. `Scheme` works in the primary one. `Schemes.Get(key)` returns the same operations and reads bound to another, by the key `DescribeContextAsync` lists for it as its selector:
 
 ```csharp
 var description = await ctx.DescribeContextAsync();
 var other = description.Schemes[1].Selector;
 
-var result = await ctx.SchemeView(other).ProcessAsync(markingText);
+var result = await ctx.Schemes!.Get(other).ProcessAsync(markingText);
 ```
 
-Every call on the view sends the selector as `?scheme=`, including the label presets and `ApplyPresetAsync`, so a marking is read and written in that scheme. Its cached results are kept apart from every other scheme's, and the same selector returns the same view. A selector the Context does not hold is not replaced with the primary: each call fails with the server's 404.
+Every call on the view sends the key as `?scheme=`, including the label presets and `ApplyPresetAsync`, so a marking is read and written in that scheme. Its cached results are kept apart from every other scheme's, and the same key returns the same view. A key the Context does not hold is not replaced with the primary: each call fails with the server's 404, code `scheme_not_found`.
 
 ## Reading a marking and writing one
 

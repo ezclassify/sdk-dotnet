@@ -64,12 +64,14 @@ class sealed EzClassify.ContextSchemeOps
   method public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<EzClassify.LabelPresetView>> LabelPresetsAsync(System.Threading.CancellationToken cancellationToken = default)
   method public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<EzClassify.SchemeScope>> ScopesAsync(System.Threading.CancellationToken cancellationToken = default)
 
+class sealed EzClassify.ContextSchemes
+  method public EzClassify.ContextSchemeOps Get(System.String key)
+
 class sealed EzClassify.EzClassifyClient : System.IDisposable
   ctor public .ctor(System.Net.Http.HttpClient httpClient)
   ctor public .ctor(System.Net.Http.HttpClient httpClient, EzClassify.RestClientCredentials credentials)
   ctor public .ctor(System.String baseUrl)
   ctor public .ctor(System.String baseUrl, EzClassify.RestClientCredentials credentials)
-  method public EzClassify.ContextSchemeOps SchemeView(System.String selector)
   method public System.Threading.Tasks.Task<EzClassify.ContextDescription> DescribeContextAsync(System.Threading.CancellationToken cancellationToken = default)
   method public System.Threading.Tasks.Task<EzClassify.PingResult> PingAsync(System.Threading.CancellationToken cancellationToken = default)
   method public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<System.String>> ListContextVersionsAsync(System.String contextId, System.Threading.CancellationToken cancellationToken = default)
@@ -87,6 +89,7 @@ class sealed EzClassify.EzClassifyClient : System.IDisposable
   property public EzClassify.ContextDocumentOps Document { get; }
   property public EzClassify.ContextGuideOps Guide { get; }
   property public EzClassify.ContextSchemeOps Scheme { get; }
+  property public EzClassify.ContextSchemes Schemes { get; }
   property public System.String EngineSpecVersion { get; }
   property public System.String ResolvedVersion { get; }
 

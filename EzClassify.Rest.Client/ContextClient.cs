@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Text;
 using System.Text.Json;
@@ -8,34 +9,77 @@ using System.Threading.Tasks;
 namespace EzClassify;
 
 /// <summary>
+/// The schemes a connected Context holds. A Context that carries crosswalks
+/// holds more than one, and a caller can mark in any of them;
+/// <see cref="EzClassifyClient.Scheme"/> stays the primary.
+/// </summary>
+public sealed class ContextSchemes
+{
+    private readonly EzClassifyClient _client;
+    // One view per key, so repeated lookups hand back the same instance.
+    private readonly ConcurrentDictionary<string, ContextSchemeOps> _views = new(StringComparer.Ordinal);
+
+    internal ContextSchemes(EzClassifyClient client)
+    {
+        _client = client;
+    }
+
+    /// <summary>
+    /// The view of the scheme the Context holds under <paramref name="key"/>.
+    ///
+    /// <para>Every operation and read on the view sends the key as
+    /// <c>?scheme=</c>, so a marking processed there is read and written in
+    /// that scheme, and its cached results are kept apart from every other
+    /// scheme's. The same key returns the same view.</para>
+    ///
+    /// <para>The key is the selector <see cref="EzClassifyClient.DescribeContextAsync"/>
+    /// lists for the scheme, and the server is the authority on it. It is sent
+    /// as given and never replaced with the primary: a key the Context does not
+    /// hold fails each call with the server's not-found error, code
+    /// <c>scheme_not_found</c>.</para>
+    /// </summary>
+    /// <param name="key">Context-local key of the scheme.</param>
+    /// <returns>The view bound to that scheme.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="key"/> is null.</exception>
+    /// <exception cref="ArgumentException"><paramref name="key"/> is empty or whitespace.</exception>
+    public ContextSchemeOps Get(string key)
+    {
+        if (key is null) throw new ArgumentNullException(nameof(key));
+        if (key.Trim().Length == 0)
+            throw new ArgumentException("A scheme key must not be empty.", nameof(key));
+        return _views.GetOrAdd(key, k => new ContextSchemeOps(_client, k));
+    }
+}
+
+/// <summary>
 /// Scheme-domain operations bound to one scheme of a connected Context. Every
 /// call routes through <c>/v1/ctx/{ctxId}/{version}/scheme/*</c>; the Context
 /// is selected by the path, so request bodies carry payload only.
 ///
 /// <para><see cref="EzClassifyClient.Scheme"/> is the view of the Context's
-/// primary scheme. <see cref="EzClassifyClient.SchemeView(string)"/> returns
-/// the view of any other scheme the Context holds, and every operation and
-/// read on that view addresses that scheme with <c>?scheme=</c>. The view
+/// primary scheme. <see cref="ContextSchemes.Get(string)"/> returns the view
+/// of any other scheme the Context holds, and every operation and read on
+/// that view addresses that scheme with <c>?scheme=</c>. The view
 /// picks the scheme, so no operation takes a scheme argument.</para>
 /// </summary>
 public sealed class ContextSchemeOps
 {
     private readonly EzClassifyClient _client;
-    // Null for the primary view, which sends no selector and lets the server
+    // Null for the primary view, which sends no key and lets the server
     // address the Context's primary scheme.
-    private readonly string? _selector;
+    private readonly string? _key;
 
-    internal ContextSchemeOps(EzClassifyClient client, string? selector)
+    internal ContextSchemeOps(EzClassifyClient client, string? key)
     {
         _client = client;
-        _selector = selector;
+        _key = key;
     }
 
-    // The operation path with this view's selector appended. A path that
+    // The operation path with this view's key appended. A path that
     // already carries a query gets it as one more parameter.
-    private string Route(string opPath) => _selector is null
+    private string Route(string opPath) => _key is null
         ? opPath
-        : opPath + (opPath.Contains('?') ? "&" : "?") + "scheme=" + Uri.EscapeDataString(_selector);
+        : opPath + (opPath.Contains('?') ? "&" : "?") + "scheme=" + Uri.EscapeDataString(_key);
 
     /// <summary>
     /// Process a marking for someone who is writing it: the author's call.

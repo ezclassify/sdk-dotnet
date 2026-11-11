@@ -1669,7 +1669,7 @@ public class ContextClientTests
     // --- scheme views --------------------------------------------------------
     //
     // Every scheme operation and read, with the route it posts or gets. A view
-    // bound to a selector must address that scheme on every one of them, and the
+    // bound to a key must address that scheme on every one of them, and the
     // primary view on none, so the wire behavior is proved once per call rather
     // than per assertion. Only the request matters here: the stub answers with
     // bodies most parsers reject.
@@ -1738,7 +1738,7 @@ public class ContextClientTests
         var (client, handler) = await CtxClientFactory.ConnectAsync();
         using (client)
         {
-            var path = await SentPathAsync(handler, () => SchemeCalls[route](client.SchemeView("source")));
+            var path = await SentPathAsync(handler, () => SchemeCalls[route](client.Schemes!.Get("source")));
             var (sentRoute, query) = Split(path);
             Assert.Equal(route, sentRoute);
             Assert.Single(query, pair => pair.StartsWith("scheme=", StringComparison.Ordinal));
@@ -1748,7 +1748,7 @@ public class ContextClientTests
 
     [Theory]
     [MemberData(nameof(SchemeCallRoutes))]
-    public async Task PrimaryView_SendsNoSchemeSelector(string route)
+    public async Task PrimaryView_SendsNoSchemeKey(string route)
     {
         var (client, handler) = await CtxClientFactory.ConnectAsync();
         using (client)
@@ -1766,7 +1766,7 @@ public class ContextClientTests
         var (client, handler) = await CtxClientFactory.ConnectAsync();
         using (client)
         {
-            var path = await SentPathAsync(handler, () => client.SchemeView("source").DescribeConceptAsync("HIGH", "level", view: "short"));
+            var path = await SentPathAsync(handler, () => client.Schemes!.Get("source").DescribeConceptAsync("HIGH", "level", view: "short"));
             Assert.Equal(
                 "/v1/ctx/acme-marking/1.0.0/scheme/describe-concept?conceptId=HIGH&categoryId=level&view=short&scheme=source",
                 path);
@@ -1774,7 +1774,7 @@ public class ContextClientTests
     }
 
     [Fact]
-    public async Task SchemeView_EscapesTheSelector()
+    public async Task SchemesGet_EscapesTheKey()
     {
         var (client, handler) = await CtxClientFactory.ConnectAsync(new Dictionary<string, (HttpStatusCode, string)>
         {
@@ -1782,7 +1782,7 @@ public class ContextClientTests
         });
         using (client)
         {
-            await client.SchemeView("acme/target v2").ConceptsAsync();
+            await client.Schemes!.Get("acme/target v2").ConceptsAsync();
             Assert.Equal(
                 "/v1/ctx/acme-marking/1.0.0/scheme/concepts?scheme=acme%2Ftarget%20v2",
                 handler.Requests[^1].Path);
@@ -1790,19 +1790,19 @@ public class ContextClientTests
     }
 
     [Fact]
-    public async Task SchemeView_IsOneViewPerSelector()
+    public async Task SchemesGet_IsOneViewPerKey()
     {
         var (client, _) = await CtxClientFactory.ConnectAsync();
         using (client)
         {
-            Assert.Same(client.SchemeView("source"), client.SchemeView("source"));
-            Assert.NotSame(client.SchemeView("source"), client.SchemeView("target"));
-            Assert.NotSame(client.Scheme, client.SchemeView("source"));
+            Assert.Same(client.Schemes!.Get("source"), client.Schemes!.Get("source"));
+            Assert.NotSame(client.Schemes!.Get("source"), client.Schemes!.Get("target"));
+            Assert.NotSame(client.Scheme, client.Schemes!.Get("source"));
         }
     }
 
     [Fact]
-    public async Task SchemeView_CachesResultsPerSelector()
+    public async Task SchemesGet_CachesResultsPerKey()
     {
         var routes = new Dictionary<string, (HttpStatusCode, string)>
         {
@@ -1814,8 +1814,8 @@ public class ContextClientTests
             foreach (var _ in Enumerable.Range(0, 2))
             {
                 await client.Scheme!.ProcessAsync("H");
-                await client.SchemeView("source").ProcessAsync("H");
-                await client.SchemeView("target").ProcessAsync("H");
+                await client.Schemes!.Get("source").ProcessAsync("H");
+                await client.Schemes!.Get("target").ProcessAsync("H");
             }
 
             var sent = handler.Requests.Where(request => request.Path.Contains("/scheme/process")).Select(request => request.Path).ToArray();
@@ -1829,18 +1829,19 @@ public class ContextClientTests
     }
 
     [Fact]
-    public async Task SchemeView_UnknownSelectorFailsWithoutFallingBackToThePrimary()
+    public async Task SchemesGet_UnknownKeyFailsWithTheServersNotFoundAndNoFallback()
     {
         var routes = new Dictionary<string, (HttpStatusCode, string)>
         {
-            ["scheme=missing"] = (HttpStatusCode.NotFound, """{ "error": "not_found", "code": "NOT_FOUND", "detail": "scheme: missing" }"""),
+            ["scheme=missing"] = (HttpStatusCode.NotFound, """{ "error": "not_found", "code": "scheme_not_found", "detail": "scheme: missing" }"""),
             ["/scheme/process"] = (HttpStatusCode.OK, ProcessJson),
         };
         var (client, handler) = await CtxClientFactory.ConnectAsync(routes);
         using (client)
         {
-            var error = await Assert.ThrowsAsync<EzClassifyClientException>(() => client.SchemeView("missing").ProcessAsync("H"));
+            var error = await Assert.ThrowsAsync<EzClassifyClientException>(() => client.Schemes!.Get("missing").ProcessAsync("H"));
             Assert.Equal(404, error.StatusCode);
+            Assert.Equal("scheme_not_found", error.Code);
             var sent = handler.Requests.Skip(1).Select(request => request.Path).ToArray();
             Assert.Equal(new[] { "/v1/ctx/acme-marking/1.0.0/scheme/process?scheme=missing" }, sent);
         }
@@ -1849,23 +1850,23 @@ public class ContextClientTests
     [Theory]
     [InlineData("")]
     [InlineData("   ")]
-    public async Task SchemeView_RefusesABlankSelector(string selector)
+    public async Task SchemesGet_RefusesABlankKey(string key)
     {
         var (client, handler) = await CtxClientFactory.ConnectAsync();
         using (client)
         {
-            Assert.Throws<ArgumentException>(() => client.SchemeView(selector));
-            Assert.Throws<ArgumentNullException>(() => client.SchemeView(null!));
+            Assert.Throws<ArgumentException>(() => client.Schemes!.Get(key));
+            Assert.Throws<ArgumentNullException>(() => client.Schemes!.Get(null!));
             Assert.Single(handler.Requests);
         }
     }
 
     [Fact]
-    public void SchemeView_RequiresAContextBoundClient()
+    public void Schemes_IsNullOnTheRootClient()
     {
         using var http = new HttpClient(new CtxMockHandler()) { BaseAddress = new Uri("http://localhost:8080") };
         using var root = new EzClassifyClient(http);
-        Assert.Throws<InvalidOperationException>(() => root.SchemeView("source"));
+        Assert.Null(root.Schemes);
     }
 
     // --- guide ops ---------------------------------------------------------
