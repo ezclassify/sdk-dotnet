@@ -59,7 +59,6 @@ internal sealed class CachePlanTransport : HttpMessageHandler
     private readonly Dictionary<string, Queue<Func<WireCase, (int Status, string Body, IReadOnlyDictionary<string, string> Headers)>>> _scripted = new(StringComparer.Ordinal);
     private readonly object _gate = new();
     private string? _movedVersion;
-    private bool _connected;
 
     /// <param name="corpus">The wire corpus every case id refers to.</param>
     /// <param name="bindingVersion">The version segment the client puts in its paths.</param>
@@ -93,7 +92,6 @@ internal sealed class CachePlanTransport : HttpMessageHandler
         {
             _counts.Clear();
             Misses.Clear();
-            _connected = true;
         }
     }
 
@@ -181,11 +179,6 @@ internal sealed class CachePlanTransport : HttpMessageHandler
         {
             if (!_byKey.TryGetValue(key, out recorded))
             {
-                // Connecting probes the Context and keeps only the resolved version,
-                // and the corpus does not record that probe for every Context a plan
-                // binds. A later describe is a plan step and still has to match.
-                if (!_connected && bodyText is null && request.Method == HttpMethod.Get && VersionSegment.Match(target) is { Success: true } probe && probe.Length == target.Length)
-                    return WireReplayHandler.Respond(200, ContextProbe.Body, new Dictionary<string, string> { [VersionHeader] = probe.Groups[2].Value });
                 Misses.Add($"{request.Method} {target} {bodyText ?? "(no body)"}");
                 return WireReplayHandler.Respond(404, """{"error":"no_recording"}""", new Dictionary<string, string>());
             }

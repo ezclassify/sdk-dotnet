@@ -158,6 +158,14 @@ public class WireCorpusReplayTests
                     description.Schemes[0].Roles);
                 Assert.Equal(new[] { ContextSchemeRole.CrosswalkTarget }, description.Schemes[1].Roles);
             })),
+        ["ctx-describe.marked"] = Described("ez-marked", "ctx-describe.marked",
+            async c => await c.DescribeContextAsync(),
+            Check<ContextDescription>((description, body) =>
+            {
+                Assert.Equal(body["id"]!.GetValue<string>(), description.Id);
+                Assert.Equal(body["guides"]![0]!["id"]!.GetValue<string>(), Assert.Single(description.Guides).Id);
+                Assert.Equal(body["access"]!["id"]!.GetValue<string>(), description.Access!.Id);
+            })),
 
         // -- documents --------------------------------------------------------
         ["ctx-document-audit.ok"] = Ctx("ez-full", "ctx-document-audit.ok",
@@ -345,6 +353,10 @@ public class WireCorpusReplayTests
             Check<ContextSchemeViewResult>((view, body) => Assert.Equal(
                 body["result"]!["categories"]![0]!["items"]!.AsArray().Select(item => item!["id"]!.GetValue<string>()),
                 view.Result.Categories[0].Items.Select(item => item.Id)))),
+        ["ctx-scheme-view.marked"] = Ctx("ez-marked", "ctx-scheme-view.marked",
+            async c => await c.Scheme!.ViewAsync(),
+            Check<ContextSchemeViewResult>((view, body) =>
+                Assert.Equal(body["result"]!["marking"]!.GetValue<string>(), view.Result.Marking))),
         ["ctx-scheme-notices.ok"] = Ctx("ez-full", "ctx-scheme-notices.ok",
             async c => await c.Scheme!.NoticesAsync(new[] { Open })),
         ["ctx-scheme-filter-concepts.ok"] = Ctx("ez-full", "ctx-scheme-filter-concepts.ok",
@@ -386,6 +398,9 @@ public class WireCorpusReplayTests
             async c => await c.Access!.DescribeRequirementsAsync("OPEN")),
         ["ctx-access-rules.ok"] = Ctx("ez-full", "ctx-access-rules.ok",
             async c => await c.Access!.RulesAsync()),
+        ["ctx-access-rules.marked"] = Ctx("ez-marked", "ctx-access-rules.marked",
+            async c => await c.Access!.MarkingAsync(),
+            Check<string?>((marking, body) => Assert.Equal(body["marking"]!.GetValue<string>(), marking))),
         ["ctx-access-rules.no-policy"] = Ctx("ez-minimal", "ctx-access-rules.no-policy",
             async c => await c.Access!.RulesAsync()),
 
@@ -410,6 +425,10 @@ public class WireCorpusReplayTests
                 var rule = Assert.Single(view.Result.Uncategorized);
                 Assert.Equal((recorded["id"]!.GetValue<string>(), recorded["outcomeText"]!.GetValue<string>()), (rule.Id, rule.OutcomeText));
             })),
+        ["ctx-guide-view.marked"] = Ctx("ez-marked", "ctx-guide-view.marked",
+            async c => await c.Guide!.ViewAsync(),
+            Check<ContextGuideViewResult>((view, body) =>
+                Assert.Equal(body["result"]!["marking"]!.GetValue<string>(), view.Result.Marking))),
         ["ctx-guide-filter-rules.ok"] = Ctx("ez-full", "ctx-guide-filter-rules.ok",
             async c => await c.Guide!.FilterRulesAsync("sensitive")),
 
@@ -418,11 +437,11 @@ public class WireCorpusReplayTests
             async c => await c.Crosswalk!.TranslateAsync("ez-test-to-ez-gated", "OPEN")),
         ["ctx-crosswalk-describe.ok"] = Ctx("ez-crosswalk", "ctx-crosswalk-describe.ok",
             async c => await c.Crosswalk!.DescribeAsync()),
-        ["ctx-crosswalk-describe.marked"] = Ctx("ez-marked-crosswalk", "ctx-crosswalk-describe.marked",
+        ["ctx-crosswalk-describe.marked"] = Ctx("ez-marked", "ctx-crosswalk-describe.marked",
             async c => await c.Crosswalk!.DescribeAsync(),
             Check<IReadOnlyList<JsonElement>>((crosswalks, body) =>
                 Assert.Equal(body["crosswalks"]![0]!["marking"]!.GetValue<string>(), Assert.Single(crosswalks).GetProperty("marking").GetString()))),
-        ["ctx-crosswalk-translate.not-selected"] = Ctx("ez-marked-crosswalk", "ctx-crosswalk-translate.not-selected",
+        ["ctx-crosswalk-translate.not-selected"] = Ctx("ez-marked", "ctx-crosswalk-translate.not-selected",
             async c => await c.Crosswalk!.TranslateAsync("ez-gated-to-ez-test", "SENSITIVE / EXPORT"),
             Check<ContextCrosswalkTranslationResult>((r, body) =>
             {

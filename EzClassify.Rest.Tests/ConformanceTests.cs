@@ -30,9 +30,18 @@ public class ConformanceTests : IDisposable
     // the REST API serves no standalone guide/access routes. Those cases
     // route through /v1/ctx/{ctxId}/{version}/... with payload-only bodies. The
     // replayer is keyed by (path, body) and never resolves a live context, so
-    // this is just the canonical route shape the server serves; ref-ctx-1@1.0.0
-    // is the reference context used across the conformance spec.
-    private const string CtxBase = "/v1/ctx/ref-ctx-1/1.0.0";
+    // the Context id only has to tell compositions apart: PolicyContextBase
+    // derives it from the scheme, guide and access fixtures a case names.
+    private static string PolicyContextBase(JsonNode? fixture, string guideFixture, string accessFixture)
+    {
+        var identity = Replayer.StableJson(new JsonObject
+        {
+            ["fixture"] = fixture?.DeepClone(),
+            ["guideFixture"] = guideFixture,
+            ["accessFixture"] = accessFixture,
+        });
+        return $"/v1/ctx/conformance-{Replayer.Sha256Hex(identity)[..16]}/1.0.0";
+    }
 
     // Number of engine-slice plan cases the runner must execute against the
     // vendored spec bundle. Ambient registry vectors belong to the embedded
@@ -150,11 +159,12 @@ public class ConformanceTests : IDisposable
                 var ctxId = tc["ctxId"]?.GetValue<string>() ?? "";
                 var ctxVersion = tc["ctxVersion"]?.GetValue<string>() ?? "";
                 var guideFixture = tc["guideFixture"]?.GetValue<string>() ?? "";
+                var accessFixture = tc["accessFixture"]?.GetValue<string>() ?? "";
 
-                var recKey = ComputeRecordingKey(method, args, fixture, mode, ctxId, ctxVersion);
+                var recKey = ComputeRecordingKey(method, args, fixture, mode, ctxId, ctxVersion, guideFixture, accessFixture);
                 if (!recordings.TryGetValue(recKey, out var responseBody)) continue;
 
-                var result = BuildPlanBody(method, args, fixture, guideFixture, fixtureDir);
+                var result = BuildPlanBody(method, args, fixture, guideFixture, accessFixture, fixtureDir);
                 if (result.Skip) continue;
 
                 var rKey = Replayer.RecordingKey(result.Path, result.Body);
@@ -167,7 +177,8 @@ public class ConformanceTests : IDisposable
 
     /// <summary>
     /// Reproduces the canonical recording hash algorithm.
-    /// Hash input: method | stableJSON(args) | stableJSON(fixture) | mode | ctxId | ctxVersion
+    /// Hash input: method | stableJSON(args) | stableJSON(fixture) | mode | ctxId | ctxVersion |
+    /// guideFixture | accessFixture
     /// </summary>
     private static string ComputeRecordingKey(
         string method,
@@ -175,11 +186,13 @@ public class ConformanceTests : IDisposable
         JsonNode? fixture,
         string mode,
         string ctxId,
-        string ctxVersion)
+        string ctxVersion,
+        string guideFixture,
+        string accessFixture)
     {
         var fixtureJson = Replayer.StableJson(fixture);
         var argsJson = Replayer.StableJson(args);
-        var raw = $"{method}|{argsJson}|{fixtureJson}|{mode}|{ctxId}|{ctxVersion}";
+        var raw = $"{method}|{argsJson}|{fixtureJson}|{mode}|{ctxId}|{ctxVersion}|{guideFixture}|{accessFixture}";
         return Replayer.Sha256Hex(raw);
     }
 
@@ -199,8 +212,10 @@ public class ConformanceTests : IDisposable
         JsonArray args,
         JsonNode? fixture,
         string guideFixture,
+        string accessFixture,
         string fixtureDir)
     {
+        var policyBase = PolicyContextBase(fixture, guideFixture, accessFixture);
         // Safe string extraction from args; returns "" when index out of range or node is not a scalar.
         string StrArg(int i)
         {
@@ -320,7 +335,7 @@ public class ConformanceTests : IDisposable
                     var body = MakeObj(
                         ("assertions", args.Count > 0 ? args[0]?.DeepClone() : new JsonArray()),
                         ("userAttributes", args.Count > 1 ? args[1]?.DeepClone() : new JsonObject()));
-                    return new($"{CtxBase}/access/check", body, false);
+                    return new($"{policyBase}/access/check", body, false);
                 }
 
             case "evaluateGuide":
@@ -340,7 +355,7 @@ public class ConformanceTests : IDisposable
                     var guideId = GuideIdFromFixture(fixtureDir, gf);
                     var selArr = new JsonArray();
                     foreach (var s in StrSliceArg(0)) selArr.Add(JsonValue.Create(s));
-                    return new($"{CtxBase}/guide/evaluate", MakeObj(
+                    return new($"{policyBase}/guide/evaluate", MakeObj(
                         ("guideId", JsonValue.Create(guideId)),
                         ("selectedRuleIds", selArr)), false);
                 }
@@ -353,7 +368,7 @@ public class ConformanceTests : IDisposable
                     if (!TryLoadGuideFixture(fixtureDir, gf, out _))
                         return PlanBodyResult.Dropped($"unreadable guide fixture: '{gf}'");
                     var guideId = GuideIdFromFixture(fixtureDir, gf);
-                    return new($"{CtxBase}/guide/scan", MakeObj(
+                    return new($"{policyBase}/guide/scan", MakeObj(
                         ("text", JsonValue.Create(StrArg(0))),
                         ("guideId", JsonValue.Create(guideId))), false);
                 }
@@ -507,7 +522,7 @@ public class ConformanceTests : IDisposable
         string method, string argsJson, string formatKey, string? surfaceKey)
     {
         var args = JsonNode.Parse(argsJson)!.AsArray();
-        var result = BuildPlanBody(method, args, JsonValue.Create("ref-scope-1"), "", _fixtureDir);
+        var result = BuildPlanBody(method, args, JsonValue.Create("ref-scope-1"), "", "", _fixtureDir);
 
         Assert.Null(result.DropReason);
         Assert.False(result.Skip);
@@ -527,7 +542,7 @@ public class ConformanceTests : IDisposable
     public void UnknownConformanceMethodFails()
     {
         var error = Assert.Throws<InvalidDataException>(() => BuildPlanBody(
-            "futureOperation", new JsonArray(), JsonValue.Create("ref-scheme-1"), "", _fixtureDir));
+            "futureOperation", new JsonArray(), JsonValue.Create("ref-scheme-1"), "", "", _fixtureDir));
         Assert.Contains("futureOperation", error.Message);
     }
 
@@ -555,10 +570,11 @@ public class ConformanceTests : IDisposable
                 var method = tc["method"]?.GetValue<string>() ?? "";
                 var fixture = tc["fixture"];
                 var guideFixture = tc["guideFixture"]?.GetValue<string>() ?? "";
+                var accessFixture = tc["accessFixture"]?.GetValue<string>() ?? "";
                 var args = tc["args"]?.AsArray() ?? new JsonArray();
                 var expect = tc["expect"];
 
-                var result = BuildPlanBody(method, args, fixture, guideFixture, _fixtureDir);
+                var result = BuildPlanBody(method, args, fixture, guideFixture, accessFixture, _fixtureDir);
                 if (result.DropReason != null)
                 {
                     // A case that lost its fixture is corpus corruption; record

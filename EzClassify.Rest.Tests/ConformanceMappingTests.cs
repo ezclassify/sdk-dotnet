@@ -88,7 +88,7 @@ public class ConformanceMappingTests
             var recordings = new Dictionary<string, JsonNode>();
             foreach (var (method, answer) in new[] { ("evaluateGuide", first), ("evaluateMany", second) })
             {
-                var key = (string)Invoke("ComputeRecordingKey", method, args, JsonValue.Create("ref-scheme-1"), "fromJSON", "", "");
+                var key = (string)Invoke("ComputeRecordingKey", method, args, JsonValue.Create("ref-scheme-1"), "fromJSON", "", "", "ref-guide-1", "");
                 recordings[key] = JsonNode.Parse(answer) ?? throw new InvalidDataException();
             }
             result = (Dictionary<string, ReplayerRecording>)Invoke("BuildReplayerMap", Invoke("LoadEnginePlans", dir), recordings, FixtureDirectory());
@@ -97,7 +97,7 @@ public class ConformanceMappingTests
     }
 
     private static object Map(string method, string args) => Invoke("BuildPlanBody", method,
-        JsonNode.Parse(args)?.AsArray() ?? throw new InvalidDataException(), JsonValue.Create("ref-scope-1"), "", FixtureDirectory());
+        JsonNode.Parse(args)?.AsArray() ?? throw new InvalidDataException(), JsonValue.Create("ref-scope-1"), "", "", FixtureDirectory());
 
     private static string FixtureDirectory() => Path.Combine((string)Invoke("FindRepoRoot"), "vendor", "spec", "fixtures", "v1");
 
