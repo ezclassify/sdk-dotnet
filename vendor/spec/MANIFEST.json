@@ -1,23 +1,23 @@
 {
   "openapiVersion": "1.0.0-dev.30",
-  "openapiSha256": "7e2f9fab6b656f6cc7f5d47a1988ffdaf25a8310283b7a6a7e1ac38fd72a7bd8",
-  "specBundleSha256": "4f48728cddd0be98134e32f179f00139d0efd06d33d8cc03fa0b44a81a26a27a",
-  "specDigest": "e980e8cfa684b9549ac64faacaa4f024d6c4dae6b4c56a59131aaefbefb529e4",
-  "contractsSha": "76b83da6d68f93914a44a727e8210dceef169870",
+  "openapiSha256": "61f4be388fc94d7d86e1c84cde98c894f9635ae61458c9c7b0c51920f9046100",
+  "specBundleSha256": "6392a912c490792d893ce5441aad9eca7a47ecaea494cb9b96f4fec3a0de298d",
+  "specDigest": "eb433ca580293e07f51b5ca05fa36fac94bdd833e24d0c5459dc6eb14f9a653d",
+  "contractsSha": "9059f61c223c103a38ae191560650e6408251a79",
   "sourcePackages": {
     "@ezclassify/openapi": "1.0.0-dev.30",
     "@ezclassify/schemas": "1.0.0-dev.30",
     "@ezclassify/conformance": "1.0.0-dev.30"
   },
-  "generatedAt": "2026-11-12T08:40:19.000Z",
+  "generatedAt": "2026-11-12T10:00:02.000Z",
   "generators": {
     "dotnet": {
       "binary": "node",
       "script": "scripts/gen.mjs",
       "version": "node",
-      "sha256": "6282fbdd32c586ae2fcd0f13abaa725d812507d7359e630e6d24b62ce222ce55",
+      "sha256": "31c7811148de145e864820cc8d94e6ab08557f1023aff9998a5bc92bae2300f8",
       "additionalInputs": [],
-      "note": "sha256 is of scripts/gen.mjs - changes here mean the generator was modified",
+      "note": "sha256 is of scripts/gen.mjs; the generator reads only the vendored schemas and OpenAPI",
       "jsonSchemasSha256": "c91e952aa830225a721f226da170babd89fce8427ec4280c6f9497700b1ecee0"
     }
   },
