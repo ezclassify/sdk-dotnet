@@ -19,8 +19,8 @@ public wire surface. It is the repository's executable ownership contract.
 ## Build and Test
 
 ```sh
-make build   # dotnet build EzClassify.Rest.sln --configuration Release
-make test    # dotnet test  EzClassify.Rest.sln --configuration Release --filter "Category!=Live"
+make build   # dotnet build EzClassify.sln --configuration Release
+make test    # dotnet test  EzClassify.sln --configuration Release --filter "Category!=Live"
 make check-architecture # declaration ownership and central package versions
 make check-generated    # committed generated-source freshness
 ```

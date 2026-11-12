@@ -52,7 +52,7 @@ public class ApplicationIdTests
     public void TheGrammarIsTheOneTheContractDeclares()
     {
         var root = new DirectoryInfo(AppContext.BaseDirectory);
-        while (!File.Exists(Path.Combine(root.FullName, "EzClassify.Rest.sln"))) root = root.Parent!;
+        while (!File.Exists(Path.Combine(root.FullName, "EzClassify.sln"))) root = root.Parent!;
         var spec = File.ReadAllText(Path.Combine(root.FullName, "vendor", "spec", "openapi.yaml"));
         var start = spec.IndexOf("    ApplicationId:\n      name: " + Header, StringComparison.Ordinal);
         Assert.True(start >= 0, "The contract declares no application id header");
@@ -84,7 +84,7 @@ public class ApplicationIdTests
     public void TheHeaderNameIsTheOneTheContractDeclares()
     {
         var root = new DirectoryInfo(AppContext.BaseDirectory);
-        while (!File.Exists(Path.Combine(root.FullName, "EzClassify.Rest.sln"))) root = root.Parent!;
+        while (!File.Exists(Path.Combine(root.FullName, "EzClassify.sln"))) root = root.Parent!;
         var spec = File.ReadAllText(Path.Combine(root.FullName, "vendor", "spec", "openapi.yaml"));
         Assert.Contains("    ApplicationId:\n      name: " + Header + "\n      in: header", spec);
     }

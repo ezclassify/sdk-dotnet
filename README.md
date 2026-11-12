@@ -1,9 +1,9 @@
 # <img src="assets/icon.svg" alt="" width="32"> EzClassify .NET SDK
 
-[![CI](https://github.com/ezclassify/client-dotnet/actions/workflows/ci.yml/badge.svg)](https://github.com/ezclassify/client-dotnet/actions/workflows/ci.yml)
+[![CI](https://github.com/ezclassify/sdk-dotnet/actions/workflows/ci.yml/badge.svg)](https://github.com/ezclassify/sdk-dotnet/actions/workflows/ci.yml)
 [![NuGet](https://img.shields.io/nuget/v/EzClassify.Rest.Client?label=EzClassify.Rest.Client)](https://www.nuget.org/packages/EzClassify.Rest.Client)
 [![license: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
-[![.NET](https://img.shields.io/badge/.NET-netstandard2.0%20%7C%20net8.0-512BD4.svg)](EzClassify.Rest.sln)
+[![.NET](https://img.shields.io/badge/.NET-netstandard2.0%20%7C%20net8.0-512BD4.svg)](EzClassify.sln)
 
 Apache-licensed HTTP client for a licensed EzClassify REST runtime. It contains the wire models and client ergonomics, not the proprietary engine or enterprise content. `EzClassify.Rest.Client` is the one package.
 

@@ -22,7 +22,7 @@ public class ReplayerContractTests
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
         while (dir != null)
         {
-            if (File.Exists(Path.Combine(dir.FullName, "EzClassify.Rest.sln")))
+            if (File.Exists(Path.Combine(dir.FullName, "EzClassify.sln")))
             {
                 var candidate = Path.Combine(
                     dir.FullName, "vendor", "spec",
@@ -31,7 +31,7 @@ public class ReplayerContractTests
             }
             dir = dir.Parent;
         }
-        throw new FileNotFoundException("Cannot locate EzClassify.Rest.sln to resolve spec path");
+        throw new FileNotFoundException("Cannot locate EzClassify.sln to resolve spec path");
     }
 
     [Fact]

@@ -20,7 +20,7 @@ make test   # dotnet test --filter "Category!=Live"
 
 ## Building and Testing
 
-Standard `dotnet` CLI against [`EzClassify.Rest.sln`](EzClassify.Rest.sln); the `Makefile` wraps the
+Standard `dotnet` CLI against [`EzClassify.sln`](EzClassify.sln); the `Makefile` wraps the
 same commands for parity with the other SDKs.
 
 | Action | Native command | Notes |

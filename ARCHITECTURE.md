@@ -11,7 +11,7 @@ records the contracts commit, contract hashes, generator inputs, and committed
 generated outputs.
 
 The repository follows the conventional .NET layout: the root
-[`EzClassify.Rest.sln`](EzClassify.Rest.sln) contains the one published library,
+[`EzClassify.sln`](EzClassify.sln) contains the one published library,
 the xUnit test project, and the [`examples/server-tour/`](examples/server-tour/)
 application. [`Directory.Build.props`](Directory.Build.props) owns common compiler and
 package metadata. [`Directory.Packages.props`](Directory.Packages.props) is the only place NuGet dependency
@@ -74,11 +74,11 @@ the transport.
   declaration owners, generated-path drift, and inline package versions.
 - `make check-generated` verifies both committed outputs against the pinned
   generator, OpenAPI, and JSON Schemas.
-- `dotnet format EzClassify.Rest.sln --verify-no-changes --no-restore`
-- `dotnet build EzClassify.Rest.sln --no-restore --configuration Release`
-- `dotnet test EzClassify.Rest.sln --no-build --configuration Release --filter "Category!=Live"`
-- `dotnet test EzClassify.Rest.sln --no-build --configuration Release --filter "FullyQualifiedName~PublicApiSurfaceTests"`
-- `dotnet test EzClassify.Rest.sln --no-build --configuration Release --filter "FullyQualifiedName~DocumentSemanticConformanceTests"`
+- `dotnet format EzClassify.sln --verify-no-changes --no-restore`
+- `dotnet build EzClassify.sln --no-restore --configuration Release`
+- `dotnet test EzClassify.sln --no-build --configuration Release --filter "Category!=Live"`
+- `dotnet test EzClassify.sln --no-build --configuration Release --filter "FullyQualifiedName~PublicApiSurfaceTests"`
+- `dotnet test EzClassify.sln --no-build --configuration Release --filter "FullyQualifiedName~DocumentSemanticConformanceTests"`
 - `python3 scripts/gen-notices.py notices --check`
 
 Before compilation CI verifies the OpenAPI and generator hashes the manifest
