@@ -69,10 +69,12 @@ const DEFAULT_OVERALL_TIMEOUT_MS = 5 * 60_000;
 const CONCURRENCY = 4;
 
 /**
- * nuget.org's registration hive for SemVer 1.0.0 packages, whose leaf for one
- * version records when it was published.
+ * nuget.org's registration hive that lists every package, SemVer 2.0.0 ones
+ * included; its leaf for one version records when it was published. The
+ * SemVer 1.0.0 hive answers 404 for a SemVer 2.0.0 version. This hive serves
+ * every document gzip-encoded, which fetch decodes from Content-Encoding.
  */
-const DEFAULT_REGISTRATION = 'https://api.nuget.org/v3/registration5-semver1';
+const DEFAULT_REGISTRATION = 'https://api.nuget.org/v3/registration5-gz-semver2';
 
 /** The feed restore uses by default, and the only http feed this gate can date. */
 const NUGET_ORG_FEED = 'https://api.nuget.org/v3/index.json';

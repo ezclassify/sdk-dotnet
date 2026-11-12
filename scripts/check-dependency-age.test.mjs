@@ -3,7 +3,8 @@
  * quarantine over the NuGet restore graph and the pinned .NET tools.
  *
  * Hermetic: the gate is pointed at throwaway restore graphs and tool manifests
- * and at a local http server that stands in for nuget.org's registration hive,
+ * and at a local http server that stands in for nuget.org's registration hive
+ * (gzip-encoded, as nuget.org serves it),
  * so no test reaches the network. Run with `node --test scripts/*.test.mjs`.
  */
 import { execFile } from 'node:child_process';
@@ -13,7 +14,8 @@ import { tmpdir } from 'node:os';
 import { dirname, resolve } from 'node:path';
 import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { gzipSync } from 'node:zlib';
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const gate = resolve(repositoryRoot, 'scripts/check-dependency-age.mjs');
@@ -54,8 +56,8 @@ before(async () => {
             res.writeHead(404).end('{}');
             return;
         }
-        res.writeHead(200, { 'content-type': 'application/json' });
-        res.end(JSON.stringify(leaf));
+        res.writeHead(200, { 'content-type': 'application/json', 'content-encoding': 'gzip' });
+        res.end(gzipSync(JSON.stringify(leaf)));
     });
     await new Promise((done) => server.listen(0, '127.0.0.1', done));
     registration = `http://127.0.0.1:${server.address().port}`;
@@ -111,11 +113,11 @@ function toolsWith(tools = {}) {
  * this same process, so a synchronous spawn would block the event loop and the
  * gate's requests would never be answered.
  */
-function run({ assets = assetsWith(), tools = toolsWith(), env = {} } = {}) {
+function run({ assets = assetsWith(), tools = toolsWith(), env = {}, nodeArguments = [] } = {}) {
     return new Promise((settle) => {
         execFile(
             process.execPath,
-            [gate],
+            [...nodeArguments, gate],
             {
                 cwd: repositoryRoot,
                 env: {
@@ -159,6 +161,32 @@ describe('dependency quarantine, NuGet restore graph', () => {
         const result = await run({ assets: assetsWith({ 'Mixed.Case/3.0.0-Preview.1': 'package' }) });
         assert.equal(result.status, 0, result.output);
         assert.deepEqual(requests.slice(before), ['/mixed.case/3.0.0-preview.1.json']);
+    });
+
+    it('asks nuget.org\'s SemVer 2.0.0 registration hive by default', async () => {
+        // The SemVer 1.0.0 hive answers 404 for a version like this one. A
+        // preloaded fetch sends the default hive to the stand-in and refuses
+        // any other URL, so a pass proves which hive the gate asked.
+        publish('Dotted.Prerelease', '2.0.0-beta.1', isoDaysAgo(40));
+        const preload = scratch(
+            'route-nuget-org.mjs',
+            `const hive = 'https://api.nuget.org/v3/registration5-gz-semver2/';
+const original = globalThis.fetch;
+globalThis.fetch = (url, init) => {
+    const target = String(url);
+    if (!target.startsWith(hive)) throw new Error('unexpected registry URL ' + target);
+    return original(${JSON.stringify(`${registration}/`)} + target.slice(hive.length), init);
+};
+`,
+        );
+        const result = await run({
+            assets: assetsWith({ 'Dotted.Prerelease/2.0.0-beta.1': 'package' }),
+            nodeArguments: ['--import', pathToFileURL(preload).href],
+            // An undefined value drops the variable, so the gate uses its default.
+            env: { EZCLASSIFY_DEPENDENCY_AGE_NUGET_REGISTRATION: undefined },
+        });
+        assert.equal(result.status, 0, result.output);
+        assert.match(result.output, /Dependency quarantine passed: 1 third-party NuGet package\(s\)/);
     });
 
     it('skips a project reference as first-party, asking no registry', async () => {
