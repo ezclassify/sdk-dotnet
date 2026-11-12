@@ -89,7 +89,7 @@ To name your application in the runtime's usage counts, pass the id it is regist
 var credentials = new RestClientCredentials(accessToken, contextToken, applicationId: "case-intake-portal");
 ```
 
-The SDK sends it as the `x-ezclassify-application-id` header on Context requests only, never on health. The id is not a credential and authorizes nothing: a request without it, or with an id the deployment has not registered, is served the same way. Keep one client and its caches per caller; your application owns user sign-in and token refresh.
+An id is 1 to 128 printable ASCII characters (0x21 to 0x7E) with no spaces, and the constructor throws `ArgumentException` for any other value. The SDK sends it as the `x-ezclassify-application-id` header on Context requests only, never on health. The id is not a credential and authorizes nothing: a request without it, or with an id the deployment has not registered, is served the same way. Keep one client and its caches per caller; your application owns user sign-in and token refresh.
 
 Pass a concrete version to pin one, or omit the version to let the server choose: the token's default, or the newest published. An omitted version binds the same way as `latest`, and the concrete immutable version the server resolved is on `ResolvedVersion`. The bound groups are `Scheme`, `Guide`, `Access`, `Crosswalk`, and `Document`; they are null on the root discovery client, hence the `!`.
 

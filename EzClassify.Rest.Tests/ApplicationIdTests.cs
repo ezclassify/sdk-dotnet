@@ -19,10 +19,46 @@ public class ApplicationIdTests
     [InlineData("zero\0value")]
     [InlineData("delete\u007fvalue")]
     [InlineData("non-asciié")]
+    [InlineData("inner space")]
     public void MalformedApplicationId_IsRefusedWithoutTransport(string value)
     {
         var error = Assert.Throws<ArgumentException>(() => new RestClientCredentials(null, null, value));
         Assert.Equal("applicationId", error.ParamName);
+        Assert.StartsWith("An application id is 1 to 128 printable ASCII characters (0x21 to 0x7E), with no spaces", error.Message);
+    }
+
+    [Fact]
+    public void ApplicationIdLongerThan128Characters_IsRefused()
+    {
+        var error = Assert.Throws<ArgumentException>(() => new RestClientCredentials(null, null, new string('a', 129)));
+        Assert.Equal("applicationId", error.ParamName);
+    }
+
+    [Theory]
+    [InlineData("!")]
+    [InlineData("~")]
+    [InlineData("portal/v2:intake")]
+    public void EveryPrintableCharacterOutsideSpace_IsAccepted(string value) =>
+        Assert.Equal(value, new RestClientCredentials(null, null, value).ApplicationId);
+
+    [Fact]
+    public void ApplicationIdOf128Characters_IsAccepted()
+    {
+        var value = new string('a', 128);
+        Assert.Equal(value, new RestClientCredentials(null, null, value).ApplicationId);
+    }
+
+    [Fact]
+    public void TheGrammarIsTheOneTheContractDeclares()
+    {
+        var root = new DirectoryInfo(AppContext.BaseDirectory);
+        while (!File.Exists(Path.Combine(root.FullName, "EzClassify.Rest.sln"))) root = root.Parent!;
+        var spec = File.ReadAllText(Path.Combine(root.FullName, "vendor", "spec", "openapi.yaml"));
+        var start = spec.IndexOf("    ApplicationId:\n      name: " + Header, StringComparison.Ordinal);
+        Assert.True(start >= 0, "The contract declares no application id header");
+        var block = spec.Substring(start, spec.IndexOf("\n  headers:", start, StringComparison.Ordinal) - start);
+        Assert.Contains("        pattern: ^[\\x21-\\x7e]{1,128}$\n", block);
+        Assert.Contains("        maxLength: 128\n", block);
     }
 
     [Fact]

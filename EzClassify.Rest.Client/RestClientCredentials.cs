@@ -11,6 +11,9 @@ namespace EzClassify;
 public sealed class RestClientCredentials
 {
     private const string ApplicationIdHeader = "x-ezclassify-application-id";
+    private const int ApplicationIdMaxLength = 128;
+    private const string ApplicationIdRule =
+        "An application id is 1 to 128 printable ASCII characters (0x21 to 0x7E), with no spaces";
 
     /// <summary>Credentials that add no headers.</summary>
     public static RestClientCredentials None { get; } = new RestClientCredentials(null, null);
@@ -32,18 +35,12 @@ public sealed class RestClientCredentials
     /// <summary>Create caller authorization and, optionally, the application id.</summary>
     /// <param name="accessToken">Bearer token identifying the caller, or <c>null</c>.</param>
     /// <param name="contextToken">Signed Context authorization token, or <c>null</c>.</param>
-    /// <param name="applicationId">The id the application is registered under, or <c>null</c>. Supply nonempty ASCII without controls or surrounding whitespace.</param>
-    /// <exception cref="ArgumentException">A value is blank or malformed.</exception>
+    /// <param name="applicationId">The id the application is registered under, or <c>null</c>: 1 to 128 printable ASCII characters (0x21 to 0x7E), with no spaces.</param>
+    /// <exception cref="ArgumentException">A value is blank or malformed, or the application id is outside its grammar.</exception>
     public RestClientCredentials(string? accessToken, string? contextToken, string? applicationId = null)
     {
-        if (applicationId is not null)
-        {
-            if (applicationId.Length == 0 || applicationId[0] == ' ' || applicationId[applicationId.Length - 1] == ' ')
-                throw new ArgumentException("Application id must be nonempty ASCII without controls or surrounding whitespace", nameof(applicationId));
-            foreach (var character in applicationId)
-                if (character < 0x20 || character > 0x7e)
-                    throw new ArgumentException("Application id must be nonempty ASCII without controls or surrounding whitespace", nameof(applicationId));
-        }
+        if (applicationId is not null && !IsApplicationId(applicationId))
+            throw new ArgumentException(ApplicationIdRule, nameof(applicationId));
         if (accessToken is not null && string.IsNullOrWhiteSpace(accessToken))
             throw new ArgumentException("accessToken must be null or non-blank", nameof(accessToken));
         if (contextToken is not null && string.IsNullOrWhiteSpace(contextToken))
@@ -51,6 +48,16 @@ public sealed class RestClientCredentials
         AccessToken = accessToken;
         ContextToken = contextToken;
         ApplicationId = applicationId;
+    }
+
+    // The grammar the contract's header pattern states. A server counts a
+    // value outside it as unidentified, so the client refuses it up front.
+    private static bool IsApplicationId(string value)
+    {
+        if (value.Length == 0 || value.Length > ApplicationIdMaxLength) return false;
+        foreach (var character in value)
+            if (character < 0x21 || character > 0x7e) return false;
+        return true;
     }
 
     internal void ValidateTransport(HttpClient http)
