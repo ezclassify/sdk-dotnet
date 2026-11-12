@@ -15,7 +15,7 @@
       "binary": "node",
       "script": "scripts/gen.mjs",
       "version": "node",
-      "sha256": "479a632e91f14a1e23cabaf49d9ad052986d4df916f46bd2baf97c003bb3be8b",
+      "sha256": "75f2fcb0c19a039775bfff57328b8295df0840efe327ff36e7f5a6965b31b13c",
       "additionalInputs": [],
       "note": "sha256 is of scripts/gen.mjs; the generator reads only the vendored schemas and OpenAPI",
       "jsonSchemasSha256": "c91e952aa830225a721f226da170babd89fce8427ec4280c6f9497700b1ecee0"
