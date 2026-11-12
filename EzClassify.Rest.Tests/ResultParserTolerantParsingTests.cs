@@ -279,7 +279,7 @@ public class ResultParserProcessResultTests
             """;
         var result = ResultParser.ParseProcessResult(json);
 
-        Assert.Equal(new ConceptColor { Background = "#c62828", Text = "#ffffff" }, result.DisplayColor);
+        Assert.Equal(new ConceptColor(background: "#c62828", text: "#ffffff"), result.DisplayColor);
     }
 
     [Fact]
@@ -395,9 +395,9 @@ public class ResultParserProcessResultTests
         Assert.Equal("supersede-1", applied.RuleId);
         Assert.Equal(FixAction.Replace, applied.Action);
         Assert.NotNull(applied.Add);
-        Assert.Equal(new ConceptRef { ConceptId = "RS", CategoryId = "level" }, Assert.Single(applied.Add!));
+        Assert.Equal(new ConceptRef(conceptId: "RS", categoryId: "level"), Assert.Single(applied.Add!));
         Assert.NotNull(applied.Remove);
-        Assert.Equal(new ConceptRef { ConceptId = "S", CategoryId = "level" }, Assert.Single(applied.Remove!));
+        Assert.Equal(new ConceptRef(conceptId: "S", categoryId: "level"), Assert.Single(applied.Remove!));
         Assert.Equal(new[] { "AR" }, applied.TriggerConceptIds);
         Assert.Equal("RS supersedes S", applied.Message);
 
@@ -406,10 +406,10 @@ public class ResultParserProcessResultTests
         Assert.Equal("Add AR to satisfy the SCI rule", proposed.Message);
         Assert.Equal("RS/AR", proposed.Rendered);
         Assert.Equal(2, proposed.Keeps.Count);
-        Assert.Equal(new ConceptRef { ConceptId = "RS", CategoryId = "level" }, proposed.Keeps[0]);
-        Assert.Equal(new ConceptRef { ConceptId = "AR", CategoryId = "sci" }, proposed.Keeps[1]);
-        Assert.Equal(new[] { new ConceptRef { ConceptId = "AR", CategoryId = "sci" } }, proposed.Adds);
-        Assert.Equal(new[] { new ConceptRef { ConceptId = "S", CategoryId = "level" } }, proposed.Removes);
+        Assert.Equal(new ConceptRef(conceptId: "RS", categoryId: "level"), proposed.Keeps[0]);
+        Assert.Equal(new ConceptRef(conceptId: "AR", categoryId: "sci"), proposed.Keeps[1]);
+        Assert.Equal(new[] { new ConceptRef(conceptId: "AR", categoryId: "sci") }, proposed.Adds);
+        Assert.Equal(new[] { new ConceptRef(conceptId: "S", categoryId: "level") }, proposed.Removes);
     }
 
     [Fact]
@@ -601,7 +601,7 @@ public class ResultParserAggregateResultTests
         var result = ResultParser.ParseAggregateResult(
             """{"valid":true,"rendered":"H","assertions":[],"errors":[],"warnings":[],"appliedFixes":[],"proposedFixes":[],"notices":[],"displayColor":{"background":"#c62828","text":"#ffffff"}}""");
 
-        Assert.Equal(new ConceptColor { Background = "#c62828", Text = "#ffffff" }, result.DisplayColor);
+        Assert.Equal(new ConceptColor(background: "#c62828", text: "#ffffff"), result.DisplayColor);
     }
 
     [Fact]
@@ -623,7 +623,7 @@ public class ResultParserAggregateResultTests
 
         Assert.Equal(FixAction.Reorder, r.AppliedFixes[0].Action);
         Assert.Equal("drop B", r.ProposedFixes[0].Message);
-        Assert.Equal(new[] { new ConceptRef { ConceptId = "B", CategoryId = "cat" } }, r.ProposedFixes[0].Removes);
+        Assert.Equal(new[] { new ConceptRef(conceptId: "B", categoryId: "cat") }, r.ProposedFixes[0].Removes);
     }
 }
 

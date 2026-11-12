@@ -7,56 +7,93 @@ using Xunit;
 namespace EzClassify.Tests;
 
 /// <summary>
-/// Holds every public record to the additive shape: built with an object
-/// initializer over init-only properties, never through a constructor
-/// parameter list. A new optional member is then a new property, and code
-/// compiled against an earlier release keeps building and binding.
+/// Holds every public record to the additive model shape: a sealed record whose
+/// one public constructor takes exactly the members a caller must supply, which
+/// are read-only, while every optional member is a settable property. A later
+/// optional member is then a new property that breaks no caller, and nothing in
+/// the shape needs a compiler newer than C# 7.3 to build a record.
 /// </summary>
 public class WireRecordShapeTests
 {
     [Fact]
-    public void EveryPublicRecordIsBuiltFromInitOnlyPropertiesAlone()
+    public void EveryPublicRecordTakesItsRequiredMembersThroughOnePublicConstructor()
     {
         var problems = new List<string>();
 
         foreach (var record in PublicRecords())
         {
-            const BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly;
-            foreach (var constructor in record.GetConstructors(flags).Where(c => c.IsPublic || c.IsFamily || c.IsFamilyOrAssembly))
+            const BindingFlags declared = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly;
+            var properties = record.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+                .Where(property => property.Name != "EqualityContract")
+                .ToList();
+
+            foreach (var property in properties)
             {
-                var parameters = constructor.GetParameters();
-                var copies = parameters.Length == 1 && parameters[0].ParameterType == record;
-                if (parameters.Length > 0 && !copies)
-                    problems.Add($"{record.Name} has a constructor that takes ({string.Join(", ", parameters.Select(p => p.Name))}).");
+                if (property.SetMethod is { } setter && IsInitOnly(setter))
+                    problems.Add($"{record.Name}.{property.Name} has an init accessor.");
+                if (property.CustomAttributes.Any(attribute => attribute.AttributeType.Name == "RequiredMemberAttribute"))
+                    problems.Add($"{record.Name}.{property.Name} is a required member.");
+                if (property.SetMethod is { IsPublic: false })
+                    problems.Add($"{record.Name}.{property.Name} has a set accessor that is not public.");
             }
 
-            foreach (var property in record.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
+            if (record.IsAbstract)
             {
-                if (property.Name == "EqualityContract") continue;
-                if (property.SetMethod is { IsPublic: true } setter && !IsInitOnly(setter))
-                    problems.Add($"{record.Name}.{property.Name} has a public set accessor.");
-                if (property.SetMethod is null && !property.GetMethod!.IsAbstract)
-                    problems.Add($"{record.Name}.{property.Name} cannot be set in an initializer.");
+                // A closed union: only this assembly derives from it. The
+                // compiler's protected copy constructor is the one exception.
+                if (record.GetConstructors(declared).Any(constructor => (constructor.IsPublic || constructor.IsFamily || constructor.IsFamilyOrAssembly)
+                    && !(constructor.GetParameters() is [{ } only] && only.ParameterType == record)))
+                    problems.Add($"{record.Name} is abstract but can be derived outside this assembly.");
+                continue;
             }
+
+            if (!record.IsSealed) problems.Add($"{record.Name} is not sealed.");
+
+            var constructors = record.GetConstructors(BindingFlags.Public | BindingFlags.Instance);
+            if (constructors.Length != 1)
+            {
+                problems.Add($"{record.Name} has {constructors.Length} public constructors.");
+                continue;
+            }
+
+            var parameters = constructors[0].GetParameters();
+            var readOnly = properties.Where(property => property.SetMethod is null).ToList();
+            foreach (var property in readOnly)
+            {
+                var parameter = parameters.FirstOrDefault(p => string.Equals(p.Name, property.Name, StringComparison.OrdinalIgnoreCase));
+                if (parameter is null)
+                    problems.Add($"{record.Name}.{property.Name} is read-only but no constructor parameter sets it.");
+                else if (parameter.ParameterType != property.PropertyType)
+                    problems.Add($"{record.Name}({parameter.Name}) is {parameter.ParameterType.Name}, but {property.Name} is {property.PropertyType.Name}.");
+            }
+            foreach (var parameter in parameters.Where(p => readOnly.All(property => !string.Equals(p.Name, property.Name, StringComparison.OrdinalIgnoreCase))))
+                problems.Add($"{record.Name}({parameter.Name}) sets no read-only member; an optional member belongs in a settable property.");
+            foreach (var parameter in parameters.Where(p => p.IsOptional))
+                problems.Add($"{record.Name}({parameter.Name}) is optional; adding a defaulted parameter later breaks compiled callers.");
         }
 
         Assert.True(problems.Count == 0, "Public records outside the additive shape:\n  " + string.Join("\n  ", problems));
     }
 
     [Fact]
-    public void ARecordIsBuiltWithAnInitializerAndLeavesOptionalMembersNull()
+    public void ARecordIsBuiltFromItsRequiredMembersAndLeavesOptionalMembersNull()
     {
-        var assertion = new Assertion
-        {
-            CategoryId = "level",
-            ConceptId = "CONFIDENTIAL",
-            Confidence = Confidence.Certain,
-            Source = "user",
-        };
+        var assertion = new Assertion("level", "CONFIDENTIAL", Confidence.Certain, "user");
 
+        Assert.Equal("level", assertion.CategoryId);
         Assert.Null(assertion.Value);
-        Assert.Equal(assertion, assertion with { });
-        Assert.NotEqual(assertion, assertion with { Value = "x" });
+        Assert.Equal(assertion, new Assertion("level", "CONFIDENTIAL", Confidence.Certain, "user"));
+
+        assertion.Value = "x";
+        Assert.Equal("x", assertion.Value);
+        Assert.NotEqual(assertion, new Assertion("level", "CONFIDENTIAL", Confidence.Certain, "user"));
+    }
+
+    [Fact]
+    public void ARecordRefusesNullForARequiredReferenceMember()
+    {
+        var thrown = Assert.Throws<ArgumentNullException>(() => new Assertion("level", null!, Confidence.Certain, "user"));
+        Assert.Equal("conceptId", thrown.ParamName);
     }
 
     private static IEnumerable<Type> PublicRecords() =>

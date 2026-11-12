@@ -19,5 +19,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EzClassify.Rest.Client\EzClassify.Rest.Client.csproj" />
+    <ProjectReference Include="..\EzClassify.Rest.CSharp73\EzClassify.Rest.CSharp73.csproj" />
   </ItemGroup>
 </Project>

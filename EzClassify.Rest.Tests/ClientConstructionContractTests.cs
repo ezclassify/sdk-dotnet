@@ -198,12 +198,12 @@ public class CtxRequestBodyTests
         {
             var assertions = new[]
             {
-                new Assertion
+                new Assertion(
+                    categoryId: "level",
+                    conceptId: "LEVEL_HIGH",
+                    confidence: Confidence.Certain,
+                    source: "parse")
                 {
-                    CategoryId = "level",
-                    ConceptId = "LEVEL_HIGH",
-                    Confidence = Confidence.Certain,
-                    Source = "parse",
                     Value = "H",
                 }
             };

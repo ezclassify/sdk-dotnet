@@ -12,8 +12,10 @@ generated outputs.
 
 The repository follows the conventional .NET layout: the root
 [`EzClassify.sln`](EzClassify.sln) contains the one published library,
-the xUnit test project, and the [`examples/server-tour/`](examples/server-tour/)
-application. [`Directory.Build.props`](Directory.Build.props) owns common compiler and
+the xUnit test project, the [`examples/server-tour/`](examples/server-tour/)
+application, and [`EzClassify.Rest.CSharp73/`](EzClassify.Rest.CSharp73/), a
+never-packed C# 7.3 project that builds every request record against the
+netstandard2.0 client so the record shape cannot raise the language floor. [`Directory.Build.props`](Directory.Build.props) owns common compiler and
 package metadata. [`Directory.Packages.props`](Directory.Packages.props) is the only place NuGet dependency
 versions are declared. The project file keeps only project-specific settings,
 references, and packaging content.

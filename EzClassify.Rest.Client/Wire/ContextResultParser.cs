@@ -39,14 +39,14 @@ internal static class ContextResultParser
     {
         if (el.ValueKind != JsonValueKind.Object) return null;
 
-        return new CoverageReport
+        return new CoverageReport(
+            covered: JsonRead.RequiredBool(el, "covered"),
+            missing: JsonRead.RequiredList(el, "missing", ResultParser.ReadAssertion),
+            missingLabels: JsonRead.StrictStringList(el, "missingLabels"),
+            excess: JsonRead.RequiredList(el, "excess", ResultParser.ReadAssertion),
+            excessLabels: JsonRead.StrictStringList(el, "excessLabels"),
+            rendered: JsonRead.RequiredString(el, "rendered"))
         {
-            Covered = JsonRead.RequiredBool(el, "covered"),
-            Missing = JsonRead.RequiredList(el, "missing", ResultParser.ReadAssertion),
-            MissingLabels = JsonRead.StrictStringList(el, "missingLabels"),
-            Excess = JsonRead.RequiredList(el, "excess", ResultParser.ReadAssertion),
-            ExcessLabels = JsonRead.StrictStringList(el, "excessLabels"),
-            Rendered = JsonRead.RequiredString(el, "rendered"),
             // Sent only when a rollup refused; absent stays null.
             Refusals = JsonRead.TolerantOptionalList(el, "refusals", ResultParser.ReadValidationError),
         };
@@ -64,12 +64,12 @@ internal static class ContextResultParser
     // in hand instead of being re-serialized and re-parsed.
     internal static ConceptDescription ParseConceptDescriptionElement(JsonElement root)
     {
-        return new ConceptDescription
+        return new ConceptDescription(
+            conceptId: JsonRead.RequiredString(root, "conceptId"),
+            categoryId: JsonRead.RequiredString(root, "categoryId"),
+            name: JsonRead.RequiredString(root, "name"),
+            lines: JsonRead.StrictStringList(root, "lines"))
         {
-            ConceptId = JsonRead.RequiredString(root, "conceptId"),
-            CategoryId = JsonRead.RequiredString(root, "categoryId"),
-            Name = JsonRead.RequiredString(root, "name"),
-            Lines = JsonRead.StrictStringList(root, "lines"),
             Definition = JsonRead.OptionalString(root, "definition"),
             Guidance = JsonRead.OptionalString(root, "guidance"),
             // An absent or null "rules" is null, not an empty list: the concept
@@ -99,13 +99,13 @@ internal static class ContextResultParser
     // Single-notice core. The notices operation returns a bare array of these,
     // and every result that describes a marking carries the same objects under
     // its own "notices" property, so both paths decode through one reader.
-    internal static Notice ParseNoticeElement(JsonElement el) => new()
+    internal static Notice ParseNoticeElement(JsonElement el) => new(
+        conceptId: JsonRead.RequiredString(el, "conceptId"),
+        conceptName: JsonRead.RequiredString(el, "conceptName"),
+        type: JsonRead.RequiredString(el, "type"),
+        text: JsonRead.RequiredString(el, "text"),
+        required: JsonRead.RequiredBool(el, "required"))
     {
-        ConceptId = JsonRead.RequiredString(el, "conceptId"),
-        ConceptName = JsonRead.RequiredString(el, "conceptName"),
-        Type = JsonRead.RequiredString(el, "type"),
-        Text = JsonRead.RequiredString(el, "text"),
-        Required = JsonRead.RequiredBool(el, "required"),
         Views = JsonRead.TolerantOptionalStringMap(el, "views"),
     };
 
@@ -122,11 +122,9 @@ internal static class ContextResultParser
     internal static SuggestResult ParseSuggestResultElement(JsonElement root)
     {
         JsonRead.RequireObject(root, "suggest result");
-        return new()
-        {
-            Suggestions = JsonRead.RequiredList(root, "suggestions", ResultParser.ReadSuggestion),
-            Warnings = JsonRead.RequiredList(root, "warnings", ResultParser.ReadWarning),
-        };
+        return new(
+            suggestions: JsonRead.RequiredList(root, "suggestions", ResultParser.ReadSuggestion),
+            warnings: JsonRead.RequiredList(root, "warnings", ResultParser.ReadWarning));
     }
 
     /// <summary>
@@ -174,16 +172,16 @@ internal static class ContextResultParser
         return ReadAccessRuleDescription(el);
     }
 
-    internal static AccessRuleDescription ReadAccessRuleDescription(JsonElement el) => new()
+    internal static AccessRuleDescription ReadAccessRuleDescription(JsonElement el) => new(
+        rule: ReadRuleReference(JsonRead.RequiredProperty(el, "rule")),
+        access: ReadArtifactReference(JsonRead.RequiredProperty(el, "access")),
+        scheme: ReadArtifactReference(JsonRead.RequiredProperty(el, "scheme")),
+        name: JsonRead.RequiredString(el, "name"),
+        requirementText: JsonRead.RequiredString(el, "requirementText"),
+        attributesNeeded: JsonRead.StrictStringList(el, "attributesNeeded"),
+        dependsOn: JsonRead.RequiredList(el, "dependsOn", ReadRuleReference),
+        overrides: JsonRead.RequiredList(el, "overrides", ReadRuleReference))
     {
-        Rule = ReadRuleReference(JsonRead.RequiredProperty(el, "rule")),
-        Access = ReadArtifactReference(JsonRead.RequiredProperty(el, "access")),
-        Scheme = ReadArtifactReference(JsonRead.RequiredProperty(el, "scheme")),
-        Name = JsonRead.RequiredString(el, "name"),
-        RequirementText = JsonRead.RequiredString(el, "requirementText"),
-        AttributesNeeded = JsonRead.StrictStringList(el, "attributesNeeded"),
-        DependsOn = JsonRead.RequiredList(el, "dependsOn", ReadRuleReference),
-        Overrides = JsonRead.RequiredList(el, "overrides", ReadRuleReference),
         Description = JsonRead.OptionalString(el, "description"),
         WhenText = JsonRead.OptionalString(el, "whenText"),
     };
@@ -200,16 +198,16 @@ internal static class ContextResultParser
     // in hand instead of being re-serialized and re-parsed.
     internal static AccessRequirementsDescription ParseAccessRequirementsDescriptionElement(JsonElement root)
     {
-        return new AccessRequirementsDescription
+        return new AccessRequirementsDescription(
+            assertions: JsonRead.RequiredList(root, "assertions", ResultParser.ReadAssertion),
+            assertionDisplays: JsonRead.StrictStringList(root, "assertionDisplays"),
+            access: ReadArtifactReference(JsonRead.RequiredProperty(root, "access")),
+            scheme: ReadArtifactReference(JsonRead.RequiredProperty(root, "scheme")),
+            appliedRules: JsonRead.RequiredList(root, "appliedRules", ReadRuleReference),
+            rules: JsonRead.RequiredList(root, "rules", ReadAccessRuleDescription),
+            combinedRequirementText: JsonRead.RequiredString(root, "combinedRequirementText"),
+            combinedAttributesNeeded: JsonRead.StrictStringList(root, "combinedAttributesNeeded"))
         {
-            Assertions = JsonRead.RequiredList(root, "assertions", ResultParser.ReadAssertion),
-            AssertionDisplays = JsonRead.StrictStringList(root, "assertionDisplays"),
-            Access = ReadArtifactReference(JsonRead.RequiredProperty(root, "access")),
-            Scheme = ReadArtifactReference(JsonRead.RequiredProperty(root, "scheme")),
-            AppliedRules = JsonRead.RequiredList(root, "appliedRules", ReadRuleReference),
-            Rules = JsonRead.RequiredList(root, "rules", ReadAccessRuleDescription),
-            CombinedRequirementText = JsonRead.RequiredString(root, "combinedRequirementText"),
-            CombinedAttributesNeeded = JsonRead.StrictStringList(root, "combinedAttributesNeeded"),
             Marking = JsonRead.OptionalString(root, "marking"),
         };
     }
@@ -234,34 +232,30 @@ internal static class ContextResultParser
 
     // Element cores: a nested occurrence is read from the element already
     // in hand instead of being re-serialized and re-parsed.
-    internal static SchemeView ReadSchemeView(JsonElement root) => new()
+    internal static SchemeView ReadSchemeView(JsonElement root) => new(
+        id: JsonRead.RequiredString(root, "id"),
+        name: JsonRead.RequiredString(root, "name"),
+        description: JsonRead.RequiredString(root, "description"),
+        categories: JsonRead.RequiredList(root, "categories", category => new SchemeViewCategory(
+            id: JsonRead.RequiredString(category, "id"),
+            label: JsonRead.RequiredString(category, "label"),
+            items: JsonRead.RequiredList(category, "items", ReadConceptView))),
+        uncategorized: JsonRead.RequiredList(root, "uncategorized", ReadConceptView))
     {
-        Id = JsonRead.RequiredString(root, "id"),
-        Name = JsonRead.RequiredString(root, "name"),
-        Description = JsonRead.RequiredString(root, "description"),
-        Categories = JsonRead.RequiredList(root, "categories", category => new SchemeViewCategory
-        {
-            Id = JsonRead.RequiredString(category, "id"),
-            Label = JsonRead.RequiredString(category, "label"),
-            Items = JsonRead.RequiredList(category, "items", ReadConceptView),
-        }),
-        Uncategorized = JsonRead.RequiredList(root, "uncategorized", ReadConceptView),
         Marking = JsonRead.OptionalString(root, "marking"),
         Vocabulary = OptionalVocabulary(root),
     };
 
-    internal static GuideView ReadGuideView(JsonElement root) => new()
+    internal static GuideView ReadGuideView(JsonElement root) => new(
+        id: JsonRead.RequiredString(root, "id"),
+        name: JsonRead.RequiredString(root, "name"),
+        description: JsonRead.RequiredString(root, "description"),
+        categories: JsonRead.RequiredList(root, "categories", category => new GuideViewCategory(
+            id: JsonRead.RequiredString(category, "id"),
+            label: JsonRead.RequiredString(category, "label"),
+            items: JsonRead.RequiredList(category, "items", ReadGuideRuleView))),
+        uncategorized: JsonRead.RequiredList(root, "uncategorized", ReadGuideRuleView))
     {
-        Id = JsonRead.RequiredString(root, "id"),
-        Name = JsonRead.RequiredString(root, "name"),
-        Description = JsonRead.RequiredString(root, "description"),
-        Categories = JsonRead.RequiredList(root, "categories", category => new GuideViewCategory
-        {
-            Id = JsonRead.RequiredString(category, "id"),
-            Label = JsonRead.RequiredString(category, "label"),
-            Items = JsonRead.RequiredList(category, "items", ReadGuideRuleView),
-        }),
-        Uncategorized = JsonRead.RequiredList(root, "uncategorized", ReadGuideRuleView),
         Marking = JsonRead.OptionalString(root, "marking"),
         Vocabulary = OptionalVocabulary(root),
     };
@@ -273,18 +267,18 @@ internal static class ContextResultParser
     private static GuideRuleView ReadGuideRuleView(JsonElement el)
     {
         JsonRead.RequireObject(el, "guide rule view");
-        return new GuideRuleView
+        return new GuideRuleView(
+            id: JsonRead.RequiredString(el, "id"),
+            name: JsonRead.RequiredString(el, "name"),
+            outcomeText: JsonRead.RequiredString(el, "outcomeText"),
+            isComputed: JsonRead.RequiredBool(el, "isComputed"),
+            keywords: JsonRead.StrictStringList(el, "keywords"),
+            matcherLabels: JsonRead.StrictStringList(el, "matcherLabels"),
+            dependsOn: JsonRead.StrictStringList(el, "dependsOn"),
+            dependsOnNames: JsonRead.StrictStringList(el, "dependsOnNames"),
+            overrides: JsonRead.StrictStringList(el, "overrides"),
+            overrideNames: JsonRead.StrictStringList(el, "overrideNames"))
         {
-            Id = JsonRead.RequiredString(el, "id"),
-            Name = JsonRead.RequiredString(el, "name"),
-            OutcomeText = JsonRead.RequiredString(el, "outcomeText"),
-            IsComputed = JsonRead.RequiredBool(el, "isComputed"),
-            Keywords = JsonRead.StrictStringList(el, "keywords"),
-            MatcherLabels = JsonRead.StrictStringList(el, "matcherLabels"),
-            DependsOn = JsonRead.StrictStringList(el, "dependsOn"),
-            DependsOnNames = JsonRead.StrictStringList(el, "dependsOnNames"),
-            Overrides = JsonRead.StrictStringList(el, "overrides"),
-            OverrideNames = JsonRead.StrictStringList(el, "overrideNames"),
             Description = JsonRead.OptionalString(el, "description"),
             WhenText = JsonRead.OptionalString(el, "whenText"),
             Rationale = JsonRead.OptionalString(el, "rationale"),
@@ -312,55 +306,51 @@ internal static class ContextResultParser
 
         var wholes = new List<AuditWhole>();
         foreach (var w in RequiredArray(root, "wholes"))
-            wholes.Add(new AuditWhole
-            {
-                Marking = JsonRead.RequiredString(w, "marking"),
-                Start = JsonRead.RequiredInt(w, "start"),
-                End = JsonRead.RequiredInt(w, "end"),
-                OffsetEncoding = JsonRead.RequiredString(w, "offsetEncoding"),
-            });
+            wholes.Add(new AuditWhole(
+                marking: JsonRead.RequiredString(w, "marking"),
+                start: JsonRead.RequiredInt(w, "start"),
+                end: JsonRead.RequiredInt(w, "end"),
+                offsetEncoding: JsonRead.RequiredString(w, "offsetEncoding")));
 
         var parts = new List<AuditPart>();
         foreach (var p in RequiredArray(root, "parts"))
-            parts.Add(new AuditPart
+            parts.Add(new AuditPart(
+                marking: JsonRead.RequiredString(p, "marking"),
+                start: JsonRead.RequiredInt(p, "start"),
+                end: JsonRead.RequiredInt(p, "end"),
+                offsetEncoding: JsonRead.RequiredString(p, "offsetEncoding"),
+                scopeId: JsonRead.RequiredString(p, "scopeId"),
+                validation: ParseMarkingValidationElement(JsonRead.RequiredProperty(p, "validation"))
+                    ?? throw new JsonException("validation must be an object"))
             {
-                Marking = JsonRead.RequiredString(p, "marking"),
                 Text = p.TryGetProperty("text", out var text) && text.ValueKind == JsonValueKind.String ? text.GetString() : null,
-                Start = JsonRead.RequiredInt(p, "start"),
-                End = JsonRead.RequiredInt(p, "end"),
-                OffsetEncoding = JsonRead.RequiredString(p, "offsetEncoding"),
-                ScopeId = JsonRead.RequiredString(p, "scopeId"),
-                Validation = ParseMarkingValidationElement(JsonRead.RequiredProperty(p, "validation"))
-                    ?? throw new JsonException("validation must be an object"),
             });
 
         var unmarked = new List<UnmarkedSpan>();
         foreach (var u in RequiredArray(root, "unmarkedSpans"))
-            unmarked.Add(new UnmarkedSpan
+            unmarked.Add(new UnmarkedSpan(
+                start: JsonRead.RequiredInt(u, "start"),
+                end: JsonRead.RequiredInt(u, "end"),
+                offsetEncoding: JsonRead.RequiredString(u, "offsetEncoding"))
             {
-                Start = JsonRead.RequiredInt(u, "start"),
-                End = JsonRead.RequiredInt(u, "end"),
-                OffsetEncoding = JsonRead.RequiredString(u, "offsetEncoding"),
                 Text = u.TryGetProperty("text", out var text) && text.ValueKind == JsonValueKind.String ? text.GetString() : null,
             });
 
-        return new DocumentAuditReport
-        {
-            MarkingRequirements = ReadDocumentMarkingRequirements(JsonRead.RequiredProperty(root, "markingRequirements")),
-            Whole = root.TryGetProperty("whole", out var wh) && wh.ValueKind == JsonValueKind.String ? wh.GetString() : null,
-            Wholes = wholes.AsReadOnly(),
-            WholeValidation = root.TryGetProperty("wholeValidation", out var wv) ? ParseMarkingValidationElement(wv) : null,
-            Parts = parts.AsReadOnly(),
-            WholeCoversParts = root.TryGetProperty("wholeCoversParts", out var wcp) ? ReadCoverageReport(wcp) : null,
-            UnmarkedSpans = unmarked.AsReadOnly(),
-            ProceduralFlags = JsonRead.StrictStringList(root, "proceduralFlags"),
-            OverallVerdict = new AuditVerdict(JsonRead.RequiredString(root, "overallVerdict")),
-            DocumentDigest = JsonRead.RequiredString(root, "documentDigest"),
-            Limitations = JsonRead.RequiredList(root, "limitations", ParseAssessmentLimitationElement),
-            Vocabulary = root.TryGetProperty("vocabulary", out var voc) && voc.ValueKind == JsonValueKind.Object ? ParseVocabularyElement(voc) : null,
-            GuideAssessment = root.TryGetProperty("guideAssessment", out var guide) && guide.ValueKind == JsonValueKind.Object
-                ? ParseDocumentGuideAssessmentElement(guide) : null,
-        };
+        return new DocumentAuditReport(
+            markingRequirements: ReadDocumentMarkingRequirements(JsonRead.RequiredProperty(root, "markingRequirements")),
+            whole: root.TryGetProperty("whole", out var wh) && wh.ValueKind == JsonValueKind.String ? wh.GetString() : null,
+            wholes: wholes.AsReadOnly(),
+            wholeValidation: root.TryGetProperty("wholeValidation", out var wv) ? ParseMarkingValidationElement(wv) : null,
+            parts: parts.AsReadOnly(),
+            wholeCoversParts: root.TryGetProperty("wholeCoversParts", out var wcp) ? ReadCoverageReport(wcp) : null,
+            unmarkedSpans: unmarked.AsReadOnly(),
+            proceduralFlags: JsonRead.StrictStringList(root, "proceduralFlags"),
+            overallVerdict: new AuditVerdict(JsonRead.RequiredString(root, "overallVerdict")),
+            documentDigest: JsonRead.RequiredString(root, "documentDigest"),
+            limitations: JsonRead.RequiredList(root, "limitations", ParseAssessmentLimitationElement),
+            vocabulary: root.TryGetProperty("vocabulary", out var voc) && voc.ValueKind == JsonValueKind.Object ? ParseVocabularyElement(voc) : null,
+            guideAssessment: root.TryGetProperty("guideAssessment", out var guide) && guide.ValueKind == JsonValueKind.Object
+                ? ParseDocumentGuideAssessmentElement(guide) : null);
     }
 
     /// <summary>Parse the resolved Context envelope for document audit.</summary>
@@ -370,26 +360,24 @@ internal static class ContextResultParser
         var root = doc.RootElement;
         JsonRead.RequireObject(root, "document audit envelope");
         ResponseCheck.Require("ContextDocumentAuditResult", root);
-        return new ContextDocumentAuditResult
-        {
-            Resolution = ParseContextResolutionElement(JsonRead.RequiredProperty(root, "resolution")),
-            Result = ReadDocumentAuditReport(JsonRead.RequiredProperty(root, "result")),
-            ResponseProjection = ParseDocumentResponseProjectionElement(JsonRead.RequiredProperty(root, "responseProjection")),
-        };
+        return new ContextDocumentAuditResult(
+            resolution: ParseContextResolutionElement(JsonRead.RequiredProperty(root, "resolution")),
+            result: ReadDocumentAuditReport(JsonRead.RequiredProperty(root, "result")),
+            responseProjection: ParseDocumentResponseProjectionElement(JsonRead.RequiredProperty(root, "responseProjection")));
     }
 
     /// <summary>Parse the resolved Context envelope for scheme processing.</summary>
     public static ContextSchemeProcessResult ParseContextSchemeProcessResult(string json)
     {
         var envelope = ParseContextEnvelope(json, "scheme process", "ContextSchemeProcessResult", ResultParser.ParseProcessResultElement);
-        return new() { Resolution = envelope.Resolution, Result = envelope.Result };
+        return new(resolution: envelope.Resolution, result: envelope.Result);
     }
 
     /// <summary>Parse the resolved Context envelope for scheme validation or label preset expansion.</summary>
     public static ContextSchemeValidateResult ParseContextSchemeValidateResult(string json)
     {
         var envelope = ParseContextEnvelope(json, "scheme validation", "ContextSchemeValidateResult", ResultParser.ParseValidateResultElement);
-        return new() { Resolution = envelope.Resolution, Result = envelope.Result };
+        return new(resolution: envelope.Resolution, result: envelope.Result);
     }
 
     /// <summary>Parse the resolved Context envelope for a scheme explanation.</summary>
@@ -400,116 +388,114 @@ internal static class ContextResultParser
             JsonRead.RequireObject(el, "explanation trace");
             return ResultParser.ReadExplanationTrace(el);
         });
-        return new() { Resolution = envelope.Resolution, Result = envelope.Result };
+        return new(resolution: envelope.Resolution, result: envelope.Result);
     }
 
     /// <summary>Parse the resolved Context envelope for scheme suggestions.</summary>
     public static ContextSchemeSuggestResult ParseContextSchemeSuggestResult(string json)
     {
         var envelope = ParseContextEnvelope(json, "scheme suggestions", "ContextSchemeSuggestResult", ParseSuggestResultElement);
-        return new() { Resolution = envelope.Resolution, Result = envelope.Result };
+        return new(resolution: envelope.Resolution, result: envelope.Result);
     }
 
     /// <summary>Parse the resolved Context envelope for per-category scheme suggestions.</summary>
     public static ContextSchemeSuggestForCategoriesResult ParseContextSchemeSuggestForCategoriesResult(string json)
     {
         var envelope = ParseContextEnvelope(json, "per-category scheme suggestions", "ContextSchemeSuggestForCategoriesResult", ParseSuggestResultsByCategoryElement);
-        return new() { Resolution = envelope.Resolution, Result = envelope.Result };
+        return new(resolution: envelope.Resolution, result: envelope.Result);
     }
 
     /// <summary>Parse the resolved Context envelope for scheme aggregation.</summary>
     public static ContextSchemeAggregateResult ParseContextSchemeAggregateResult(string json)
     {
         var envelope = ParseContextEnvelope(json, "scheme aggregation", "ContextSchemeAggregateResult", ResultParser.ParseAggregateResultElement);
-        return new() { Resolution = envelope.Resolution, Result = envelope.Result };
+        return new(resolution: envelope.Resolution, result: envelope.Result);
     }
 
     /// <summary>Parse the resolved Context envelope for scheme scanning.</summary>
     public static ContextSchemeScanResult ParseContextSchemeScanResult(string json)
     {
         var envelope = ParseContextEnvelope(json, "scheme scan", "ContextSchemeScanResult", ResultParser.ParseScanResponseElement);
-        return new() { Resolution = envelope.Resolution, Result = envelope.Result };
+        return new(resolution: envelope.Resolution, result: envelope.Result);
     }
 
     /// <summary>Parse the resolved Context envelope for scheme rendering.</summary>
     public static ContextSchemeRenderResult ParseContextSchemeRenderResult(string json)
     {
-        var envelope = ParseContextEnvelope(json, "scheme render", "ContextSchemeRenderResult", el => new RenderResponse
-        {
-            Result = ParseRenderResultElement(el),
-            Assessment = ResultParser.ParseRenderAssessmentElement(JsonRead.RequiredProperty(el, "assessment")),
-        });
-        return new() { Resolution = envelope.Resolution, Result = envelope.Result };
+        var envelope = ParseContextEnvelope(json, "scheme render", "ContextSchemeRenderResult", el => new RenderResponse(
+            result: ParseRenderResultElement(el),
+            assessment: ResultParser.ParseRenderAssessmentElement(JsonRead.RequiredProperty(el, "assessment"))));
+        return new(resolution: envelope.Resolution, result: envelope.Result);
     }
 
     /// <summary>Parse the resolved Context envelope for scheme coverage checks.</summary>
     public static ContextSchemeCoverageResult ParseContextSchemeCoverageResult(string json)
     {
         var envelope = ParseContextEnvelope(json, "scheme coverage", "ContextSchemeCoverageResult", el => ReadCoverageReport(el) ?? throw new JsonException("Expected a coverage report object"));
-        return new() { Resolution = envelope.Resolution, Result = envelope.Result };
+        return new(resolution: envelope.Resolution, result: envelope.Result);
     }
 
     /// <summary>Parse the resolved Context envelope for concept descriptions.</summary>
     public static ContextSchemeConceptDescriptionResult ParseContextSchemeConceptDescriptionResult(string json)
     {
         var envelope = ParseContextEnvelope(json, "concept description", "ContextSchemeConceptDescriptionResult", ParseConceptDescriptionElement);
-        return new() { Resolution = envelope.Resolution, Result = envelope.Result };
+        return new(resolution: envelope.Resolution, result: envelope.Result);
     }
 
     /// <summary>Parse the resolved Context envelope for scheme diffs.</summary>
     public static ContextSchemeDiffResult ParseContextSchemeDiffResult(string json)
     {
         var envelope = ParseContextEnvelope(json, "scheme diff", "ContextSchemeDiffResult", ResultParser.ParseDiffResultElement);
-        return new() { Resolution = envelope.Resolution, Result = envelope.Result };
+        return new(resolution: envelope.Resolution, result: envelope.Result);
     }
 
     /// <summary>Parse the resolved Context envelope for scheme notices.</summary>
     public static ContextSchemeNoticesResult ParseContextSchemeNoticesResult(string json)
     {
         var envelope = ParseContextEnvelope(json, "scheme notices", "ContextSchemeNoticesResult", ParseNoticesElement);
-        return new() { Resolution = envelope.Resolution, Result = envelope.Result };
+        return new(resolution: envelope.Resolution, result: envelope.Result);
     }
 
     /// <summary>Parse the resolved Context envelope for a scheme structural view.</summary>
     public static ContextSchemeViewResult ParseContextSchemeViewResult(string json)
     {
         var envelope = ParseContextEnvelope(json, "scheme view", "ContextSchemeViewResult", ReadSchemeView);
-        return new() { Resolution = envelope.Resolution, Result = envelope.Result };
+        return new(resolution: envelope.Resolution, result: envelope.Result);
     }
 
     /// <summary>Parse the resolved Context envelope for guide scanning.</summary>
     public static ContextGuideScanResult ParseContextGuideScanResult(string json)
     {
         var envelope = ParseContextEnvelope(json, "guide scan", "ContextGuideScanResult", ResultParser.ParseGuideScanResultsElement);
-        return new() { Resolution = envelope.Resolution, Result = envelope.Result };
+        return new(resolution: envelope.Resolution, result: envelope.Result);
     }
 
     /// <summary>Parse the resolved Context envelope for guide evaluation.</summary>
     public static ContextGuideEvaluationResult ParseContextGuideEvaluationResult(string json)
     {
         var envelope = ParseContextEnvelope(json, "guide evaluation", "ContextGuideEvaluationResult", ResultParser.ReadEvaluationResult);
-        return new() { Resolution = envelope.Resolution, Result = envelope.Result };
+        return new(resolution: envelope.Resolution, result: envelope.Result);
     }
 
     /// <summary>Parse the resolved Context envelope for a guide structural view.</summary>
     public static ContextGuideViewResult ParseContextGuideViewResult(string json)
     {
         var envelope = ParseContextEnvelope(json, "guide view", "ContextGuideViewResult", ReadGuideView);
-        return new() { Resolution = envelope.Resolution, Result = envelope.Result };
+        return new(resolution: envelope.Resolution, result: envelope.Result);
     }
 
     /// <summary>Parse the resolved Context envelope for an access decision.</summary>
     public static ContextAccessDecisionResult ParseContextAccessDecisionResult(string json)
     {
         var envelope = ParseContextEnvelope(json, "access decision", "ContextAccessDecisionResult", ResultParser.ReadAccessDecision);
-        return new() { Resolution = envelope.Resolution, Result = envelope.Result };
+        return new(resolution: envelope.Resolution, result: envelope.Result);
     }
 
     /// <summary>Parse the resolved Context envelope for access requirements.</summary>
     public static ContextAccessRequirementsResult ParseContextAccessRequirementsResult(string json)
     {
         var envelope = ParseContextEnvelope(json, "access requirements", "ContextAccessRequirementsResult", ParseAccessRequirementsDescriptionElement);
-        return new() { Resolution = envelope.Resolution, Result = envelope.Result };
+        return new(resolution: envelope.Resolution, result: envelope.Result);
     }
 
     /// <summary>Parse every access-rule description from the Context resource response.</summary>
@@ -568,14 +554,14 @@ internal static class ContextResultParser
         JsonRead.RequireObject(root, "Context description");
         ResponseCheck.Require("CtxDescribeResponseBody", root);
         var scheme = ParseContextComponentElement(JsonRead.RequiredProperty(root, "scheme"));
-        return new ContextDescription
+        return new ContextDescription(
+            id: JsonRead.RequiredString(root, "id"),
+            version: JsonRead.RequiredString(root, "version"),
+            scheme: scheme,
+            schemes: JsonRead.RequiredList(root, "schemes", ParseContextSchemeDescriptorElement),
+            guides: ParseOptionalComponentList(root, "guides"),
+            crosswalks: ParseOptionalComponentList(root, "crosswalks"))
         {
-            Id = JsonRead.RequiredString(root, "id"),
-            Version = JsonRead.RequiredString(root, "version"),
-            Scheme = scheme,
-            Schemes = JsonRead.RequiredList(root, "schemes", ParseContextSchemeDescriptorElement),
-            Guides = ParseOptionalComponentList(root, "guides"),
-            Crosswalks = ParseOptionalComponentList(root, "crosswalks"),
             Access = Present(root, "access") ? ParseContextComponentElement(JsonRead.RequiredProperty(root, "access")) : null,
             Description = JsonRead.OptionalString(root, "description"),
         };
@@ -584,13 +570,11 @@ internal static class ContextResultParser
     private static ContextComponentRef ParseContextComponentElement(JsonElement el)
     {
         JsonRead.RequireObject(el, "Context component");
-        return new ContextComponentRef
-        {
-            Id = JsonRead.RequiredString(el, "id"),
-            Version = JsonRead.RequiredString(el, "version"),
-            ResolvedVersion = JsonRead.RequiredString(el, "resolvedVersion"),
-            Layers = ParseOptionalComponentList(el, "layers"),
-        };
+        return new ContextComponentRef(
+            id: JsonRead.RequiredString(el, "id"),
+            version: JsonRead.RequiredString(el, "version"),
+            resolvedVersion: JsonRead.RequiredString(el, "resolvedVersion"),
+            layers: ParseOptionalComponentList(el, "layers"));
     }
 
     private static IReadOnlyList<ContextComponentRef> ParseOptionalComponentList(JsonElement parent, string key) =>
@@ -608,20 +592,18 @@ internal static class ContextResultParser
         // "Never empty" is the contract: a scheme held for no stated reason is
         // `additional`, not a scheme with no roles.
         if (roles.Count == 0) throw new JsonException("roles must not be empty");
-        return new ContextSchemeDescriptor
-        {
-            Selector = JsonRead.RequiredString(el, "selector"),
-            Id = JsonRead.RequiredString(el, "id"),
-            Version = JsonRead.RequiredString(el, "version"),
-            Roles = roles,
-        };
+        return new ContextSchemeDescriptor(
+            selector: JsonRead.RequiredString(el, "selector"),
+            id: JsonRead.RequiredString(el, "id"),
+            version: JsonRead.RequiredString(el, "version"),
+            roles: roles);
     }
 
     /// <summary>Parse a directional crosswalk result while preserving its discriminated union.</summary>
     public static ContextCrosswalkTranslationResult ParseContextCrosswalkTranslationResult(string json)
     {
         var envelope = ParseContextEnvelope(json, "crosswalk translation", "ContextCrosswalkTranslationResult", el => el.Clone());
-        return new() { Resolution = envelope.Resolution, Result = envelope.Result };
+        return new(resolution: envelope.Resolution, result: envelope.Result);
     }
 
     // --- scheme resource projections ----------------------------------------
@@ -644,14 +626,14 @@ internal static class ContextResultParser
         var root = doc.RootElement;
         JsonRead.RequireObject(root, "scheme summary");
         ResponseCheck.Require("SchemeSummary", root);
-        return new SchemeSummary
+        return new SchemeSummary(
+            id: JsonRead.RequiredString(root, "id"),
+            version: JsonRead.RequiredString(root, "version"),
+            name: JsonRead.RequiredString(root, "name"),
+            description: JsonRead.RequiredString(root, "description"),
+            referenceSurfaceLabel: ParseReferenceSurfaceLabelElement(JsonRead.RequiredProperty(root, "referenceSurfaceLabel")))
         {
-            Id = JsonRead.RequiredString(root, "id"),
-            Version = JsonRead.RequiredString(root, "version"),
-            Name = JsonRead.RequiredString(root, "name"),
-            Description = JsonRead.RequiredString(root, "description"),
             RoleAware = OptionalBool(root, "roleAware"),
-            ReferenceSurfaceLabel = ParseReferenceSurfaceLabelElement(JsonRead.RequiredProperty(root, "referenceSurfaceLabel")),
             EmbeddedMarking = OptionalElement(root, "embeddedMarking"),
             DefaultRenderFormat = JsonRead.OptionalString(root, "defaultRenderFormat"),
             Definition = JsonRead.OptionalString(root, "definition"),
@@ -663,7 +645,7 @@ internal static class ContextResultParser
             Vocabulary = root.TryGetProperty("vocabulary", out var vocabulary) && vocabulary.ValueKind == JsonValueKind.Object
                 ? ParseVocabularyElement(vocabulary) : null,
             ContextFormats = root.TryGetProperty("contextFormats", out var formats) && formats.ValueKind == JsonValueKind.Object
-                ? new SchemeContextFormats { Whole = JsonRead.StrictStringList(formats, "whole"), Part = JsonRead.StrictStringList(formats, "part") }
+                ? new SchemeContextFormats(whole: JsonRead.StrictStringList(formats, "whole"), part: JsonRead.StrictStringList(formats, "part"))
                 : null,
             DefaultScope = JsonRead.OptionalString(root, "defaultScope"),
             ScopeLabel = JsonRead.OptionalString(root, "scopeLabel"),
@@ -683,15 +665,15 @@ internal static class ContextResultParser
     private static ConceptView ReadConceptView(JsonElement el)
     {
         JsonRead.RequireObject(el, "concept view");
-        return new ConceptView
+        return new ConceptView(
+            id: JsonRead.RequiredString(el, "id"),
+            name: JsonRead.RequiredString(el, "name"),
+            views: RequiredStringMap(el, "views"),
+            aliases: JsonRead.StrictStringList(el, "aliases"),
+            categories: JsonRead.StrictStringList(el, "categories"),
+            parents: JsonRead.StrictStringList(el, "parents"),
+            position: OptionalDouble(el, "position") ?? throw new JsonException("Missing required property: position"))
         {
-            Id = JsonRead.RequiredString(el, "id"),
-            Name = JsonRead.RequiredString(el, "name"),
-            Views = RequiredStringMap(el, "views"),
-            Aliases = JsonRead.StrictStringList(el, "aliases"),
-            Categories = JsonRead.StrictStringList(el, "categories"),
-            Parents = JsonRead.StrictStringList(el, "parents"),
-            Position = OptionalDouble(el, "position") ?? throw new JsonException("Missing required property: position"),
             Color = el.TryGetProperty("color", out var color) && color.ValueKind == JsonValueKind.Object
                 ? ParseConceptColorElement(color) : null,
             Rank = OptionalDouble(el, "rank"),
@@ -716,11 +698,11 @@ internal static class ContextResultParser
         var required = JsonRead.RequiredProperty(el, "required");
         if (required.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
             throw new JsonException("required must be a boolean");
-        return new ConceptNotice
+        return new ConceptNotice(
+            type: JsonRead.RequiredString(el, "type"),
+            required: required.GetBoolean(),
+            text: JsonRead.RequiredString(el, "text"))
         {
-            Type = JsonRead.RequiredString(el, "type"),
-            Required = required.GetBoolean(),
-            Text = JsonRead.RequiredString(el, "text"),
             Condition = JsonRead.OptionalString(el, "condition"),
             Views = OptionalStringMap(el, "views"),
         };
@@ -731,11 +713,11 @@ internal static class ContextResultParser
     {
         using var doc = JsonDocument.Parse(json);
         ResponseCheck.RequireEach("CategoryView", doc.RootElement);
-        return ParseRootArray(doc.RootElement, "scheme categories", el => new CategoryView
+        return ParseRootArray(doc.RootElement, "scheme categories", el => new CategoryView(
+            id: JsonRead.RequiredString(el, "id"),
+            label: JsonRead.RequiredString(el, "label"),
+            rollup: JsonRead.RequiredString(el, "rollup"))
         {
-            Id = JsonRead.RequiredString(el, "id"),
-            Label = JsonRead.RequiredString(el, "label"),
-            Rollup = JsonRead.RequiredString(el, "rollup"),
             Required = OptionalBool(el, "required"),
             Single = OptionalBool(el, "single"),
             Sort = OptionalElement(el, "sort"),
@@ -757,12 +739,12 @@ internal static class ContextResultParser
         return ParseRootArray(doc.RootElement, "scheme formats", ParseSchemeFormatElement);
     }
 
-    private static FormatView ParseSchemeFormatElement(JsonElement el) => new()
+    private static FormatView ParseSchemeFormatElement(JsonElement el) => new(
+        id: JsonRead.RequiredString(el, "id"),
+        surface: JsonRead.RequiredString(el, "surface"),
+        mode: new RenderFormatMode(JsonRead.RequiredString(el, "mode")),
+        categoryOrder: JsonRead.StrictStringList(el, "categoryOrder"))
     {
-        Id = JsonRead.RequiredString(el, "id"),
-        Surface = JsonRead.RequiredString(el, "surface"),
-        Mode = new RenderFormatMode(JsonRead.RequiredString(el, "mode")),
-        CategoryOrder = JsonRead.StrictStringList(el, "categoryOrder"),
         View = JsonRead.OptionalString(el, "view"),
         Prefix = JsonRead.OptionalString(el, "prefix"),
         Suffix = JsonRead.OptionalString(el, "suffix"),
@@ -793,10 +775,10 @@ internal static class ContextResultParser
     private static TierComposition ParseTierCompositionElement(JsonElement el)
     {
         JsonRead.RequireObject(el, "tier composition");
-        return new TierComposition
+        return new TierComposition(
+            tier: JsonRead.RequiredString(el, "tier"),
+            attachedBy: JsonRead.RequiredString(el, "attachedBy"))
         {
-            Tier = JsonRead.RequiredString(el, "tier"),
-            AttachedBy = JsonRead.RequiredString(el, "attachedBy"),
             View = JsonRead.OptionalString(el, "view"),
             HeadView = JsonRead.OptionalString(el, "headView"),
         };
@@ -811,19 +793,17 @@ internal static class ContextResultParser
     private static FormatHeaderAssociation ParseFormatHeaderAssociationElement(JsonElement el)
     {
         JsonRead.RequireObject(el, "format header");
-        return new FormatHeaderAssociation
-        {
-            Concept = JsonRead.RequiredString(el, "concept"),
-            HeaderCategory = JsonRead.RequiredString(el, "headerCategory"),
-            Category = JsonRead.RequiredString(el, "category"),
-            Position = new FormatHeaderPosition(JsonRead.RequiredString(el, "position")),
-        };
+        return new FormatHeaderAssociation(
+            concept: JsonRead.RequiredString(el, "concept"),
+            headerCategory: JsonRead.RequiredString(el, "headerCategory"),
+            category: JsonRead.RequiredString(el, "category"),
+            position: new FormatHeaderPosition(JsonRead.RequiredString(el, "position")));
     }
 
     private static FormatSyntax ParseFormatSyntaxElement(JsonElement el)
     {
         JsonRead.RequireObject(el, "format syntax");
-        return new FormatSyntax { Type = new FormatSyntaxType(JsonRead.RequiredString(el, "type")) };
+        return new FormatSyntax(new FormatSyntaxType(JsonRead.RequiredString(el, "type")));
     }
 
     /// <summary>
@@ -839,7 +819,7 @@ internal static class ContextResultParser
         return ParseRootArray(doc.RootElement, "scheme scopes", el =>
         {
             JsonRead.RequireObject(el, "scheme scope");
-            return new SchemeScope { Id = JsonRead.RequiredString(el, "id"), Label = JsonRead.RequiredString(el, "label") };
+            return new SchemeScope(id: JsonRead.RequiredString(el, "id"), label: JsonRead.RequiredString(el, "label"));
         });
     }
 
@@ -848,10 +828,10 @@ internal static class ContextResultParser
     {
         using var doc = JsonDocument.Parse(json);
         ResponseCheck.RequireEach("LabelPresetView", doc.RootElement);
-        return ParseRootArray(doc.RootElement, "scheme label presets", el => new LabelPresetView
+        return ParseRootArray(doc.RootElement, "scheme label presets", el => new LabelPresetView(
+            id: JsonRead.RequiredString(el, "id"),
+            label: JsonRead.RequiredString(el, "label"))
         {
-            Id = JsonRead.RequiredString(el, "id"),
-            Label = JsonRead.RequiredString(el, "label"),
             Description = JsonRead.OptionalString(el, "description"),
             Scope = JsonRead.OptionalString(el, "scope"),
         });
@@ -860,15 +840,15 @@ internal static class ContextResultParser
     private static ReferenceSurfaceLabel ParseReferenceSurfaceLabelElement(JsonElement el)
     {
         JsonRead.RequireObject(el, "reference surface label");
-        return new ReferenceSurfaceLabel { Singular = JsonRead.RequiredString(el, "singular"), Plural = JsonRead.RequiredString(el, "plural") };
+        return new ReferenceSurfaceLabel(singular: JsonRead.RequiredString(el, "singular"), plural: JsonRead.RequiredString(el, "plural"));
     }
 
     private static MarkingColorRule ParseMarkingColorRuleElement(JsonElement el)
     {
         JsonRead.RequireObject(el, "marking color rule");
-        return new MarkingColorRule
+        return new MarkingColorRule(
+            ParseConceptColorElement(JsonRead.RequiredProperty(el, "color")))
         {
-            Color = ParseConceptColorElement(JsonRead.RequiredProperty(el, "color")),
             When = OptionalElement(el, "when"),
         };
     }
@@ -876,7 +856,7 @@ internal static class ContextResultParser
     internal static ConceptColor ParseConceptColorElement(JsonElement el)
     {
         JsonRead.RequireObject(el, "concept color");
-        return new ConceptColor { Background = JsonRead.RequiredString(el, "background"), Text = JsonRead.RequiredString(el, "text") };
+        return new ConceptColor(background: JsonRead.RequiredString(el, "background"), text: JsonRead.RequiredString(el, "text"));
     }
 
     // The resource routes answer with a bare array rather than a wrapper object,
@@ -934,11 +914,11 @@ internal static class ContextResultParser
     internal static ArtifactReference ReadArtifactReference(JsonElement el)
     {
         JsonRead.RequireObject(el, "artifact reference");
-        return new ArtifactReference
+        return new ArtifactReference(
+            kind: new ArtifactKind(JsonRead.RequiredString(el, "kind")),
+            id: JsonRead.RequiredString(el, "id"),
+            version: JsonRead.RequiredString(el, "version"))
         {
-            Kind = new ArtifactKind(JsonRead.RequiredString(el, "kind")),
-            Id = JsonRead.RequiredString(el, "id"),
-            Version = JsonRead.RequiredString(el, "version"),
             Digest = JsonRead.OptionalString(el, "digest"),
         };
     }
@@ -953,12 +933,10 @@ internal static class ContextResultParser
     internal static RuleReference ReadRuleReference(JsonElement el)
     {
         JsonRead.RequireObject(el, "rule reference");
-        return new RuleReference
-        {
-            Artifact = ReadArtifactReference(JsonRead.RequiredProperty(el, "artifact")),
-            RuleId = JsonRead.RequiredString(el, "ruleId"),
-            RuleDigest = JsonRead.RequiredString(el, "ruleDigest"),
-        };
+        return new RuleReference(
+            artifact: ReadArtifactReference(JsonRead.RequiredProperty(el, "artifact")),
+            ruleId: JsonRead.RequiredString(el, "ruleId"),
+            ruleDigest: JsonRead.RequiredString(el, "ruleDigest"));
     }
 
     /// <summary>Parse access-rule activation evidence.</summary>
@@ -971,12 +949,10 @@ internal static class ContextResultParser
     internal static AccessRuleActivation ReadAccessRuleActivation(JsonElement el)
     {
         JsonRead.RequireObject(el, "access rule activation");
-        return new AccessRuleActivation
-        {
-            Matched = JsonRead.RequiredBool(el, "matched"),
-            Assertions = JsonRead.RequiredList(el, "assertions", ParseAssertionReferenceElement),
-            ContextPaths = JsonRead.StrictStringList(el, "contextPaths"),
-        };
+        return new AccessRuleActivation(
+            matched: JsonRead.RequiredBool(el, "matched"),
+            assertions: JsonRead.RequiredList(el, "assertions", ParseAssertionReferenceElement),
+            contextPaths: JsonRead.StrictStringList(el, "contextPaths"));
     }
 
     /// <summary>Parse access comparison results.</summary>
@@ -991,12 +967,12 @@ internal static class ContextResultParser
         if (el.ValueKind != JsonValueKind.Array) throw new JsonException("Expected access comparisons array");
         var result = new List<AccessComparisonResult>();
         foreach (var item in el.EnumerateArray())
-            result.Add(new AccessComparisonResult
+            result.Add(new AccessComparisonResult(
+                left: ParseAccessOperandElement(JsonRead.RequiredProperty(item, "left")),
+                @operator: JsonRead.RequiredString(item, "operator"),
+                right: ParseAccessOperandElement(JsonRead.RequiredProperty(item, "right")),
+                matched: JsonRead.RequiredBool(item, "matched"))
             {
-                Left = ParseAccessOperandElement(JsonRead.RequiredProperty(item, "left")),
-                Operator = JsonRead.RequiredString(item, "operator"),
-                Right = ParseAccessOperandElement(JsonRead.RequiredProperty(item, "right")),
-                Matched = JsonRead.RequiredBool(item, "matched"),
                 Missing = item.TryGetProperty("missing", out var missing) && missing.ValueKind == JsonValueKind.Array
                     ? CloneElementList(missing) : null,
             });
@@ -1006,9 +982,9 @@ internal static class ContextResultParser
     private static AccessOperand ParseAccessOperandElement(JsonElement el)
     {
         JsonRead.RequireObject(el, "access operand");
-        return new AccessOperand
+        return new AccessOperand(
+            new AccessOperandSource(JsonRead.RequiredString(el, "source")))
         {
-            Source = new AccessOperandSource(JsonRead.RequiredString(el, "source")),
             Path = JsonRead.OptionalString(el, "path"),
             CategoryId = JsonRead.OptionalString(el, "categoryId"),
             Assertions = el.TryGetProperty("assertions", out var assertions) && assertions.ValueKind == JsonValueKind.Array
@@ -1017,168 +993,152 @@ internal static class ContextResultParser
         };
     }
 
-    private static DocumentGuideAssessment ParseDocumentGuideAssessmentElement(JsonElement el) => new()
+    private static DocumentGuideAssessment ParseDocumentGuideAssessmentElement(JsonElement el) => new(
+        status: new GuideCompilationStatus(JsonRead.RequiredString(el, "status")),
+        nominationCount: JsonRead.RequiredInt(el, "nominationCount"),
+        unresolvedCount: JsonRead.RequiredInt(el, "unresolvedCount"),
+        acceptedCount: JsonRead.RequiredInt(el, "acceptedCount"),
+        rejectedCount: JsonRead.RequiredInt(el, "rejectedCount"),
+        evidenceSpanCount: JsonRead.RequiredInt(el, "evidenceSpanCount"),
+        unitCoverage: JsonRead.RequiredList(el, "unitCoverage", ParseGuideScopeCoverageElement),
+        determinedRequiredWhole: el.TryGetProperty("determinedRequiredWhole", out var determined) && determined.ValueKind == JsonValueKind.Object ? ParseGuideCompiledResultElement(determined) : null,
+        projectedRequiredWhole: el.TryGetProperty("projectedRequiredWhole", out var projected) && projected.ValueKind == JsonValueKind.Object ? ParseGuideCompiledResultElement(projected) : null,
+        determinedWholeCoverage: el.TryGetProperty("determinedWholeCoverage", out var dc) ? ReadCoverageReport(dc) : null,
+        projectedWholeCoverage: el.TryGetProperty("projectedWholeCoverage", out var pc) ? ReadCoverageReport(pc) : null)
     {
-        Status = new GuideCompilationStatus(JsonRead.RequiredString(el, "status")),
-        NominationCount = JsonRead.RequiredInt(el, "nominationCount"),
-        UnresolvedCount = JsonRead.RequiredInt(el, "unresolvedCount"),
-        AcceptedCount = JsonRead.RequiredInt(el, "acceptedCount"),
-        RejectedCount = JsonRead.RequiredInt(el, "rejectedCount"),
-        EvidenceSpanCount = JsonRead.RequiredInt(el, "evidenceSpanCount"),
-        UnitCoverage = JsonRead.RequiredList(el, "unitCoverage", ParseGuideScopeCoverageElement),
-        DeterminedRequiredWhole = el.TryGetProperty("determinedRequiredWhole", out var determined) && determined.ValueKind == JsonValueKind.Object ? ParseGuideCompiledResultElement(determined) : null,
-        ProjectedRequiredWhole = el.TryGetProperty("projectedRequiredWhole", out var projected) && projected.ValueKind == JsonValueKind.Object ? ParseGuideCompiledResultElement(projected) : null,
-        DeterminedWholeCoverage = el.TryGetProperty("determinedWholeCoverage", out var dc) ? ReadCoverageReport(dc) : null,
-        ProjectedWholeCoverage = el.TryGetProperty("projectedWholeCoverage", out var pc) ? ReadCoverageReport(pc) : null,
         Evaluation = el.TryGetProperty("evaluation", out var evaluation) && evaluation.ValueKind == JsonValueKind.Object ? ParseGuideContentEvaluationElement(evaluation) : null,
     };
 
-    private static GuideScopeCoverage ParseGuideScopeCoverageElement(JsonElement el) => new()
-    {
-        ScopeId = JsonRead.RequiredString(el, "scopeId"),
-        DeterminedCoverage = el.TryGetProperty("determinedCoverage", out var d) ? ReadCoverageReport(d) : null,
-        ProjectedCoverage = el.TryGetProperty("projectedCoverage", out var p) ? ReadCoverageReport(p) : null,
-    };
+    private static GuideScopeCoverage ParseGuideScopeCoverageElement(JsonElement el) => new(
+        scopeId: JsonRead.RequiredString(el, "scopeId"),
+        determinedCoverage: el.TryGetProperty("determinedCoverage", out var d) ? ReadCoverageReport(d) : null,
+        projectedCoverage: el.TryGetProperty("projectedCoverage", out var p) ? ReadCoverageReport(p) : null);
 
-    private static GuideContentEvaluation ParseGuideContentEvaluationElement(JsonElement el) => new()
-    {
-        DocumentDigest = JsonRead.RequiredString(el, "documentDigest"),
-        Nominations = JsonRead.RequiredList(el, "nominations", ParseGuideNominationElement),
-        Determinations = JsonRead.RequiredList(el, "determinations", ParseGuideFindingDeterminationElement),
-        ManualSelections = JsonRead.RequiredList(el, "manualSelections", ParseManualGuideSelectionElement),
-        UnresolvedFindingIds = JsonRead.StrictStringList(el, "unresolvedFindingIds"),
-        AcceptedFindingIds = JsonRead.StrictStringList(el, "acceptedFindingIds"),
-        RejectedFindingIds = JsonRead.StrictStringList(el, "rejectedFindingIds"),
-        SupportCatalog = JsonRead.RequiredList(el, "supportCatalog", ParseAssertionSupportElement),
-        Units = JsonRead.RequiredList(el, "units", ParseGuideUnitEvaluationElement),
-        Limitations = JsonRead.RequiredList(el, "limitations", ParseAssessmentLimitationElement),
-    };
+    private static GuideContentEvaluation ParseGuideContentEvaluationElement(JsonElement el) => new(
+        documentDigest: JsonRead.RequiredString(el, "documentDigest"),
+        nominations: JsonRead.RequiredList(el, "nominations", ParseGuideNominationElement),
+        determinations: JsonRead.RequiredList(el, "determinations", ParseGuideFindingDeterminationElement),
+        manualSelections: JsonRead.RequiredList(el, "manualSelections", ParseManualGuideSelectionElement),
+        unresolvedFindingIds: JsonRead.StrictStringList(el, "unresolvedFindingIds"),
+        acceptedFindingIds: JsonRead.StrictStringList(el, "acceptedFindingIds"),
+        rejectedFindingIds: JsonRead.StrictStringList(el, "rejectedFindingIds"),
+        supportCatalog: JsonRead.RequiredList(el, "supportCatalog", ParseAssertionSupportElement),
+        units: JsonRead.RequiredList(el, "units", ParseGuideUnitEvaluationElement),
+        limitations: JsonRead.RequiredList(el, "limitations", ParseAssessmentLimitationElement));
 
-    private static GuideNomination ParseGuideNominationElement(JsonElement el) => new()
+    private static GuideNomination ParseGuideNominationElement(JsonElement el) => new(
+        findingId: JsonRead.RequiredString(el, "findingId"),
+        documentDigest: JsonRead.RequiredString(el, "documentDigest"),
+        rule: ReadRuleReference(JsonRead.RequiredProperty(el, "rule")),
+        evidence: JsonRead.RequiredList(el, "evidence", ParseContentEvidenceSpanElement),
+        proposedAssertions: JsonRead.RequiredList(el, "proposedAssertions", ParseAssertionReferenceElement),
+        origin: JsonRead.RequiredString(el, "origin"))
     {
-        FindingId = JsonRead.RequiredString(el, "findingId"),
-        DocumentDigest = JsonRead.RequiredString(el, "documentDigest"),
-        Rule = ReadRuleReference(JsonRead.RequiredProperty(el, "rule")),
-        Evidence = JsonRead.RequiredList(el, "evidence", ParseContentEvidenceSpanElement),
-        ProposedAssertions = JsonRead.RequiredList(el, "proposedAssertions", ParseAssertionReferenceElement),
-        Origin = JsonRead.RequiredString(el, "origin"),
         Rationale = JsonRead.OptionalString(el, "rationale"),
     };
 
-    private static GuideFindingDetermination ParseGuideFindingDeterminationElement(JsonElement el) => new()
+    private static GuideFindingDetermination ParseGuideFindingDeterminationElement(JsonElement el) => new(
+        findingId: JsonRead.RequiredString(el, "findingId"),
+        documentDigest: JsonRead.RequiredString(el, "documentDigest"),
+        decision: new GuideFindingDecision(JsonRead.RequiredString(el, "decision")),
+        reason: JsonRead.RequiredString(el, "reason"))
     {
-        FindingId = JsonRead.RequiredString(el, "findingId"),
-        DocumentDigest = JsonRead.RequiredString(el, "documentDigest"),
-        Decision = new GuideFindingDecision(JsonRead.RequiredString(el, "decision")),
-        Reason = JsonRead.RequiredString(el, "reason"),
         ProposalOrigin = el.TryGetProperty("proposalOrigin", out var origin) && origin.ValueKind == JsonValueKind.String
             ? new DecisionProposalOrigin(origin.GetString() ?? "") : null,
     };
 
-    private static ManualGuideSelection ParseManualGuideSelectionElement(JsonElement el) => new()
+    private static ManualGuideSelection ParseManualGuideSelectionElement(JsonElement el) => new(
+        documentDigest: JsonRead.RequiredString(el, "documentDigest"),
+        rule: ReadRuleReference(JsonRead.RequiredProperty(el, "rule")),
+        evidence: JsonRead.RequiredList(el, "evidence", ParseContentEvidenceSpanElement),
+        reason: JsonRead.RequiredString(el, "reason"),
+        selectionId: JsonRead.RequiredString(el, "selectionId"))
     {
-        DocumentDigest = JsonRead.RequiredString(el, "documentDigest"),
-        Rule = ReadRuleReference(JsonRead.RequiredProperty(el, "rule")),
-        Evidence = JsonRead.RequiredList(el, "evidence", ParseContentEvidenceSpanElement),
-        Reason = JsonRead.RequiredString(el, "reason"),
-        SelectionId = JsonRead.RequiredString(el, "selectionId"),
         ProposalOrigin = el.TryGetProperty("proposalOrigin", out var origin) && origin.ValueKind == JsonValueKind.String
             ? new DecisionProposalOrigin(origin.GetString() ?? "") : null,
     };
 
-    private static AssertionSupport ParseAssertionSupportElement(JsonElement el) => new()
-    {
-        SupportId = JsonRead.RequiredString(el, "supportId"),
-        Assertion = ParseAssertionReferenceElement(JsonRead.RequiredProperty(el, "assertion")),
-        Rules = JsonRead.RequiredList(el, "rules", ReadRuleReference),
-        Evidence = JsonRead.RequiredList(el, "evidence", ParseContentEvidenceSpanElement),
-        FactReferences = JsonRead.RequiredList(el, "factReferences", f => new GuideFactReference
-        {
-            Kind = new GuideFactKind(JsonRead.RequiredString(f, "kind")),
-            FactId = JsonRead.RequiredString(f, "factId"),
-        }),
-    };
+    private static AssertionSupport ParseAssertionSupportElement(JsonElement el) => new(
+        supportId: JsonRead.RequiredString(el, "supportId"),
+        assertion: ParseAssertionReferenceElement(JsonRead.RequiredProperty(el, "assertion")),
+        rules: JsonRead.RequiredList(el, "rules", ReadRuleReference),
+        evidence: JsonRead.RequiredList(el, "evidence", ParseContentEvidenceSpanElement),
+        factReferences: JsonRead.RequiredList(el, "factReferences", f => new GuideFactReference(
+            kind: new GuideFactKind(JsonRead.RequiredString(f, "kind")),
+            factId: JsonRead.RequiredString(f, "factId"))));
 
-    private static GuideUnitEvaluation ParseGuideUnitEvaluationElement(JsonElement el) => new()
-    {
-        ScopeId = JsonRead.RequiredString(el, "scopeId"),
-        Start = JsonRead.RequiredInt(el, "start"),
-        End = JsonRead.RequiredInt(el, "end"),
-        OffsetEncoding = JsonRead.RequiredString(el, "offsetEncoding"),
-        FindingIds = JsonRead.StrictStringList(el, "findingIds"),
-        Determined = el.TryGetProperty("determined", out var d) && d.ValueKind == JsonValueKind.Object ? ParseGuideCompiledResultElement(d) : null,
-        Projected = el.TryGetProperty("projected", out var p) && p.ValueKind == JsonValueKind.Object ? ParseGuideCompiledResultElement(p) : null,
-    };
+    private static GuideUnitEvaluation ParseGuideUnitEvaluationElement(JsonElement el) => new(
+        scopeId: JsonRead.RequiredString(el, "scopeId"),
+        start: JsonRead.RequiredInt(el, "start"),
+        end: JsonRead.RequiredInt(el, "end"),
+        offsetEncoding: JsonRead.RequiredString(el, "offsetEncoding"),
+        findingIds: JsonRead.StrictStringList(el, "findingIds"),
+        determined: el.TryGetProperty("determined", out var d) && d.ValueKind == JsonValueKind.Object ? ParseGuideCompiledResultElement(d) : null,
+        projected: el.TryGetProperty("projected", out var p) && p.ValueKind == JsonValueKind.Object ? ParseGuideCompiledResultElement(p) : null);
 
-    private static GuideCompiledResult ParseGuideCompiledResultElement(JsonElement el) => new()
+    private static GuideCompiledResult ParseGuideCompiledResultElement(JsonElement el) => new(
+        assertions: JsonRead.RequiredList(el, "assertions", ResultParser.ReadAssertion),
+        rendered: JsonRead.RequiredString(el, "rendered"),
+        valid: JsonRead.RequiredBool(el, "valid"),
+        errors: JsonRead.RequiredList(el, "errors", ResultParser.ReadValidationError),
+        warnings: JsonRead.RequiredList(el, "warnings", ResultParser.ReadWarning),
+        directRules: JsonRead.RequiredList(el, "directRules", ReadRuleReference),
+        computedRules: JsonRead.RequiredList(el, "computedRules", ReadRuleReference),
+        overriddenRules: JsonRead.RequiredList(el, "overriddenRules", ReadRuleReference),
+        supportIds: JsonRead.StrictStringList(el, "supportIds"))
     {
-        Assertions = JsonRead.RequiredList(el, "assertions", ResultParser.ReadAssertion),
-        Rendered = JsonRead.RequiredString(el, "rendered"),
-        Valid = JsonRead.RequiredBool(el, "valid"),
-        Errors = JsonRead.RequiredList(el, "errors", ResultParser.ReadValidationError),
-        Warnings = JsonRead.RequiredList(el, "warnings", ResultParser.ReadWarning),
-        DirectRules = JsonRead.RequiredList(el, "directRules", ReadRuleReference),
-        ComputedRules = JsonRead.RequiredList(el, "computedRules", ReadRuleReference),
-        OverriddenRules = JsonRead.RequiredList(el, "overriddenRules", ReadRuleReference),
-        SupportIds = JsonRead.StrictStringList(el, "supportIds"),
         Detail = el.TryGetProperty("detail", out var detail) && detail.ValueKind != JsonValueKind.Null
-            ? new GuideCompiledDetail
-            {
-                Evaluation = ResultParser.ReadEvaluationResult(JsonRead.RequiredProperty(detail, "evaluation")),
-                Process = ResultParser.ParseValidateResultElement(JsonRead.RequiredProperty(detail, "process")),
-            }
+            ? new GuideCompiledDetail(
+                evaluation: ResultParser.ReadEvaluationResult(JsonRead.RequiredProperty(detail, "evaluation")),
+                process: ResultParser.ParseValidateResultElement(JsonRead.RequiredProperty(detail, "process")))
             : null,
     };
 
     private static DocumentMarkingRequirements ReadDocumentMarkingRequirements(JsonElement el)
     {
         JsonRead.RequireObject(el, "document marking requirements");
-        return new DocumentMarkingRequirements { Whole = JsonRead.RequiredBool(el, "whole"), Part = JsonRead.RequiredBool(el, "part") };
+        return new DocumentMarkingRequirements(whole: JsonRead.RequiredBool(el, "whole"), part: JsonRead.RequiredBool(el, "part"));
     }
 
-    private static ContentEvidenceSpan ParseContentEvidenceSpanElement(JsonElement el) => new()
+    private static ContentEvidenceSpan ParseContentEvidenceSpanElement(JsonElement el) => new(
+        start: JsonRead.RequiredInt(el, "start"),
+        end: JsonRead.RequiredInt(el, "end"),
+        offsetEncoding: JsonRead.RequiredString(el, "offsetEncoding"),
+        rule: ReadRuleReference(JsonRead.RequiredProperty(el, "rule")))
     {
-        Start = JsonRead.RequiredInt(el, "start"),
-        End = JsonRead.RequiredInt(el, "end"),
-        OffsetEncoding = JsonRead.RequiredString(el, "offsetEncoding"),
-        Rule = ReadRuleReference(JsonRead.RequiredProperty(el, "rule")),
         Matched = JsonRead.OptionalString(el, "matched"),
     };
 
-    private static AssertionReference ParseAssertionReferenceElement(JsonElement el) => new()
+    private static AssertionReference ParseAssertionReferenceElement(JsonElement el) => new(
+        categoryId: JsonRead.RequiredString(el, "categoryId"),
+        conceptId: JsonRead.RequiredString(el, "conceptId"))
     {
-        CategoryId = JsonRead.RequiredString(el, "categoryId"),
-        ConceptId = JsonRead.RequiredString(el, "conceptId"),
         Value = JsonRead.OptionalString(el, "value"),
     };
 
-    private static ContextResolution ParseContextResolutionElement(JsonElement el) => new()
+    private static ContextResolution ParseContextResolutionElement(JsonElement el) => new(
+        contextId: JsonRead.RequiredString(el, "contextId"),
+        resolvedVersion: JsonRead.RequiredString(el, "resolvedVersion"),
+        artifacts: JsonRead.RequiredList(el, "artifacts", ReadArtifactReference))
     {
-        ContextId = JsonRead.RequiredString(el, "contextId"),
-        ResolvedVersion = JsonRead.RequiredString(el, "resolvedVersion"),
-        Artifacts = JsonRead.RequiredList(el, "artifacts", ReadArtifactReference),
         RequestedVersion = JsonRead.OptionalString(el, "requestedVersion"),
     };
 
-    private static DocumentResponseProjection ParseDocumentResponseProjectionElement(JsonElement el) => new()
-    {
-        Profile = new DocumentResponseProfile(JsonRead.RequiredString(el, "profile")),
-        DetailsComplete = JsonRead.RequiredBool(el, "detailsComplete"),
-        OmittedFields = JsonRead.StrictStringList(el, "omittedFields"),
-        Counts = ParseDocumentResponseCountsElement(JsonRead.RequiredProperty(el, "counts")),
-    };
+    private static DocumentResponseProjection ParseDocumentResponseProjectionElement(JsonElement el) => new(
+        profile: new DocumentResponseProfile(JsonRead.RequiredString(el, "profile")),
+        detailsComplete: JsonRead.RequiredBool(el, "detailsComplete"),
+        omittedFields: JsonRead.StrictStringList(el, "omittedFields"),
+        counts: ParseDocumentResponseCountsElement(JsonRead.RequiredProperty(el, "counts")));
 
-    private static DocumentResponseCounts ParseDocumentResponseCountsElement(JsonElement el) => new()
-    {
-        Nominations = JsonRead.RequiredInt(el, "nominations"),
-        EvidenceSpans = JsonRead.RequiredInt(el, "evidenceSpans"),
-        GuideUnits = JsonRead.RequiredInt(el, "guideUnits"),
-    };
+    private static DocumentResponseCounts ParseDocumentResponseCountsElement(JsonElement el) => new(
+        nominations: JsonRead.RequiredInt(el, "nominations"),
+        evidenceSpans: JsonRead.RequiredInt(el, "evidenceSpans"),
+        guideUnits: JsonRead.RequiredInt(el, "guideUnits"));
 
-    private static AssessmentLimitation ParseAssessmentLimitationElement(JsonElement el) => new()
+    private static AssessmentLimitation ParseAssessmentLimitationElement(JsonElement el) => new(
+        code: JsonRead.RequiredString(el, "code"),
+        reason: JsonRead.RequiredString(el, "reason"))
     {
-        Code = JsonRead.RequiredString(el, "code"),
-        Reason = JsonRead.RequiredString(el, "reason"),
         Scope = JsonRead.OptionalString(el, "scope"),
     };
 
@@ -1259,11 +1219,9 @@ internal static class ContextResultParser
         return new ReadOnlyDictionary<string, Term>(vocabulary);
     }
 
-    private static Term ParseTermElement(JsonElement el) => new()
-    {
-        Singular = el.TryGetProperty("singular", out var s) ? s.GetString() ?? "" : "",
-        Plural = el.TryGetProperty("plural", out var p) ? p.GetString() ?? "" : "",
-    };
+    private static Term ParseTermElement(JsonElement el) => new(
+        singular: el.TryGetProperty("singular", out var s) ? s.GetString() ?? "" : "",
+        plural: el.TryGetProperty("plural", out var p) ? p.GetString() ?? "" : "");
 
     // An audit's judgment of one marking. The facts and the recognition account
     // are what a caller rolls up or checks access from, so both are required;
@@ -1271,17 +1229,15 @@ internal static class ContextResultParser
     private static MarkingValidation? ParseMarkingValidationElement(JsonElement el)
     {
         if (el.ValueKind != JsonValueKind.Object) return null;
-        return new MarkingValidation
-        {
-            Assertions = JsonRead.RequiredList(el, "assertions", ResultParser.ReadAssertion),
-            Recognition = ResultParser.ParseRecognitionResult(JsonRead.RequiredProperty(el, "recognition")),
-            Valid = JsonRead.RequiredBool(el, "valid"),
-            InputWasValid = JsonRead.RequiredBool(el, "inputWasValid"),
-            Errors = JsonRead.RequiredList(el, "errors", ResultParser.ReadValidationError),
-            ProposedFixes = JsonRead.RequiredList(el, "proposedFixes", ResultParser.ReadFix),
-            AppliedFixes = JsonRead.RequiredList(el, "appliedFixes", ResultParser.ReadChange),
-            Rendered = JsonRead.RequiredString(el, "rendered"),
-        };
+        return new MarkingValidation(
+            assertions: JsonRead.RequiredList(el, "assertions", ResultParser.ReadAssertion),
+            recognition: ResultParser.ParseRecognitionResult(JsonRead.RequiredProperty(el, "recognition")),
+            valid: JsonRead.RequiredBool(el, "valid"),
+            inputWasValid: JsonRead.RequiredBool(el, "inputWasValid"),
+            errors: JsonRead.RequiredList(el, "errors", ResultParser.ReadValidationError),
+            proposedFixes: JsonRead.RequiredList(el, "proposedFixes", ResultParser.ReadFix),
+            appliedFixes: JsonRead.RequiredList(el, "appliedFixes", ResultParser.ReadChange),
+            rendered: JsonRead.RequiredString(el, "rendered"));
     }
 
 }

@@ -138,11 +138,9 @@ public class UnknownResponseEnumTests
         var (client, handler) = await Connect("/document/audit", "{}");
         using (client)
         {
-            var determinations = new GuideDeterminationInput
-            {
-                Findings = new[] { new GuideFindingDetermination { FindingId = "f1", DocumentDigest = "sha256:doc", Decision = new GuideFindingDecision("deferred"), Reason = "r", ProposalOrigin = new DecisionProposalOrigin("imported-by-agent") } },
-                ManualSelections = Array.Empty<ManualGuideSelectionInput>(),
-            };
+            var determinations = new GuideDeterminationInput(
+                findings: new[] { new GuideFindingDetermination(findingId: "f1", documentDigest: "sha256:doc", decision: new GuideFindingDecision("deferred"), reason: "r") { ProposalOrigin = new DecisionProposalOrigin("imported-by-agent") } },
+                manualSelections: Array.Empty<ManualGuideSelectionInput>());
 
             try
             {
@@ -171,7 +169,7 @@ public class UnknownResponseEnumTests
             try
             {
                 await client.Scheme!.RenderAsync(
-                    new[] { new Assertion { CategoryId = "level", ConceptId = "L_H", Confidence = Confidence.Inferred, Source = "parse" } });
+                    new[] { new Assertion(categoryId: "level", conceptId: "L_H", confidence: Confidence.Inferred, source: "parse") });
             }
             catch (Exception e) when (e is not ArgumentException and not InvalidOperationException)
             {
@@ -194,7 +192,7 @@ public class UnknownResponseEnumTests
             var before = handler.Requests.Count;
 
             await Assert.ThrowsAsync<InvalidOperationException>(
-                () => client.Scheme!.RenderAsync(new[] { new Assertion { CategoryId = "level", ConceptId = "L_H", Confidence = default, Source = "parse" } }));
+                () => client.Scheme!.RenderAsync(new[] { new Assertion(categoryId: "level", conceptId: "L_H", confidence: default, source: "parse") }));
             Assert.Equal(before, handler.Requests.Count);
         }
     }

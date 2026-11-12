@@ -11,21 +11,32 @@ namespace EzClassify;
 /// <summary>Response from <see cref="EzClassifyClient.PingAsync"/>.</summary>
 public sealed record PingResult
 {
+    /// <summary>Creates the record from the members it requires.</summary>
+    /// <param name="engineVersion">Engine version currently running on the rest-api.</param>
+    /// <param name="engineSha">Git commit SHA of the deployed rest-api build (empty string when unavailable).</param>
+    /// <param name="gitTag">Git tag of the deployed rest-api build (empty string when unavailable).</param>
+    public PingResult(string engineVersion, string engineSha, string gitTag)
+    {
+        EngineVersion = engineVersion ?? throw new ArgumentNullException(nameof(engineVersion));
+        EngineSha = engineSha ?? throw new ArgumentNullException(nameof(engineSha));
+        GitTag = gitTag ?? throw new ArgumentNullException(nameof(gitTag));
+    }
+
     /// <summary>Engine version currently running on the rest-api.</summary>
-    public required string EngineVersion { get; init; }
+    public string EngineVersion { get; }
 
     /// <summary>Git commit SHA of the deployed rest-api build (empty string when unavailable).</summary>
-    public required string EngineSha { get; init; }
+    public string EngineSha { get; }
 
     /// <summary>Git tag of the deployed rest-api build (empty string when unavailable).</summary>
-    public required string GitTag { get; init; }
+    public string GitTag { get; }
 }
 
 /// <summary>Controls response caching on one connected Context client; supplied when connecting and fixed for the client's lifetime.</summary>
 public sealed record ContextCacheOptions
 {
     /// <summary>Whether repeated read operations share validated responses.</summary>
-    public bool Enabled { get; init; } = true;
+    public bool Enabled { get; set; } = true;
 }
 
 /// <summary>
@@ -601,12 +612,10 @@ public sealed class EzClassifyClient : IDisposable
         using var doc = JsonDocument.Parse(responseBody);
         var root = doc.RootElement;
         ResponseCheck.Require("HealthResponse", root);
-        var result = new PingResult
-        {
-            EngineVersion = HealthString(root, "engineVersion"),
-            EngineSha = HealthString(root, "engineSha"),
-            GitTag = HealthString(root, "gitTag"),
-        };
+        var result = new PingResult(
+            engineVersion: HealthString(root, "engineVersion"),
+            engineSha: HealthString(root, "engineSha"),
+            gitTag: HealthString(root, "gitTag"));
 
         if (Interlocked.CompareExchange(ref _versionWarnEmitted, 1, 0) == 0)
         {
@@ -664,7 +673,12 @@ public sealed class EzClassifyClient : IDisposable
     internal Task<string> GetCtxAsync(string opPathWithQuery, CancellationToken cancellationToken)
         => SendCoreAsync(HttpMethod.Get, BuildCtxOpPath(opPathWithQuery), body: null, cancellationToken);
 
-    private sealed record SerializedJsonBody(string Json);
+    private sealed class SerializedJsonBody
+    {
+        public SerializedJsonBody(string json) => Json = json;
+
+        public string Json { get; }
+    }
 
     internal Task<T> CachedPostCtxAsync<T>(
         string operation, string opPath, object body, Func<string, T> parse, CancellationToken cancellationToken)

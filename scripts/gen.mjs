@@ -271,12 +271,33 @@ function memberDocText(description) {
   return text.replace(/<\/c> ([.,:;])/g, '</c>$1').replace(/ {2,}/g, ' ').trim();
 }
 
+/** C# value types a generated member can have; every other non-nullable type is a reference. */
+const VALUE_TYPES = new Set(['bool', 'double', 'int', 'JsonElement', ...Object.values(ENUM_FIELDS)]);
+
+/** C# keywords a member name can collide with once camel-cased into a parameter. */
+const CSHARP_KEYWORDS = new Set([
+  'abstract', 'as', 'base', 'bool', 'break', 'byte', 'case', 'catch', 'char', 'checked', 'class',
+  'const', 'continue', 'decimal', 'default', 'delegate', 'do', 'double', 'else', 'enum', 'event',
+  'explicit', 'extern', 'false', 'finally', 'fixed', 'float', 'for', 'foreach', 'goto', 'if',
+  'implicit', 'in', 'int', 'interface', 'internal', 'is', 'lock', 'long', 'namespace', 'new', 'null',
+  'object', 'operator', 'out', 'override', 'params', 'private', 'protected', 'public', 'readonly',
+  'ref', 'return', 'sbyte', 'sealed', 'short', 'sizeof', 'stackalloc', 'static', 'string', 'struct',
+  'switch', 'this', 'throw', 'true', 'try', 'typeof', 'uint', 'ulong', 'unchecked', 'unsafe',
+  'ushort', 'using', 'virtual', 'void', 'volatile', 'while',
+]);
+
+/** Constructor parameter name for a PascalCase member. */
+function parameterName(csName) {
+  const name = csName.charAt(0).toLowerCase() + csName.slice(1);
+  return CSHARP_KEYWORDS.has(name) ? `@${name}` : name;
+}
+
 /**
- * Emit one record with init-only properties. A member the contract requires
- * is a `required` property, so an initializer that leaves it out does not
- * compile; an optional member is nullable and starts null. A later contract
- * that adds an optional member adds a property and breaks no caller, which a
- * constructor parameter list could not offer.
+ * Emit one sealed record in the additive model shape. A member the contract
+ * requires comes through the one public constructor and is read-only; a
+ * reference-typed one refuses null. An optional member is a settable, nullable
+ * property that starts null. A later contract that adds an optional member adds
+ * a property and breaks no caller, and the shape builds from C# 7.3 on.
  */
 function generateRecord(className, schema, summary) {
   const props = schema.properties || {};
@@ -296,12 +317,30 @@ function generateRecord(className, schema, summary) {
 
   const lines = [];
   lines.push(`/// <summary>${neutralizeDocText(summary)}</summary>`);
-  lines.push(`public record ${className}`);
+  lines.push(`public sealed record ${className}`);
   lines.push('{');
+  if (requiredFields.length > 0) {
+    lines.push("    /// <summary>Creates the record from the members it requires.</summary>");
+    for (const { csName, doc } of requiredFields) {
+      lines.push(`    /// <param name="${parameterName(csName).replace('@', '')}">${doc}</param>`);
+    }
+    const parameters = requiredFields.map(({ csName, csType }) => `${csType} ${parameterName(csName)}`);
+    lines.push(`    public ${className}(${parameters.join(', ')})`);
+    lines.push('    {');
+    for (const { csName, csType } of requiredFields) {
+      const parameter = parameterName(csName);
+      const checked = csType.endsWith('?') || VALUE_TYPES.has(csType)
+        ? parameter
+        : `${parameter} ?? throw new ArgumentNullException(nameof(${parameter}))`;
+      lines.push(`        ${csName} = ${checked};`);
+    }
+    lines.push('    }');
+    lines.push('');
+  }
   [...requiredFields, ...optionalFields].forEach(({ csName, csType, isReq, doc }, i) => {
     if (i > 0) lines.push('');
     lines.push(`    /// <summary>${doc}</summary>`);
-    lines.push(`    public ${isReq ? 'required ' : ''}${csType} ${csName} { get; init; }`);
+    lines.push(`    public ${csType} ${csName} { get; ${isReq ? '' : 'set; '}}`);
   });
   lines.push('}');
   return lines.join('\n');
@@ -479,6 +518,7 @@ const output = `// Code generated from json-schemas@${schemasSha} by gen.mjs@${g
 // Re-run via: make regen
 #nullable enable
 
+using System;
 using System.Collections.Generic;
 using System.Text.Json;
 

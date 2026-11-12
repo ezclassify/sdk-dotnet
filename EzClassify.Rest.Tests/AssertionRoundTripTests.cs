@@ -75,12 +75,12 @@ public class AssertionRoundTripTests
         {
             ["/access/check"] = (HttpStatusCode.OK, """{ "granted": false, "rules": [], "warnings": [] }"""),
         };
-        var assertion = new Assertion
+        var assertion = new Assertion(
+            categoryId: "level",
+            conceptId: "LEVEL_HIGH",
+            confidence: Confidence.Repaired,
+            source: "repair")
         {
-            CategoryId = "level",
-            ConceptId = "LEVEL_HIGH",
-            Confidence = Confidence.Repaired,
-            Source = "repair",
             ReplacedConceptId = "LEVEL_OLD",
             SourceRule = "rule-7",
             Value = "H",
@@ -112,7 +112,7 @@ public class AssertionRoundTripTests
         using (client)
         {
             await client.Access!.CheckAsync(
-                new[] { new Assertion { CategoryId = "level", ConceptId = "LEVEL_HIGH", Confidence = Confidence.Certain, Source = "parse" } }, """{"clearance":"high"}""");
+                new[] { new Assertion(categoryId: "level", conceptId: "LEVEL_HIGH", confidence: Confidence.Certain, source: "parse") }, """{"clearance":"high"}""");
 
             var sent = SentBody(handler, "/access/check")["assertions"]![0]!;
             var expected = JsonNode.Parse(

@@ -178,9 +178,9 @@ public class ContractFidelityTests
     }
 
     /// <summary>
-    /// A member the contract requires is a <c>required</c> property, so code
-    /// that builds the record cannot leave it out, and a member the contract
-    /// leaves optional is not. A list the parser reads as empty when absent may
+    /// A member the contract requires comes through the record's constructor,
+    /// so code that builds the record cannot leave it out, and a member the
+    /// contract leaves optional does not. A list the parser reads as empty when absent may
     /// still be required here, by the repository's convention for lists.
     /// </summary>
     [Fact]
@@ -200,10 +200,10 @@ public class ContractFidelityTests
                 if (property is null || Requiredness.ContainsKey((record.Name, wire))) continue;
                 var requiredMember = IsRequiredMember(property);
                 if (required.Contains(wire) && !requiredMember)
-                    problems.Add($"{record.Name}.{property.Name} is not required, but the contract requires `{wire}` on {source}.");
+                    problems.Add($"{record.Name}.{property.Name} is not a constructor parameter, but the contract requires `{wire}` on {source}.");
                 else if (!required.Contains(wire) && requiredMember
                     && !(IsCollection(property.PropertyType) && !IsNullable(property)))
-                    problems.Add($"{record.Name}.{property.Name} is required, but the contract leaves `{wire}` optional on {source}.");
+                    problems.Add($"{record.Name}.{property.Name} is a constructor parameter, but the contract leaves `{wire}` optional on {source}.");
             }
         }
 
@@ -714,8 +714,12 @@ public class ContractFidelityTests
         Nullable.GetUnderlyingType(property.PropertyType) is not null
         || (!property.PropertyType.IsValueType && Nullability.Create(property).ReadState == NullabilityState.Nullable);
 
+    // A required member is read-only and set by the record's one public
+    // constructor; WireRecordShapeTests holds every record to that pairing.
     private static bool IsRequiredMember(PropertyInfo property) =>
-        property.IsDefined(typeof(System.Runtime.CompilerServices.RequiredMemberAttribute), inherit: false);
+        property.SetMethod is null
+        && property.DeclaringType!.GetConstructors().Any(constructor => constructor.GetParameters()
+            .Any(parameter => string.Equals(parameter.Name, property.Name, StringComparison.OrdinalIgnoreCase)));
 
     private static bool IsCollection(Type type) =>
         type != typeof(string) && typeof(System.Collections.IEnumerable).IsAssignableFrom(type);

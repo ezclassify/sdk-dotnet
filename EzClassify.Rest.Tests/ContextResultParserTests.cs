@@ -243,7 +243,7 @@ public class ContextResultParserTests
         Assert.Equal("banner", result.Result.Vocabulary!["whole"].Singular);
         Assert.Equal("portions", result.Result.Vocabulary["part"].Plural);
         Assert.Contains("/result/unmarkedSpans/0/text", result.ResponseProjection.OmittedFields);
-        Assert.Equal(new DocumentMarkingRequirements { Whole = true, Part = false }, result.Result.MarkingRequirements);
+        Assert.Equal(new DocumentMarkingRequirements(whole: true, part: false), result.Result.MarkingRequirements);
     }
 
     [Fact]

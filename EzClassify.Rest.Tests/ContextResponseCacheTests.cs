@@ -154,7 +154,7 @@ public class ContextResponseCacheTests
         return (http, calls);
     }
 
-    private static readonly Assertion Stated = new() { CategoryId = "level", ConceptId = "HIGH", Confidence = Confidence.Certain, Source = "stated" };
+    private static readonly Assertion Stated = new(categoryId: "level", conceptId: "HIGH", confidence: Confidence.Certain, source: "stated");
 
     /// <summary>
     /// One variation per request field of the three marking calls. Each changes
