@@ -1,4 +1,4 @@
-// Code generated from the canonical OpenAPI contract (0703bd6c3f00b711c7e0cd99c72ae3a12906efe5cd15e27f14de56ed18125854) by gen.mjs@31c7811148de145e864820cc8d94e6ab08557f1023aff9998a5bc92bae2300f8. DO NOT EDIT.
+// Code generated from the canonical OpenAPI contract (da722cf35ccc11d21304504ad2f34b37b0cca1f2528671f06519ae606c21fc7e) by gen.mjs@31c7811148de145e864820cc8d94e6ab08557f1023aff9998a5bc92bae2300f8. DO NOT EDIT.
 // Re-run via: make regen
 #nullable enable
 
