@@ -5,7 +5,7 @@
 [![license: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![.NET](https://img.shields.io/badge/.NET-netstandard2.0%20%7C%20net8.0-512BD4.svg)](EzClassify.Rest.sln)
 
-Apache-licensed HTTP client for a licensed EzClassify REST runtime. It contains generated models and client ergonomics, not the proprietary engine or enterprise content. Most apps only need `EzClassify.Rest.Client`, which pulls in `EzClassify.Rest.Contract`.
+Apache-licensed HTTP client for a licensed EzClassify REST runtime. It contains the wire models and client ergonomics, not the proprietary engine or enterprise content. `EzClassify.Rest.Client` is the one package.
 
 The [ezclassify/contracts](https://github.com/ezclassify/contracts) repository owns
 document and wire types; EzClassify Runtime owns
@@ -19,7 +19,7 @@ health and Context discovery use the deployment endpoint.
 dotnet add package EzClassify.Rest.Client
 ```
 
-`EzClassify.Rest.Contract` comes in as a dependency; add it directly if you only need the model records. Both packages target `netstandard2.0`, and `Client` also ships a `net8.0` build. CI builds and tests on .NET 10; the `netstandard2.0` output is what a .NET Framework 4.7.2+ host would load, but no job exercises it there.
+The package targets `netstandard2.0` and also ships a `net8.0` build. CI builds and tests on .NET 10; the `netstandard2.0` output is what a .NET Framework 4.7.2+ host would load, but no job exercises it there.
 
 ## Quick start
 
@@ -83,22 +83,17 @@ Console.WriteLine($"{result.Rendered} {result.Valid}");
 Console.WriteLine($"resolved: {ctx.ResolvedVersion}");
 ```
 
-For application access, supply the opaque application credential instead of a Context token. If the application definition requires a verified user, also supply that caller's access token from your customer identity provider:
+To name your application in the runtime's usage counts, pass the id it is registered under as the third argument:
 
 ```csharp
-string? userAccessToken = null; // Set from this caller when the published policy requires a verified user.
-var credentials = new RestClientCredentials(
-    accessToken: userAccessToken,
-    contextToken: null,
-    applicationCredential: Environment.GetEnvironmentVariable("EZC_APPLICATION_CREDENTIAL")
-        ?? throw new InvalidOperationException("Set EZC_APPLICATION_CREDENTIAL."));
+var credentials = new RestClientCredentials(accessToken, contextToken, applicationId: "case-intake-portal");
 ```
 
-The SDK sends `X-EzClassify-Application-Grant` only to Context discovery, version, binding and operation routes. Health requests omit it. A supplied caller token travels independently as `Authorization: Bearer`. The SDK does not decode, renew or replay credentials. An application grant cannot be combined with a Context token or duplicate authentication defaults on a supplied `HttpClient`; supply the caller token through `RestClientCredentials`. SDK-owned transports disable redirects in this mode. If you supply an `HttpClient`, configure its handler with `AllowAutoRedirect = false`; you own its handler behavior, base address and subsequent mutations. Keep one client and its caches per caller; your application owns user sign-in and token refresh.
+The SDK sends it as the `x-ezclassify-application-id` header on Context requests only, never on health. The id is not a credential and authorizes nothing: a request without it, or with an id the deployment has not registered, is served the same way. Keep one client and its caches per caller; your application owns user sign-in and token refresh.
 
 Pass a concrete version to pin one, or omit the version to let the server choose: the token's default, or the newest published. An omitted version binds the same way as `latest`, and the concrete immutable version the server resolved is on `ResolvedVersion`. The bound groups are `Scheme`, `Guide`, `Access`, `Crosswalk`, and `Document`; they are null on the root discovery client, hence the `!`.
 
-The bound client caches repeated scheme `Process`, `Validate`, `Explain`, `Suggest`, `SuggestForCategories`, `Aggregate`, `AggregateAssertions`, `Scan`, `Render`, `Normalize`, `DescribeConcept`, `Diff`, and `ApplyPreset` results, plus `Access.Rules` and `Crosswalk.DescribeAsync`. Everything else reaches the server on every call: the guide operations, `CheckCoverage`, `Notices`, `FilterConcepts`, `ViewAsync` and the scheme reads (`SummaryAsync`, `ConceptsAsync`, and the rest of the scheme resources), `DescribeRule`, `DescribeRequirements`, crosswalk translation, and document audit and assessment.
+The bound client caches repeated scheme `Process`, `Validate`, `Explain`, `Suggest`, `SuggestForCategories`, `Aggregate`, `AggregateAssertions`, `Scan`, `Render`, `DescribeConcept`, `Diff`, and `ApplyPreset` results, plus `Access.Rules` and `Crosswalk.DescribeAsync`. Everything else reaches the server on every call: the guide operations, `CheckCoverage`, `Notices`, `ViewAsync` and the scheme reads (`SummaryAsync`, `ConceptsAsync`, and the rest of the scheme resources), `DescribeRequirements`, crosswalk translation, and document audit and assessment.
 
 Every field of a request is part of its cache key, so two `ProcessAsync` calls that name different `outputs` or `suggestFor` are two entries. The operation is part of the key too: `ExplainAsync` and `ProcessAsync` never share an entry, and neither do `Access.CheckAsync` and `Access.CheckByMarkingAsync`. Identical concurrent calls share one request. Canceling one caller's `CancellationToken` settles only that caller; the request itself is canceled when its last caller has gone, and a cancellation after the answer arrived evicts nothing. A failed call is not cached, and neither is a 200 that is missing a member the contract requires: the next call retries. Results are read-only, so changing the collections in one caller's result cannot change what another caller, or a later cached read, receives.
 
@@ -106,13 +101,7 @@ Each client holds up to 500 results. A concrete Context version keeps results un
 
 `await ctx.DescribeContextAsync()` returns what the Context is made of: the composed scheme, every scheme it holds with its selector and roles, the guides, the access policy, and the crosswalks, each with the version the Context declares and the concrete version that answered. Record these when you need to say which artifacts a decision was made against. The description is read on first use and held for the life of the client, so `ClearCache()` does not drop it; on a `latest` binding it is read again after the composition moves.
 
-Access and document decisions reach the server every time by default so each decision has its audit record. On a concrete Context version, connecting with `new ContextCacheOptions(CacheAccessDecisions: true)` explicitly caches the two single-target access checks. Cache hits then have no server audit record. Connecting with the option and `latest` (or no version) throws `ArgumentException`. Document audit and assessment, access requirements, and crosswalk translation are never cached, with or without the option.
-
-```csharp
-using var ctx = await EzClassifyClient.ConnectAsync(
-    baseUrl, "your-context-id", "1.0.0", RestClientCredentials.None,
-    new ContextCacheOptions(CacheAccessDecisions: true));
-```
+Access and document decisions reach the server every time, so each decision has its audit record. Document audit and assessment, access requirements, and crosswalk translation are never cached, and neither are the access checks.
 
 Cache options are fixed when the client connects. Scope each client to one caller identity, including when an HTTP handler supplies credentials from request context.
 
@@ -122,11 +111,11 @@ Cache options are fixed when the client connects. Scope each client to one calle
 |---|---|
 | health / Context discovery | root `PingAsync`, `ListContextsAsync`, `ListContextVersionsAsync` |
 | validate / process / explain / suggest / aggregate / scan | `Scheme.*` |
-| render / normalize / diff / coverage / concept describe | `Scheme.*` |
-| scheme reads: summary, concepts, categories, formats, grammar, scopes, label presets | `Scheme.SummaryAsync`, `ConceptsAsync`, `CategoriesAsync`, `FormatsAsync`, `GrammarAsync`, `ScopesAsync`, `LabelPresetsAsync` |
+| render / diff / coverage / concept describe | `Scheme.*` |
+| scheme reads: summary, concepts, categories, formats, scopes, label presets | `Scheme.SummaryAsync`, `ConceptsAsync`, `CategoriesAsync`, `FormatsAsync`, `ScopesAsync`, `LabelPresetsAsync` |
 | the same operations and reads on another scheme the Context holds | `Schemes.Get(key).*` |
-| access checks / requirements / rule discovery, and the policy's own marking | `Access.*`, `Access.MarkingAsync` |
-| guide scan / evaluate / rule describe | `Guide.*` |
+| access checks / requirements / rule list, and the policy's own marking | `Access.*`, `Access.MarkingAsync` |
+| guide scan / evaluate / view | `Guide.*` |
 | crosswalk translation, and the crosswalks the Context holds | `Crosswalk.TranslateAsync`, `Crosswalk.DescribeAsync` |
 | Context composition and component versions | `DescribeContextAsync` |
 | document audit and access assessment | `Document.*` |

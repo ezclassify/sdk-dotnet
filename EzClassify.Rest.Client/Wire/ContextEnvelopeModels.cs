@@ -77,37 +77,29 @@ public record RenderResult(string Rendered, RenderAssessment Assessment);
 /// <param name="Assessment">What this render did to the state it was given: what was written, what was left out, what collapsed, what this format cannot write. Bound to this render, not to the format in the abstract.</param>
 public record RenderResponse(string Result, RenderAssessment Assessment);
 
-/// <summary>Normalized marking payload returned inside a Context envelope.</summary>
-/// <param name="Result">Canonical normalized form of the marking string.</param>
-public record NormalizeResponse(string Result);
-
 /// <summary>Resolved Context envelope returned by scheme processing, the author's call.</summary>
 /// <param name="Resolution">Single resolved composition used throughout the operation.</param>
 /// <param name="Result">Typed operation result.</param>
-/// <param name="OperationLimitations">Limitations applying to the operation as a whole.</param>
 /// <param name="ResponseProjection">Projection metadata, present only for document operations.</param>
-public record ContextSchemeProcessResult(ContextResolution Resolution, ProcessResult Result, IReadOnlyList<AssessmentLimitation> OperationLimitations, DocumentResponseProjection? ResponseProjection = null);
+public record ContextSchemeProcessResult(ContextResolution Resolution, ProcessResult Result, DocumentResponseProjection? ResponseProjection = null);
 
 /// <summary>Resolved Context envelope returned by scheme validation, the reader's call, and by label preset expansion.</summary>
 /// <param name="Resolution">Single resolved composition used throughout the operation.</param>
 /// <param name="Result">Typed operation result.</param>
-/// <param name="OperationLimitations">Limitations applying to the operation as a whole.</param>
 /// <param name="ResponseProjection">Projection metadata, present only for document operations.</param>
-public record ContextSchemeValidateResult(ContextResolution Resolution, ValidateResult Result, IReadOnlyList<AssessmentLimitation> OperationLimitations, DocumentResponseProjection? ResponseProjection = null);
+public record ContextSchemeValidateResult(ContextResolution Resolution, ValidateResult Result, DocumentResponseProjection? ResponseProjection = null);
 
 /// <summary>Resolved Context envelope returned by a scheme explanation: the trace of how the engine settled one marking.</summary>
 /// <param name="Resolution">Single resolved composition used throughout the operation.</param>
 /// <param name="Result">Typed operation result.</param>
-/// <param name="OperationLimitations">Limitations applying to the operation as a whole.</param>
 /// <param name="ResponseProjection">Projection metadata, present only for document operations.</param>
-public record ContextSchemeExplainResult(ContextResolution Resolution, ExplanationTrace Result, IReadOnlyList<AssessmentLimitation> OperationLimitations, DocumentResponseProjection? ResponseProjection = null);
+public record ContextSchemeExplainResult(ContextResolution Resolution, ExplanationTrace Result, DocumentResponseProjection? ResponseProjection = null);
 
 /// <summary>Resolved Context envelope returned by scheme suggestions.</summary>
 /// <param name="Resolution">Single resolved composition used throughout the operation.</param>
 /// <param name="Result">Typed operation result.</param>
-/// <param name="OperationLimitations">Limitations applying to the operation as a whole.</param>
 /// <param name="ResponseProjection">Projection metadata, present only for document operations.</param>
-public record ContextSchemeSuggestResult(ContextResolution Resolution, SuggestResult Result, IReadOnlyList<AssessmentLimitation> OperationLimitations, DocumentResponseProjection? ResponseProjection = null);
+public record ContextSchemeSuggestResult(ContextResolution Resolution, SuggestResult Result, DocumentResponseProjection? ResponseProjection = null);
 
 /// <summary>
 /// Resolved Context envelope returned by per-category scheme suggestions: one
@@ -116,16 +108,14 @@ public record ContextSchemeSuggestResult(ContextResolution Resolution, SuggestRe
 /// </summary>
 /// <param name="Resolution">Single resolved composition used throughout the operation.</param>
 /// <param name="Result">Typed operation result.</param>
-/// <param name="OperationLimitations">Limitations applying to the operation as a whole.</param>
 /// <param name="ResponseProjection">Projection metadata, present only for document operations.</param>
-public record ContextSchemeSuggestForCategoriesResult(ContextResolution Resolution, IReadOnlyDictionary<string, SuggestResult> Result, IReadOnlyList<AssessmentLimitation> OperationLimitations, DocumentResponseProjection? ResponseProjection = null);
+public record ContextSchemeSuggestForCategoriesResult(ContextResolution Resolution, IReadOnlyDictionary<string, SuggestResult> Result, DocumentResponseProjection? ResponseProjection = null);
 
 /// <summary>Resolved Context envelope returned by scheme aggregation.</summary>
 /// <param name="Resolution">Single resolved composition used throughout the operation.</param>
 /// <param name="Result">Typed operation result.</param>
-/// <param name="OperationLimitations">Limitations applying to the operation as a whole.</param>
 /// <param name="ResponseProjection">Projection metadata, present only for document operations.</param>
-public record ContextSchemeAggregateResult(ContextResolution Resolution, AggregateResult Result, IReadOnlyList<AssessmentLimitation> OperationLimitations, DocumentResponseProjection? ResponseProjection = null);
+public record ContextSchemeAggregateResult(ContextResolution Resolution, AggregateResult Result, DocumentResponseProjection? ResponseProjection = null);
 
 /// <summary>What a scan answers: the markings it found, the wrapped marks it could
 /// not read, and how far it got. An empty list is what a clean document and an
@@ -139,121 +129,74 @@ public record ScanResponseBody(IReadOnlyList<ScanMatch> Results, IReadOnlyList<U
 /// <summary>Resolved Context envelope returned by scheme scans.</summary>
 /// <param name="Resolution">Single resolved composition used throughout the operation.</param>
 /// <param name="Result">Typed operation result.</param>
-/// <param name="OperationLimitations">Limitations applying to the operation as a whole.</param>
 /// <param name="ResponseProjection">Projection metadata, present only for document operations.</param>
-public record ContextSchemeScanResult(ContextResolution Resolution, ScanResponseBody Result, IReadOnlyList<AssessmentLimitation> OperationLimitations, DocumentResponseProjection? ResponseProjection = null);
+public record ContextSchemeScanResult(ContextResolution Resolution, ScanResponseBody Result, DocumentResponseProjection? ResponseProjection = null);
 
 /// <summary>Resolved Context envelope returned by scheme rendering.</summary>
 /// <param name="Resolution">Single resolved composition used throughout the operation.</param>
 /// <param name="Result">Typed operation result.</param>
-/// <param name="OperationLimitations">Limitations applying to the operation as a whole.</param>
 /// <param name="ResponseProjection">Projection metadata, present only for document operations.</param>
-public record ContextSchemeRenderResult(ContextResolution Resolution, RenderResponse Result, IReadOnlyList<AssessmentLimitation> OperationLimitations, DocumentResponseProjection? ResponseProjection = null);
-
-/// <summary>Resolved Context envelope returned by scheme normalization.</summary>
-/// <param name="Resolution">Single resolved composition used throughout the operation.</param>
-/// <param name="Result">Typed operation result.</param>
-/// <param name="OperationLimitations">Limitations applying to the operation as a whole.</param>
-/// <param name="ResponseProjection">Projection metadata, present only for document operations.</param>
-public record ContextSchemeNormalizeResult(ContextResolution Resolution, NormalizeResponse Result, IReadOnlyList<AssessmentLimitation> OperationLimitations, DocumentResponseProjection? ResponseProjection = null);
+public record ContextSchemeRenderResult(ContextResolution Resolution, RenderResponse Result, DocumentResponseProjection? ResponseProjection = null);
 
 /// <summary>Resolved Context envelope returned by scheme coverage checks.</summary>
 /// <param name="Resolution">Single resolved composition used throughout the operation.</param>
 /// <param name="Result">Typed operation result.</param>
-/// <param name="OperationLimitations">Limitations applying to the operation as a whole.</param>
 /// <param name="ResponseProjection">Projection metadata, present only for document operations.</param>
-public record ContextSchemeCoverageResult(ContextResolution Resolution, CoverageReport Result, IReadOnlyList<AssessmentLimitation> OperationLimitations, DocumentResponseProjection? ResponseProjection = null);
+public record ContextSchemeCoverageResult(ContextResolution Resolution, CoverageReport Result, DocumentResponseProjection? ResponseProjection = null);
 
 /// <summary>Resolved Context envelope returned by concept descriptions.</summary>
 /// <param name="Resolution">Single resolved composition used throughout the operation.</param>
 /// <param name="Result">Typed operation result.</param>
-/// <param name="OperationLimitations">Limitations applying to the operation as a whole.</param>
 /// <param name="ResponseProjection">Projection metadata, present only for document operations.</param>
-public record ContextSchemeConceptDescriptionResult(ContextResolution Resolution, ConceptDescription Result, IReadOnlyList<AssessmentLimitation> OperationLimitations, DocumentResponseProjection? ResponseProjection = null);
+public record ContextSchemeConceptDescriptionResult(ContextResolution Resolution, ConceptDescription Result, DocumentResponseProjection? ResponseProjection = null);
 
 /// <summary>Resolved Context envelope returned by scheme diffs.</summary>
 /// <param name="Resolution">Single resolved composition used throughout the operation.</param>
 /// <param name="Result">Typed operation result.</param>
-/// <param name="OperationLimitations">Limitations applying to the operation as a whole.</param>
 /// <param name="ResponseProjection">Projection metadata, present only for document operations.</param>
-public record ContextSchemeDiffResult(ContextResolution Resolution, DiffResult Result, IReadOnlyList<AssessmentLimitation> OperationLimitations, DocumentResponseProjection? ResponseProjection = null);
-
-/// <summary>Resolved Context envelope returned by concept filtering.</summary>
-/// <param name="Resolution">Single resolved composition used throughout the operation.</param>
-/// <param name="Result">Typed operation result.</param>
-/// <param name="OperationLimitations">Limitations applying to the operation as a whole.</param>
-/// <param name="ResponseProjection">Projection metadata, present only for document operations.</param>
-public record ContextSchemeFilterConceptsResult(ContextResolution Resolution, FilterResult Result, IReadOnlyList<AssessmentLimitation> OperationLimitations, DocumentResponseProjection? ResponseProjection = null);
+public record ContextSchemeDiffResult(ContextResolution Resolution, DiffResult Result, DocumentResponseProjection? ResponseProjection = null);
 
 /// <summary>Resolved Context envelope returned by scheme notice collection.</summary>
 /// <param name="Resolution">Single resolved composition used throughout the operation.</param>
 /// <param name="Result">Typed operation result.</param>
-/// <param name="OperationLimitations">Limitations applying to the operation as a whole.</param>
 /// <param name="ResponseProjection">Projection metadata, present only for document operations.</param>
-public record ContextSchemeNoticesResult(ContextResolution Resolution, IReadOnlyList<Notice> Result, IReadOnlyList<AssessmentLimitation> OperationLimitations, DocumentResponseProjection? ResponseProjection = null);
+public record ContextSchemeNoticesResult(ContextResolution Resolution, IReadOnlyList<Notice> Result, DocumentResponseProjection? ResponseProjection = null);
 
 /// <summary>Resolved Context envelope returned by scheme structural views.</summary>
 /// <param name="Resolution">Single resolved composition used throughout the operation.</param>
 /// <param name="Result">Typed operation result.</param>
-/// <param name="OperationLimitations">Limitations applying to the operation as a whole.</param>
 /// <param name="ResponseProjection">Projection metadata, present only for document operations.</param>
-public record ContextSchemeViewResult(ContextResolution Resolution, SchemeView Result, IReadOnlyList<AssessmentLimitation> OperationLimitations, DocumentResponseProjection? ResponseProjection = null);
+public record ContextSchemeViewResult(ContextResolution Resolution, SchemeView Result, DocumentResponseProjection? ResponseProjection = null);
 
 /// <summary>Resolved Context envelope returned by guide scans.</summary>
 /// <param name="Resolution">Single resolved composition used throughout the operation.</param>
 /// <param name="Result">Typed operation result.</param>
-/// <param name="OperationLimitations">Limitations applying to the operation as a whole.</param>
 /// <param name="ResponseProjection">Projection metadata, present only for document operations.</param>
-public record ContextGuideScanResult(ContextResolution Resolution, IReadOnlyList<GuideScanResult> Result, IReadOnlyList<AssessmentLimitation> OperationLimitations, DocumentResponseProjection? ResponseProjection = null);
+public record ContextGuideScanResult(ContextResolution Resolution, IReadOnlyList<GuideScanResult> Result, DocumentResponseProjection? ResponseProjection = null);
 
 /// <summary>Resolved Context envelope returned by guide evaluation.</summary>
 /// <param name="Resolution">Single resolved composition used throughout the operation.</param>
 /// <param name="Result">Typed operation result.</param>
-/// <param name="OperationLimitations">Limitations applying to the operation as a whole.</param>
 /// <param name="ResponseProjection">Projection metadata, present only for document operations.</param>
-public record ContextGuideEvaluationResult(ContextResolution Resolution, EvaluationResult Result, IReadOnlyList<AssessmentLimitation> OperationLimitations, DocumentResponseProjection? ResponseProjection = null);
-
-/// <summary>Resolved Context envelope returned by guide-rule filtering.</summary>
-/// <param name="Resolution">Single resolved composition used throughout the operation.</param>
-/// <param name="Result">Typed operation result.</param>
-/// <param name="OperationLimitations">Limitations applying to the operation as a whole.</param>
-/// <param name="ResponseProjection">Projection metadata, present only for document operations.</param>
-public record ContextGuideFilterRulesResult(ContextResolution Resolution, FilterResult Result, IReadOnlyList<AssessmentLimitation> OperationLimitations, DocumentResponseProjection? ResponseProjection = null);
-
-/// <summary>Resolved Context envelope returned by guide-rule descriptions.</summary>
-/// <param name="Resolution">Single resolved composition used throughout the operation.</param>
-/// <param name="Result">Typed operation result.</param>
-/// <param name="OperationLimitations">Limitations applying to the operation as a whole.</param>
-/// <param name="ResponseProjection">Projection metadata, present only for document operations.</param>
-public record ContextGuideRuleDescriptionResult(ContextResolution Resolution, RuleDescription Result, IReadOnlyList<AssessmentLimitation> OperationLimitations, DocumentResponseProjection? ResponseProjection = null);
+public record ContextGuideEvaluationResult(ContextResolution Resolution, EvaluationResult Result, DocumentResponseProjection? ResponseProjection = null);
 
 /// <summary>Resolved Context envelope returned by guide structural views.</summary>
 /// <param name="Resolution">Single resolved composition used throughout the operation.</param>
 /// <param name="Result">Typed operation result.</param>
-/// <param name="OperationLimitations">Limitations applying to the operation as a whole.</param>
 /// <param name="ResponseProjection">Projection metadata, present only for document operations.</param>
-public record ContextGuideViewResult(ContextResolution Resolution, GuideView Result, IReadOnlyList<AssessmentLimitation> OperationLimitations, DocumentResponseProjection? ResponseProjection = null);
+public record ContextGuideViewResult(ContextResolution Resolution, GuideView Result, DocumentResponseProjection? ResponseProjection = null);
 
 /// <summary>Resolved Context envelope returned by trusted-target access checks.</summary>
 /// <param name="Resolution">Single resolved composition used throughout the operation.</param>
 /// <param name="Result">Typed operation result.</param>
-/// <param name="OperationLimitations">Limitations applying to the operation as a whole.</param>
 /// <param name="ResponseProjection">Projection metadata, present only for document operations.</param>
-public record ContextAccessDecisionResult(ContextResolution Resolution, AccessDecision Result, IReadOnlyList<AssessmentLimitation> OperationLimitations, DocumentResponseProjection? ResponseProjection = null);
+public record ContextAccessDecisionResult(ContextResolution Resolution, AccessDecision Result, DocumentResponseProjection? ResponseProjection = null);
 
 /// <summary>Resolved Context envelope returned by access requirement descriptions.</summary>
 /// <param name="Resolution">Single resolved composition used throughout the operation.</param>
 /// <param name="Result">Typed operation result.</param>
-/// <param name="OperationLimitations">Limitations applying to the operation as a whole.</param>
 /// <param name="ResponseProjection">Projection metadata, present only for document operations.</param>
-public record ContextAccessRequirementsResult(ContextResolution Resolution, AccessRequirementsDescription Result, IReadOnlyList<AssessmentLimitation> OperationLimitations, DocumentResponseProjection? ResponseProjection = null);
-
-/// <summary>Resolved Context envelope returned by access-rule descriptions.</summary>
-/// <param name="Resolution">Single resolved composition used throughout the operation.</param>
-/// <param name="Result">Typed operation result.</param>
-/// <param name="OperationLimitations">Limitations applying to the operation as a whole.</param>
-/// <param name="ResponseProjection">Projection metadata, present only for document operations.</param>
-public record ContextAccessRuleDescriptionResult(ContextResolution Resolution, AccessRuleDescription Result, IReadOnlyList<AssessmentLimitation> OperationLimitations, DocumentResponseProjection? ResponseProjection = null);
+public record ContextAccessRequirementsResult(ContextResolution Resolution, AccessRequirementsDescription Result, DocumentResponseProjection? ResponseProjection = null);
 
 /// <summary>
 /// Resolved Context envelope returned by directional crosswalk translation.
@@ -262,9 +205,8 @@ public record ContextAccessRuleDescriptionResult(ContextResolution Resolution, A
 /// </summary>
 /// <param name="Resolution">Single resolved composition used throughout the operation.</param>
 /// <param name="Result">Typed operation result.</param>
-/// <param name="OperationLimitations">Limitations applying to the operation as a whole.</param>
 /// <param name="ResponseProjection">Projection metadata, present only for document operations.</param>
-public record ContextCrosswalkTranslationResult(ContextResolution Resolution, JsonElement Result, IReadOnlyList<AssessmentLimitation> OperationLimitations, DocumentResponseProjection? ResponseProjection = null);
+public record ContextCrosswalkTranslationResult(ContextResolution Resolution, JsonElement Result, DocumentResponseProjection? ResponseProjection = null);
 
 /// <summary>
 /// One artifact taking part in a resolved Context: the id and version the

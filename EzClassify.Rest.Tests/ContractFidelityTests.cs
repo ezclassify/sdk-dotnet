@@ -43,7 +43,6 @@ public class ContractFidelityTests
         ["UnmarkedSpan"] = "DocumentUnmarkedSpan",
         ["AuditWhole"] = "DocumentWholeOccurrence",
         ["AuditPart"] = "DocumentPartAssessment",
-        ["FilterCount"] = "FilterResult/properties/total",
         ["SchemeContextFormats"] = "SchemeSummary/properties/contextFormats",
         // The OpenAPI component named ConceptRef is the guide-side reference
         // (id, category, value). The .NET ConceptRef is the fix reference.
@@ -80,8 +79,6 @@ public class ContractFidelityTests
     /// </summary>
     private static readonly Dictionary<(string Record, string Wire), string> Representation = new()
     {
-        [("FilterResult", "categoryCounts")] =
-            "The per-category counts and the total share one shape, so the one FilterCount record carries both.",
     };
 
     private const string DocumentProjection =
@@ -233,6 +230,7 @@ public class ContractFidelityTests
         ["GuideRuleOutcome"] = "The rendered marking or concept references a guide rule contributes; the server has already applied them.",
         ["MatchNode"] = "The recursive guide-rule match DSL, carried through as authored rather than modeled node by node.",
         ["RuleWhen"] = "The recursive assertion-condition DSL, carried through as authored rather than modeled node by node.",
+        ["GuideWhen"] = "The recursive guide-rule activation DSL, carried through as authored rather than modeled node by node.",
         ["CrosswalkTranslationResult"] = "The completed-or-forbidden translation union is read as JSON in this release; typing it is a cross-SDK decision.",
     };
 

@@ -13,8 +13,7 @@ class EzClassify.AccessComparisonResult : System.IEquatable<EzClassify.AccessCom
   property public System.String Operator { get; init; }
 
 class EzClassify.AccessDecision : System.IEquatable<EzClassify.AccessDecision>
-  ctor public .ctor(System.Boolean Granted, System.Collections.Generic.IReadOnlyList<EzClassify.AccessRuleResult> Rules, System.Collections.Generic.IReadOnlyList<EzClassify.Warning> Warnings, EzClassify.SourceReference Provenance = null)
-  property public EzClassify.SourceReference Provenance { get; init; }
+  ctor public .ctor(System.Boolean Granted, System.Collections.Generic.IReadOnlyList<EzClassify.AccessRuleResult> Rules, System.Collections.Generic.IReadOnlyList<EzClassify.Warning> Warnings)
   property public System.Boolean Granted { get; init; }
   property public System.Collections.Generic.IReadOnlyList<EzClassify.AccessRuleResult> Rules { get; init; }
   property public System.Collections.Generic.IReadOnlyList<EzClassify.Warning> Warnings { get; init; }
@@ -45,7 +44,7 @@ struct EzClassify.AccessOperandSource : System.IEquatable<EzClassify.AccessOpera
   property public static EzClassify.AccessOperandSource Subject { get; }
 
 class EzClassify.AccessRequirementsDescription : System.IEquatable<EzClassify.AccessRequirementsDescription>
-  ctor public .ctor(System.Collections.Generic.IReadOnlyList<EzClassify.Assertion> Assertions, System.Collections.Generic.IReadOnlyList<System.String> AssertionDisplays, EzClassify.ArtifactReference Access, EzClassify.ArtifactReference Scheme, System.Collections.Generic.IReadOnlyList<EzClassify.RuleReference> AppliedRules, System.Collections.Generic.IReadOnlyList<EzClassify.AccessRuleDescription> Rules, System.String CombinedRequirementText, System.Collections.Generic.IReadOnlyList<System.String> CombinedAttributesNeeded, System.Collections.Generic.IReadOnlyList<System.String> Lines, System.String Marking = null)
+  ctor public .ctor(System.Collections.Generic.IReadOnlyList<EzClassify.Assertion> Assertions, System.Collections.Generic.IReadOnlyList<System.String> AssertionDisplays, EzClassify.ArtifactReference Access, EzClassify.ArtifactReference Scheme, System.Collections.Generic.IReadOnlyList<EzClassify.RuleReference> AppliedRules, System.Collections.Generic.IReadOnlyList<EzClassify.AccessRuleDescription> Rules, System.String CombinedRequirementText, System.Collections.Generic.IReadOnlyList<System.String> CombinedAttributesNeeded, System.String Marking = null)
   property public EzClassify.ArtifactReference Access { get; init; }
   property public EzClassify.ArtifactReference Scheme { get; init; }
   property public System.Collections.Generic.IReadOnlyList<EzClassify.AccessRuleDescription> Rules { get; init; }
@@ -53,7 +52,6 @@ class EzClassify.AccessRequirementsDescription : System.IEquatable<EzClassify.Ac
   property public System.Collections.Generic.IReadOnlyList<EzClassify.RuleReference> AppliedRules { get; init; }
   property public System.Collections.Generic.IReadOnlyList<System.String> AssertionDisplays { get; init; }
   property public System.Collections.Generic.IReadOnlyList<System.String> CombinedAttributesNeeded { get; init; }
-  property public System.Collections.Generic.IReadOnlyList<System.String> Lines { get; init; }
   property public System.String CombinedRequirementText { get; init; }
   property public System.String Marking { get; init; }
 
@@ -64,14 +62,13 @@ class EzClassify.AccessRuleActivation : System.IEquatable<EzClassify.AccessRuleA
   property public System.Collections.Generic.IReadOnlyList<System.String> ContextPaths { get; init; }
 
 class EzClassify.AccessRuleDescription : System.IEquatable<EzClassify.AccessRuleDescription>
-  ctor public .ctor(EzClassify.RuleReference Rule, EzClassify.ArtifactReference Access, EzClassify.ArtifactReference Scheme, System.String Name, System.String RequirementText, System.Collections.Generic.IReadOnlyList<System.String> AttributesNeeded, System.Collections.Generic.IReadOnlyList<EzClassify.RuleReference> DependsOn, System.Collections.Generic.IReadOnlyList<EzClassify.RuleReference> Overrides, System.Collections.Generic.IReadOnlyList<System.String> Lines, System.String Description = null, System.String WhenText = null)
+  ctor public .ctor(EzClassify.RuleReference Rule, EzClassify.ArtifactReference Access, EzClassify.ArtifactReference Scheme, System.String Name, System.String RequirementText, System.Collections.Generic.IReadOnlyList<System.String> AttributesNeeded, System.Collections.Generic.IReadOnlyList<EzClassify.RuleReference> DependsOn, System.Collections.Generic.IReadOnlyList<EzClassify.RuleReference> Overrides, System.String Description = null, System.String WhenText = null)
   property public EzClassify.ArtifactReference Access { get; init; }
   property public EzClassify.ArtifactReference Scheme { get; init; }
   property public EzClassify.RuleReference Rule { get; init; }
   property public System.Collections.Generic.IReadOnlyList<EzClassify.RuleReference> DependsOn { get; init; }
   property public System.Collections.Generic.IReadOnlyList<EzClassify.RuleReference> Overrides { get; init; }
   property public System.Collections.Generic.IReadOnlyList<System.String> AttributesNeeded { get; init; }
-  property public System.Collections.Generic.IReadOnlyList<System.String> Lines { get; init; }
   property public System.String Description { get; init; }
   property public System.String Name { get; init; }
   property public System.String RequirementText { get; init; }
@@ -128,17 +125,14 @@ class EzClassify.ArtifactReference : System.IEquatable<EzClassify.ArtifactRefere
   property public System.String Version { get; init; }
 
 class EzClassify.Assertion : System.IEquatable<EzClassify.Assertion>
-  ctor public .ctor(System.String CategoryId, System.String ConceptId, EzClassify.Confidence Confidence, System.String Source, System.String ExpiresAt = null, System.Text.Json.JsonElement? Metadata = null, EzClassify.SourceReference Provenance = null, System.String ReplacedConceptId = null, System.String SourceRule = null, System.String Value = null)
+  ctor public .ctor(System.String CategoryId, System.String ConceptId, EzClassify.Confidence Confidence, System.String Source, System.String ReplacedConceptId = null, System.String SourceRule = null, System.String Value = null)
   property public EzClassify.Confidence Confidence { get; init; }
-  property public EzClassify.SourceReference Provenance { get; init; }
   property public System.String CategoryId { get; init; }
   property public System.String ConceptId { get; init; }
-  property public System.String ExpiresAt { get; init; }
   property public System.String ReplacedConceptId { get; init; }
   property public System.String Source { get; init; }
   property public System.String SourceRule { get; init; }
   property public System.String Value { get; init; }
-  property public System.Text.Json.JsonElement? Metadata { get; init; }
 
 class EzClassify.AssertionRef : System.IEquatable<EzClassify.AssertionRef>
   ctor public .ctor(System.String ConceptId, System.String CategoryId, System.String Value = null)
@@ -165,13 +159,6 @@ class EzClassify.AssessmentLimitation : System.IEquatable<EzClassify.AssessmentL
   property public System.String Code { get; init; }
   property public System.String Reason { get; init; }
   property public System.String Scope { get; init; }
-
-class EzClassify.Attribution : System.IEquatable<EzClassify.Attribution>
-  ctor public .ctor(System.String Name, System.String License, System.String LicenseUrl = null, System.String Citation = null)
-  property public System.String Citation { get; init; }
-  property public System.String License { get; init; }
-  property public System.String LicenseUrl { get; init; }
-  property public System.String Name { get; init; }
 
 class EzClassify.AuditPart : System.IEquatable<EzClassify.AuditPart>
   ctor public .ctor(System.String Marking, System.String Text, System.Int32 Start, System.Int32 End, System.String OffsetEncoding, System.String ScopeId, EzClassify.MarkingValidation Validation)
@@ -304,7 +291,6 @@ struct EzClassify.Confidence : System.IEquatable<EzClassify.Confidence>
   property public static EzClassify.Confidence Certain { get; }
   property public static EzClassify.Confidence Inferred { get; }
   property public static EzClassify.Confidence Repaired { get; }
-  property public static EzClassify.Confidence Uncertain { get; }
 
 class EzClassify.ContentEvidenceSpan : System.IEquatable<EzClassify.ContentEvidenceSpan>
   ctor public .ctor(System.Int32 Start, System.Int32 End, System.String OffsetEncoding, EzClassify.RuleReference Rule, System.String Matched = null)
@@ -315,11 +301,10 @@ class EzClassify.ContentEvidenceSpan : System.IEquatable<EzClassify.ContentEvide
   property public System.String OffsetEncoding { get; init; }
 
 class EzClassify.ContextAccessDecisionResult : System.IEquatable<EzClassify.ContextAccessDecisionResult>
-  ctor public .ctor(EzClassify.ContextResolution Resolution, EzClassify.AccessDecision Result, System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations, EzClassify.DocumentResponseProjection ResponseProjection = null)
+  ctor public .ctor(EzClassify.ContextResolution Resolution, EzClassify.AccessDecision Result, EzClassify.DocumentResponseProjection ResponseProjection = null)
   property public EzClassify.AccessDecision Result { get; init; }
   property public EzClassify.ContextResolution Resolution { get; init; }
   property public EzClassify.DocumentResponseProjection ResponseProjection { get; init; }
-  property public System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations { get; init; }
 
 class sealed EzClassify.ContextAccessOps
   method public System.Threading.Tasks.Task<EzClassify.ContextAccessDecisionResult> CheckAsync(System.Collections.Generic.IEnumerable<EzClassify.Assertion> dataAssertions, System.String userAttributesJson, System.String contextJson = null, System.Threading.CancellationToken cancellationToken = default)
@@ -327,28 +312,18 @@ class sealed EzClassify.ContextAccessOps
   method public System.Threading.Tasks.Task<EzClassify.ContextAccessRequirementsResult> DescribeRequirementsAsync(System.Collections.Generic.IEnumerable<EzClassify.Assertion> assertions, System.Threading.CancellationToken cancellationToken = default)
   method public System.Threading.Tasks.Task<EzClassify.ContextAccessRequirementsResult> DescribeRequirementsAsync(System.String marking, System.Collections.Generic.IEnumerable<EzClassify.Assertion> assertions, System.Threading.CancellationToken cancellationToken = default)
   method public System.Threading.Tasks.Task<EzClassify.ContextAccessRequirementsResult> DescribeRequirementsAsync(System.String marking, System.Threading.CancellationToken cancellationToken = default)
-  method public System.Threading.Tasks.Task<EzClassify.ContextAccessRuleDescriptionResult> DescribeRuleAsync(System.String ruleId, System.Threading.CancellationToken cancellationToken = default)
   method public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<EzClassify.AccessRuleDescription>> RulesAsync(System.Threading.CancellationToken cancellationToken = default)
   method public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<System.String>> RuleIdsAsync(System.Threading.CancellationToken cancellationToken = default)
   method public System.Threading.Tasks.Task<System.String> MarkingAsync(System.Threading.CancellationToken cancellationToken = default)
 
 class EzClassify.ContextAccessRequirementsResult : System.IEquatable<EzClassify.ContextAccessRequirementsResult>
-  ctor public .ctor(EzClassify.ContextResolution Resolution, EzClassify.AccessRequirementsDescription Result, System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations, EzClassify.DocumentResponseProjection ResponseProjection = null)
+  ctor public .ctor(EzClassify.ContextResolution Resolution, EzClassify.AccessRequirementsDescription Result, EzClassify.DocumentResponseProjection ResponseProjection = null)
   property public EzClassify.AccessRequirementsDescription Result { get; init; }
   property public EzClassify.ContextResolution Resolution { get; init; }
   property public EzClassify.DocumentResponseProjection ResponseProjection { get; init; }
-  property public System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations { get; init; }
-
-class EzClassify.ContextAccessRuleDescriptionResult : System.IEquatable<EzClassify.ContextAccessRuleDescriptionResult>
-  ctor public .ctor(EzClassify.ContextResolution Resolution, EzClassify.AccessRuleDescription Result, System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations, EzClassify.DocumentResponseProjection ResponseProjection = null)
-  property public EzClassify.AccessRuleDescription Result { get; init; }
-  property public EzClassify.ContextResolution Resolution { get; init; }
-  property public EzClassify.DocumentResponseProjection ResponseProjection { get; init; }
-  property public System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations { get; init; }
 
 class sealed EzClassify.ContextCacheOptions : System.IEquatable<EzClassify.ContextCacheOptions>
-  ctor public .ctor(System.Boolean Enabled = true, System.Boolean CacheAccessDecisions = false)
-  property public System.Boolean CacheAccessDecisions { get; init; }
+  ctor public .ctor(System.Boolean Enabled = true)
   property public System.Boolean Enabled { get; init; }
 
 class EzClassify.ContextComponentRef : System.IEquatable<EzClassify.ContextComponentRef>
@@ -364,10 +339,9 @@ class sealed EzClassify.ContextCrosswalkOps
   method public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<System.Text.Json.JsonElement>> DescribeAsync(System.Threading.CancellationToken cancellationToken = default)
 
 class EzClassify.ContextCrosswalkTranslationResult : System.IEquatable<EzClassify.ContextCrosswalkTranslationResult>
-  ctor public .ctor(EzClassify.ContextResolution Resolution, System.Text.Json.JsonElement Result, System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations, EzClassify.DocumentResponseProjection ResponseProjection = null)
+  ctor public .ctor(EzClassify.ContextResolution Resolution, System.Text.Json.JsonElement Result, EzClassify.DocumentResponseProjection ResponseProjection = null)
   property public EzClassify.ContextResolution Resolution { get; init; }
   property public EzClassify.DocumentResponseProjection ResponseProjection { get; init; }
-  property public System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations { get; init; }
   property public System.Text.Json.JsonElement Result { get; init; }
 
 class EzClassify.ContextDescription : System.IEquatable<EzClassify.ContextDescription>
@@ -382,87 +356,63 @@ class EzClassify.ContextDescription : System.IEquatable<EzClassify.ContextDescri
   property public System.String Version { get; init; }
 
 class EzClassify.ContextDocumentAuditResult : System.IEquatable<EzClassify.ContextDocumentAuditResult>
-  ctor public .ctor(EzClassify.ContextResolution Resolution, EzClassify.DocumentAuditReport Result, System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations, EzClassify.DocumentResponseProjection ResponseProjection)
+  ctor public .ctor(EzClassify.ContextResolution Resolution, EzClassify.DocumentAuditReport Result, EzClassify.DocumentResponseProjection ResponseProjection)
   property public EzClassify.ContextResolution Resolution { get; init; }
   property public EzClassify.DocumentAuditReport Result { get; init; }
   property public EzClassify.DocumentResponseProjection ResponseProjection { get; init; }
-  property public System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations { get; init; }
 
 class sealed EzClassify.ContextDocumentOps
   method public System.Threading.Tasks.Task<EzClassify.ContextDocumentAuditResult> AuditAsync(System.String text, EzClassify.GuideDeterminationInput guideDeterminations, EzClassify.DocumentResponseProfile? responseProfile = null, System.Threading.CancellationToken cancellationToken = default)
   method public System.Threading.Tasks.Task<EzClassify.ContextDocumentAuditResult> AuditAsync(System.String text, System.Threading.CancellationToken cancellationToken = default)
 
 class EzClassify.ContextGuideEvaluationResult : System.IEquatable<EzClassify.ContextGuideEvaluationResult>
-  ctor public .ctor(EzClassify.ContextResolution Resolution, EzClassify.EvaluationResult Result, System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations, EzClassify.DocumentResponseProjection ResponseProjection = null)
+  ctor public .ctor(EzClassify.ContextResolution Resolution, EzClassify.EvaluationResult Result, EzClassify.DocumentResponseProjection ResponseProjection = null)
   property public EzClassify.ContextResolution Resolution { get; init; }
   property public EzClassify.DocumentResponseProjection ResponseProjection { get; init; }
   property public EzClassify.EvaluationResult Result { get; init; }
-  property public System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations { get; init; }
-
-class EzClassify.ContextGuideFilterRulesResult : System.IEquatable<EzClassify.ContextGuideFilterRulesResult>
-  ctor public .ctor(EzClassify.ContextResolution Resolution, EzClassify.FilterResult Result, System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations, EzClassify.DocumentResponseProjection ResponseProjection = null)
-  property public EzClassify.ContextResolution Resolution { get; init; }
-  property public EzClassify.DocumentResponseProjection ResponseProjection { get; init; }
-  property public EzClassify.FilterResult Result { get; init; }
-  property public System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations { get; init; }
 
 class sealed EzClassify.ContextGuideOps
   method public System.Threading.Tasks.Task<EzClassify.ContextGuideEvaluationResult> EvaluateAsync(System.String guideId, System.Collections.Generic.IEnumerable<System.String> selectedRuleIds, System.Threading.CancellationToken cancellationToken = default)
   method public System.Threading.Tasks.Task<EzClassify.ContextGuideEvaluationResult> EvaluateManyAsync(System.Collections.Generic.IEnumerable<EzClassify.GuideRuleSelection> selections, System.Threading.CancellationToken cancellationToken = default)
-  method public System.Threading.Tasks.Task<EzClassify.ContextGuideFilterRulesResult> FilterRulesAsync(System.String query, System.String guideId = null, System.Threading.CancellationToken cancellationToken = default)
-  method public System.Threading.Tasks.Task<EzClassify.ContextGuideRuleDescriptionResult> DescribeRuleAsync(System.String ruleId, System.String guideId = null, System.Threading.CancellationToken cancellationToken = default)
   method public System.Threading.Tasks.Task<EzClassify.ContextGuideScanResult> ScanAsync(System.String text, System.String guideId = null, System.Threading.CancellationToken cancellationToken = default)
   method public System.Threading.Tasks.Task<EzClassify.ContextGuideViewResult> ViewAsync(System.String guideId = null, System.Threading.CancellationToken cancellationToken = default)
 
-class EzClassify.ContextGuideRuleDescriptionResult : System.IEquatable<EzClassify.ContextGuideRuleDescriptionResult>
-  ctor public .ctor(EzClassify.ContextResolution Resolution, EzClassify.RuleDescription Result, System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations, EzClassify.DocumentResponseProjection ResponseProjection = null)
-  property public EzClassify.ContextResolution Resolution { get; init; }
-  property public EzClassify.DocumentResponseProjection ResponseProjection { get; init; }
-  property public EzClassify.RuleDescription Result { get; init; }
-  property public System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations { get; init; }
-
 class EzClassify.ContextGuideScanResult : System.IEquatable<EzClassify.ContextGuideScanResult>
-  ctor public .ctor(EzClassify.ContextResolution Resolution, System.Collections.Generic.IReadOnlyList<EzClassify.GuideScanResult> Result, System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations, EzClassify.DocumentResponseProjection ResponseProjection = null)
+  ctor public .ctor(EzClassify.ContextResolution Resolution, System.Collections.Generic.IReadOnlyList<EzClassify.GuideScanResult> Result, EzClassify.DocumentResponseProjection ResponseProjection = null)
   property public EzClassify.ContextResolution Resolution { get; init; }
   property public EzClassify.DocumentResponseProjection ResponseProjection { get; init; }
-  property public System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations { get; init; }
   property public System.Collections.Generic.IReadOnlyList<EzClassify.GuideScanResult> Result { get; init; }
 
 class EzClassify.ContextGuideViewResult : System.IEquatable<EzClassify.ContextGuideViewResult>
-  ctor public .ctor(EzClassify.ContextResolution Resolution, EzClassify.GuideView Result, System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations, EzClassify.DocumentResponseProjection ResponseProjection = null)
+  ctor public .ctor(EzClassify.ContextResolution Resolution, EzClassify.GuideView Result, EzClassify.DocumentResponseProjection ResponseProjection = null)
   property public EzClassify.ContextResolution Resolution { get; init; }
   property public EzClassify.DocumentResponseProjection ResponseProjection { get; init; }
   property public EzClassify.GuideView Result { get; init; }
-  property public System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations { get; init; }
 
 class EzClassify.ContextResolution : System.IEquatable<EzClassify.ContextResolution>
-  ctor public .ctor(System.String ContextId, System.String ResolvedVersion, System.Collections.Generic.IReadOnlyList<EzClassify.ArtifactReference> Artifacts, System.Collections.Generic.IReadOnlyList<EzClassify.SourceReference> Sources, System.String RequestedVersion = null)
+  ctor public .ctor(System.String ContextId, System.String ResolvedVersion, System.Collections.Generic.IReadOnlyList<EzClassify.ArtifactReference> Artifacts, System.String RequestedVersion = null)
   property public System.Collections.Generic.IReadOnlyList<EzClassify.ArtifactReference> Artifacts { get; init; }
-  property public System.Collections.Generic.IReadOnlyList<EzClassify.SourceReference> Sources { get; init; }
   property public System.String ContextId { get; init; }
   property public System.String RequestedVersion { get; init; }
   property public System.String ResolvedVersion { get; init; }
 
 class EzClassify.ContextSchemeAggregateResult : System.IEquatable<EzClassify.ContextSchemeAggregateResult>
-  ctor public .ctor(EzClassify.ContextResolution Resolution, EzClassify.AggregateResult Result, System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations, EzClassify.DocumentResponseProjection ResponseProjection = null)
+  ctor public .ctor(EzClassify.ContextResolution Resolution, EzClassify.AggregateResult Result, EzClassify.DocumentResponseProjection ResponseProjection = null)
   property public EzClassify.AggregateResult Result { get; init; }
   property public EzClassify.ContextResolution Resolution { get; init; }
   property public EzClassify.DocumentResponseProjection ResponseProjection { get; init; }
-  property public System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations { get; init; }
 
 class EzClassify.ContextSchemeConceptDescriptionResult : System.IEquatable<EzClassify.ContextSchemeConceptDescriptionResult>
-  ctor public .ctor(EzClassify.ContextResolution Resolution, EzClassify.ConceptDescription Result, System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations, EzClassify.DocumentResponseProjection ResponseProjection = null)
+  ctor public .ctor(EzClassify.ContextResolution Resolution, EzClassify.ConceptDescription Result, EzClassify.DocumentResponseProjection ResponseProjection = null)
   property public EzClassify.ConceptDescription Result { get; init; }
   property public EzClassify.ContextResolution Resolution { get; init; }
   property public EzClassify.DocumentResponseProjection ResponseProjection { get; init; }
-  property public System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations { get; init; }
 
 class EzClassify.ContextSchemeCoverageResult : System.IEquatable<EzClassify.ContextSchemeCoverageResult>
-  ctor public .ctor(EzClassify.ContextResolution Resolution, EzClassify.CoverageReport Result, System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations, EzClassify.DocumentResponseProjection ResponseProjection = null)
+  ctor public .ctor(EzClassify.ContextResolution Resolution, EzClassify.CoverageReport Result, EzClassify.DocumentResponseProjection ResponseProjection = null)
   property public EzClassify.ContextResolution Resolution { get; init; }
   property public EzClassify.CoverageReport Result { get; init; }
   property public EzClassify.DocumentResponseProjection ResponseProjection { get; init; }
-  property public System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations { get; init; }
 
 class EzClassify.ContextSchemeDescriptor : System.IEquatable<EzClassify.ContextSchemeDescriptor>
   ctor public .ctor(System.String Selector, System.String Id, System.String Version, System.Collections.Generic.IReadOnlyList<EzClassify.ContextSchemeRole> Roles)
@@ -472,38 +422,21 @@ class EzClassify.ContextSchemeDescriptor : System.IEquatable<EzClassify.ContextS
   property public System.String Version { get; init; }
 
 class EzClassify.ContextSchemeDiffResult : System.IEquatable<EzClassify.ContextSchemeDiffResult>
-  ctor public .ctor(EzClassify.ContextResolution Resolution, EzClassify.DiffResult Result, System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations, EzClassify.DocumentResponseProjection ResponseProjection = null)
+  ctor public .ctor(EzClassify.ContextResolution Resolution, EzClassify.DiffResult Result, EzClassify.DocumentResponseProjection ResponseProjection = null)
   property public EzClassify.ContextResolution Resolution { get; init; }
   property public EzClassify.DiffResult Result { get; init; }
   property public EzClassify.DocumentResponseProjection ResponseProjection { get; init; }
-  property public System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations { get; init; }
 
 class EzClassify.ContextSchemeExplainResult : System.IEquatable<EzClassify.ContextSchemeExplainResult>
-  ctor public .ctor(EzClassify.ContextResolution Resolution, EzClassify.ExplanationTrace Result, System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations, EzClassify.DocumentResponseProjection ResponseProjection = null)
+  ctor public .ctor(EzClassify.ContextResolution Resolution, EzClassify.ExplanationTrace Result, EzClassify.DocumentResponseProjection ResponseProjection = null)
   property public EzClassify.ContextResolution Resolution { get; init; }
   property public EzClassify.DocumentResponseProjection ResponseProjection { get; init; }
   property public EzClassify.ExplanationTrace Result { get; init; }
-  property public System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations { get; init; }
-
-class EzClassify.ContextSchemeFilterConceptsResult : System.IEquatable<EzClassify.ContextSchemeFilterConceptsResult>
-  ctor public .ctor(EzClassify.ContextResolution Resolution, EzClassify.FilterResult Result, System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations, EzClassify.DocumentResponseProjection ResponseProjection = null)
-  property public EzClassify.ContextResolution Resolution { get; init; }
-  property public EzClassify.DocumentResponseProjection ResponseProjection { get; init; }
-  property public EzClassify.FilterResult Result { get; init; }
-  property public System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations { get; init; }
-
-class EzClassify.ContextSchemeNormalizeResult : System.IEquatable<EzClassify.ContextSchemeNormalizeResult>
-  ctor public .ctor(EzClassify.ContextResolution Resolution, EzClassify.NormalizeResponse Result, System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations, EzClassify.DocumentResponseProjection ResponseProjection = null)
-  property public EzClassify.ContextResolution Resolution { get; init; }
-  property public EzClassify.DocumentResponseProjection ResponseProjection { get; init; }
-  property public EzClassify.NormalizeResponse Result { get; init; }
-  property public System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations { get; init; }
 
 class EzClassify.ContextSchemeNoticesResult : System.IEquatable<EzClassify.ContextSchemeNoticesResult>
-  ctor public .ctor(EzClassify.ContextResolution Resolution, System.Collections.Generic.IReadOnlyList<EzClassify.Notice> Result, System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations, EzClassify.DocumentResponseProjection ResponseProjection = null)
+  ctor public .ctor(EzClassify.ContextResolution Resolution, System.Collections.Generic.IReadOnlyList<EzClassify.Notice> Result, EzClassify.DocumentResponseProjection ResponseProjection = null)
   property public EzClassify.ContextResolution Resolution { get; init; }
   property public EzClassify.DocumentResponseProjection ResponseProjection { get; init; }
-  property public System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations { get; init; }
   property public System.Collections.Generic.IReadOnlyList<EzClassify.Notice> Result { get; init; }
 
 class sealed EzClassify.ContextSchemeOps
@@ -513,8 +446,6 @@ class sealed EzClassify.ContextSchemeOps
   method public System.Threading.Tasks.Task<EzClassify.ContextSchemeCoverageResult> CheckCoverageAsync(System.Collections.Generic.IEnumerable<System.String> children, System.String parent, System.String outputFormat = null, System.String inputFormat = null, System.Threading.CancellationToken cancellationToken = default)
   method public System.Threading.Tasks.Task<EzClassify.ContextSchemeDiffResult> DiffAsync(System.String a, System.String b, System.String inputFormat = null, System.Threading.CancellationToken cancellationToken = default)
   method public System.Threading.Tasks.Task<EzClassify.ContextSchemeExplainResult> ExplainAsync(System.String input, System.String outputFormat = null, System.String surface = null, System.String inputFormat = null, System.Collections.Generic.IEnumerable<EzClassify.Assertion> assertions = null, System.String contextJson = null, System.Collections.Generic.IEnumerable<System.String> parts = null, System.Threading.CancellationToken cancellationToken = default)
-  method public System.Threading.Tasks.Task<EzClassify.ContextSchemeFilterConceptsResult> FilterConceptsAsync(System.String query, System.Threading.CancellationToken cancellationToken = default)
-  method public System.Threading.Tasks.Task<EzClassify.ContextSchemeNormalizeResult> NormalizeAsync(System.String input, System.String outputFormat = null, System.String inputFormat = null, System.Threading.CancellationToken cancellationToken = default)
   method public System.Threading.Tasks.Task<EzClassify.ContextSchemeNoticesResult> NoticesAsync(System.Collections.Generic.IEnumerable<EzClassify.Assertion> assertions, System.Threading.CancellationToken cancellationToken = default)
   method public System.Threading.Tasks.Task<EzClassify.ContextSchemeProcessResult> ProcessAsync(System.String input, System.String outputFormat = null, System.String surface = null, System.String inputFormat = null, System.Collections.Generic.IEnumerable<EzClassify.Assertion> assertions = null, System.String contextJson = null, System.Collections.Generic.IEnumerable<System.String> parts = null, System.Collections.Generic.IEnumerable<System.String> outputs = null, System.Collections.Generic.IEnumerable<System.String> suggestFor = null, System.Threading.CancellationToken cancellationToken = default)
   method public System.Threading.Tasks.Task<EzClassify.ContextSchemeRenderResult> RenderAsync(System.Collections.Generic.IEnumerable<EzClassify.Assertion> assertions, System.String outputFormat = null, EzClassify.RenderPreservation? preservation = null, System.Threading.CancellationToken cancellationToken = default)
@@ -526,7 +457,6 @@ class sealed EzClassify.ContextSchemeOps
   method public System.Threading.Tasks.Task<EzClassify.ContextSchemeValidateResult> ValidateAsync(System.Collections.Generic.IEnumerable<EzClassify.Assertion> assertions, System.String surface = null, System.String outputFormat = null, System.Collections.Generic.IEnumerable<System.String> parts = null, System.String contextJson = null, System.Threading.CancellationToken cancellationToken = default)
   method public System.Threading.Tasks.Task<EzClassify.ContextSchemeValidateResult> ValidateAsync(System.String input, System.String surface = null, System.String outputFormat = null, System.String inputFormat = null, System.Collections.Generic.IEnumerable<System.String> parts = null, System.String contextJson = null, System.Threading.CancellationToken cancellationToken = default)
   method public System.Threading.Tasks.Task<EzClassify.ContextSchemeViewResult> ViewAsync(System.Threading.CancellationToken cancellationToken = default)
-  method public System.Threading.Tasks.Task<EzClassify.SchemeGrammar> GrammarAsync(System.Threading.CancellationToken cancellationToken = default)
   method public System.Threading.Tasks.Task<EzClassify.SchemeSummary> SummaryAsync(System.Threading.CancellationToken cancellationToken = default)
   method public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<EzClassify.CategoryView>> CategoriesAsync(System.Threading.CancellationToken cancellationToken = default)
   method public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<EzClassify.ConceptView>> ConceptsAsync(System.Threading.CancellationToken cancellationToken = default)
@@ -535,18 +465,16 @@ class sealed EzClassify.ContextSchemeOps
   method public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<EzClassify.SchemeScope>> ScopesAsync(System.Threading.CancellationToken cancellationToken = default)
 
 class EzClassify.ContextSchemeProcessResult : System.IEquatable<EzClassify.ContextSchemeProcessResult>
-  ctor public .ctor(EzClassify.ContextResolution Resolution, EzClassify.ProcessResult Result, System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations, EzClassify.DocumentResponseProjection ResponseProjection = null)
+  ctor public .ctor(EzClassify.ContextResolution Resolution, EzClassify.ProcessResult Result, EzClassify.DocumentResponseProjection ResponseProjection = null)
   property public EzClassify.ContextResolution Resolution { get; init; }
   property public EzClassify.DocumentResponseProjection ResponseProjection { get; init; }
   property public EzClassify.ProcessResult Result { get; init; }
-  property public System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations { get; init; }
 
 class EzClassify.ContextSchemeRenderResult : System.IEquatable<EzClassify.ContextSchemeRenderResult>
-  ctor public .ctor(EzClassify.ContextResolution Resolution, EzClassify.RenderResponse Result, System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations, EzClassify.DocumentResponseProjection ResponseProjection = null)
+  ctor public .ctor(EzClassify.ContextResolution Resolution, EzClassify.RenderResponse Result, EzClassify.DocumentResponseProjection ResponseProjection = null)
   property public EzClassify.ContextResolution Resolution { get; init; }
   property public EzClassify.DocumentResponseProjection ResponseProjection { get; init; }
   property public EzClassify.RenderResponse Result { get; init; }
-  property public System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations { get; init; }
 
 struct EzClassify.ContextSchemeRole : System.IEquatable<EzClassify.ContextSchemeRole>
   ctor public .ctor(System.String value)
@@ -566,39 +494,34 @@ struct EzClassify.ContextSchemeRole : System.IEquatable<EzClassify.ContextScheme
   property public static EzClassify.ContextSchemeRole Primary { get; }
 
 class EzClassify.ContextSchemeScanResult : System.IEquatable<EzClassify.ContextSchemeScanResult>
-  ctor public .ctor(EzClassify.ContextResolution Resolution, EzClassify.ScanResponseBody Result, System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations, EzClassify.DocumentResponseProjection ResponseProjection = null)
+  ctor public .ctor(EzClassify.ContextResolution Resolution, EzClassify.ScanResponseBody Result, EzClassify.DocumentResponseProjection ResponseProjection = null)
   property public EzClassify.ContextResolution Resolution { get; init; }
   property public EzClassify.DocumentResponseProjection ResponseProjection { get; init; }
   property public EzClassify.ScanResponseBody Result { get; init; }
-  property public System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations { get; init; }
 
 class EzClassify.ContextSchemeSuggestForCategoriesResult : System.IEquatable<EzClassify.ContextSchemeSuggestForCategoriesResult>
-  ctor public .ctor(EzClassify.ContextResolution Resolution, System.Collections.Generic.IReadOnlyDictionary<System.String, EzClassify.SuggestResult> Result, System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations, EzClassify.DocumentResponseProjection ResponseProjection = null)
+  ctor public .ctor(EzClassify.ContextResolution Resolution, System.Collections.Generic.IReadOnlyDictionary<System.String, EzClassify.SuggestResult> Result, EzClassify.DocumentResponseProjection ResponseProjection = null)
   property public EzClassify.ContextResolution Resolution { get; init; }
   property public EzClassify.DocumentResponseProjection ResponseProjection { get; init; }
   property public System.Collections.Generic.IReadOnlyDictionary<System.String, EzClassify.SuggestResult> Result { get; init; }
-  property public System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations { get; init; }
 
 class EzClassify.ContextSchemeSuggestResult : System.IEquatable<EzClassify.ContextSchemeSuggestResult>
-  ctor public .ctor(EzClassify.ContextResolution Resolution, EzClassify.SuggestResult Result, System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations, EzClassify.DocumentResponseProjection ResponseProjection = null)
+  ctor public .ctor(EzClassify.ContextResolution Resolution, EzClassify.SuggestResult Result, EzClassify.DocumentResponseProjection ResponseProjection = null)
   property public EzClassify.ContextResolution Resolution { get; init; }
   property public EzClassify.DocumentResponseProjection ResponseProjection { get; init; }
   property public EzClassify.SuggestResult Result { get; init; }
-  property public System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations { get; init; }
 
 class EzClassify.ContextSchemeValidateResult : System.IEquatable<EzClassify.ContextSchemeValidateResult>
-  ctor public .ctor(EzClassify.ContextResolution Resolution, EzClassify.ValidateResult Result, System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations, EzClassify.DocumentResponseProjection ResponseProjection = null)
+  ctor public .ctor(EzClassify.ContextResolution Resolution, EzClassify.ValidateResult Result, EzClassify.DocumentResponseProjection ResponseProjection = null)
   property public EzClassify.ContextResolution Resolution { get; init; }
   property public EzClassify.DocumentResponseProjection ResponseProjection { get; init; }
   property public EzClassify.ValidateResult Result { get; init; }
-  property public System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations { get; init; }
 
 class EzClassify.ContextSchemeViewResult : System.IEquatable<EzClassify.ContextSchemeViewResult>
-  ctor public .ctor(EzClassify.ContextResolution Resolution, EzClassify.SchemeView Result, System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations, EzClassify.DocumentResponseProjection ResponseProjection = null)
+  ctor public .ctor(EzClassify.ContextResolution Resolution, EzClassify.SchemeView Result, EzClassify.DocumentResponseProjection ResponseProjection = null)
   property public EzClassify.ContextResolution Resolution { get; init; }
   property public EzClassify.DocumentResponseProjection ResponseProjection { get; init; }
   property public EzClassify.SchemeView Result { get; init; }
-  property public System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations { get; init; }
 
 class sealed EzClassify.ContextSchemes
   method public EzClassify.ContextSchemeOps Get(System.String key)
@@ -672,10 +595,7 @@ class EzClassify.DocumentMarkingRequirements : System.IEquatable<EzClassify.Docu
   property public System.Boolean Whole { get; init; }
 
 class EzClassify.DocumentResponseCounts : System.IEquatable<EzClassify.DocumentResponseCounts>
-  ctor public .ctor(System.Int32 Nominations, System.Int32 EvidenceSpans, System.Int32 GuideUnits, System.Int32 AccessRuleResults, System.Int32 ContentRequirements, System.Int32 ContextRequirements)
-  property public System.Int32 AccessRuleResults { get; init; }
-  property public System.Int32 ContentRequirements { get; init; }
-  property public System.Int32 ContextRequirements { get; init; }
+  ctor public .ctor(System.Int32 Nominations, System.Int32 EvidenceSpans, System.Int32 GuideUnits)
   property public System.Int32 EvidenceSpans { get; init; }
   property public System.Int32 GuideUnits { get; init; }
   property public System.Int32 Nominations { get; init; }
@@ -709,8 +629,7 @@ class EzClassify.EachAffix : System.IEquatable<EzClassify.EachAffix>
   property public System.String Suffix { get; init; }
 
 class EzClassify.EvaluationResult : System.IEquatable<EzClassify.EvaluationResult>
-  ctor public .ctor(System.Collections.Generic.IReadOnlyList<EzClassify.GuideRule> ActiveComputedRules, System.String AggregatedMarking, System.Collections.Generic.IReadOnlyList<EzClassify.GuideBreakdownEntry> Breakdown, System.Collections.Generic.IReadOnlyList<EzClassify.GuideBreakdownEntry> ContributingBreakdown, System.Collections.Generic.IReadOnlyList<System.String> EffectiveMarkings, System.Collections.Generic.IReadOnlyList<EzClassify.GuideRule> SelectedRules, System.Collections.Generic.IReadOnlyDictionary<System.String, System.String> AggregatedMarkings = null, System.String GuideId = null, EzClassify.SourceReference Provenance = null)
-  property public EzClassify.SourceReference Provenance { get; init; }
+  ctor public .ctor(System.Collections.Generic.IReadOnlyList<EzClassify.GuideRule> ActiveComputedRules, System.String AggregatedMarking, System.Collections.Generic.IReadOnlyList<EzClassify.GuideBreakdownEntry> Breakdown, System.Collections.Generic.IReadOnlyList<EzClassify.GuideBreakdownEntry> ContributingBreakdown, System.Collections.Generic.IReadOnlyList<System.String> EffectiveMarkings, System.Collections.Generic.IReadOnlyList<EzClassify.GuideRule> SelectedRules, System.Collections.Generic.IReadOnlyDictionary<System.String, System.String> AggregatedMarkings = null, System.String GuideId = null)
   property public System.Collections.Generic.IReadOnlyDictionary<System.String, System.String> AggregatedMarkings { get; init; }
   property public System.Collections.Generic.IReadOnlyList<EzClassify.GuideBreakdownEntry> Breakdown { get; init; }
   property public System.Collections.Generic.IReadOnlyList<EzClassify.GuideBreakdownEntry> ContributingBreakdown { get; init; }
@@ -767,17 +686,6 @@ class sealed EzClassify.EzClassifyClientException : System.Exception, System.Run
   property public System.String Detail { get; }
   property public System.String ResponseBody { get; }
   property public System.TimeSpan? RetryAfter { get; }
-
-class EzClassify.FilterCount : System.IEquatable<EzClassify.FilterCount>
-  ctor public .ctor(System.Int32 Visible, System.Int32 Total)
-  property public System.Int32 Total { get; init; }
-  property public System.Int32 Visible { get; init; }
-
-class EzClassify.FilterResult : System.IEquatable<EzClassify.FilterResult>
-  ctor public .ctor(System.Collections.Generic.IReadOnlyList<System.String> VisibleIds, System.Collections.Generic.IReadOnlyDictionary<System.String, EzClassify.FilterCount> CategoryCounts, EzClassify.FilterCount Total)
-  property public EzClassify.FilterCount Total { get; init; }
-  property public System.Collections.Generic.IReadOnlyDictionary<System.String, EzClassify.FilterCount> CategoryCounts { get; init; }
-  property public System.Collections.Generic.IReadOnlyList<System.String> VisibleIds { get; init; }
 
 class EzClassify.Fix : System.IEquatable<EzClassify.Fix>
   ctor public .ctor(System.String Message, System.String Rendered, System.Collections.Generic.IReadOnlyList<EzClassify.ConceptRef> Keeps, System.Collections.Generic.IReadOnlyList<EzClassify.ConceptRef> Adds, System.Collections.Generic.IReadOnlyList<EzClassify.ConceptRef> Removes)
@@ -1017,16 +925,14 @@ class EzClassify.GuideRuleView : System.IEquatable<EzClassify.GuideRuleView>
   property public System.String WhenText { get; init; }
 
 class EzClassify.GuideScanResult : System.IEquatable<EzClassify.GuideScanResult>
-  ctor public .ctor(System.String GuideId, System.Collections.Generic.IReadOnlyList<System.String> MatchedKeywords, EzClassify.GuideRule Rule, System.Collections.Generic.IReadOnlyList<EzClassify.GuideScanSpan> Spans, EzClassify.SourceReference Provenance = null)
+  ctor public .ctor(System.String GuideId, System.Collections.Generic.IReadOnlyList<System.String> MatchedKeywords, EzClassify.GuideRule Rule, System.Collections.Generic.IReadOnlyList<EzClassify.GuideScanSpan> Spans)
   property public EzClassify.GuideRule Rule { get; init; }
-  property public EzClassify.SourceReference Provenance { get; init; }
   property public System.Collections.Generic.IReadOnlyList<EzClassify.GuideScanSpan> Spans { get; init; }
   property public System.Collections.Generic.IReadOnlyList<System.String> MatchedKeywords { get; init; }
   property public System.String GuideId { get; init; }
 
 class EzClassify.GuideScanSpan : System.IEquatable<EzClassify.GuideScanSpan>
-  ctor public .ctor(System.Int32 End, System.String Keyword, System.Int32 Start, System.Double? Confidence = null)
-  property public System.Double? Confidence { get; init; }
+  ctor public .ctor(System.Int32 End, System.String Keyword, System.Int32 Start)
   property public System.Int32 End { get; init; }
   property public System.Int32 Start { get; init; }
   property public System.String Keyword { get; init; }
@@ -1109,10 +1015,6 @@ class EzClassify.MarkingValidation : System.IEquatable<EzClassify.MarkingValidat
   property public System.Collections.Generic.IReadOnlyList<EzClassify.ValidationError> Errors { get; init; }
   property public System.String Rendered { get; init; }
 
-class EzClassify.NormalizeResponse : System.IEquatable<EzClassify.NormalizeResponse>
-  ctor public .ctor(System.String Result)
-  property public System.String Result { get; init; }
-
 class EzClassify.Notice : System.IEquatable<EzClassify.Notice>
   ctor public .ctor(System.String ConceptId, System.String ConceptName, System.String Type, System.String Text, System.Boolean Required, System.Collections.Generic.IReadOnlyDictionary<System.String, System.String> Views = null)
   property public System.Boolean Required { get; init; }
@@ -1129,7 +1031,7 @@ class sealed EzClassify.PingResult : System.IEquatable<EzClassify.PingResult>
   property public System.String GitTag { get; init; }
 
 class EzClassify.ProcessResult : System.IEquatable<EzClassify.ProcessResult>
-  ctor public .ctor(System.Collections.Generic.IReadOnlyList<EzClassify.Change> AppliedFixes, System.Collections.Generic.IReadOnlyList<EzClassify.Assertion> Assertions, EzClassify.RenderAssessment Assessment, System.Collections.Generic.IReadOnlyList<EzClassify.ValidationError> Errors, System.Boolean InputWasValid, System.Collections.Generic.IReadOnlyList<EzClassify.Notice> Notices, System.Collections.Generic.IReadOnlyList<EzClassify.Fix> ProposedFixes, System.String Rendered, System.Collections.Generic.IReadOnlyDictionary<System.String, EzClassify.RenderResult> Renders, System.Boolean Valid, System.Collections.Generic.IReadOnlyList<EzClassify.Warning> Warnings, System.Collections.Generic.IReadOnlyList<EzClassify.Assertion> AssertionsBeforeRepair = null, EzClassify.ConceptColor DisplayColor = null, EzClassify.RecognitionWithCorrections Recognition = null, System.Collections.Generic.IReadOnlyDictionary<System.String, EzClassify.SuggestResult> SuggestionsFor = null)
+  ctor public .ctor(System.Collections.Generic.IReadOnlyList<EzClassify.Change> AppliedFixes, System.Collections.Generic.IReadOnlyList<EzClassify.Assertion> Assertions, EzClassify.RenderAssessment Assessment, System.Collections.Generic.IReadOnlyList<EzClassify.ValidationError> Errors, System.Boolean InputWasValid, System.Collections.Generic.IReadOnlyList<EzClassify.Notice> Notices, System.Collections.Generic.IReadOnlyList<EzClassify.Fix> ProposedFixes, System.String Rendered, System.Collections.Generic.IReadOnlyDictionary<System.String, EzClassify.RenderResult> Renders, System.Boolean Valid, System.Collections.Generic.IReadOnlyList<EzClassify.Warning> Warnings, EzClassify.ConceptColor DisplayColor = null, EzClassify.RecognitionWithCorrections Recognition = null, System.Collections.Generic.IReadOnlyDictionary<System.String, EzClassify.SuggestResult> SuggestionsFor = null)
   property public EzClassify.ConceptColor DisplayColor { get; init; }
   property public EzClassify.RecognitionWithCorrections Recognition { get; init; }
   property public EzClassify.RenderAssessment Assessment { get; init; }
@@ -1138,7 +1040,6 @@ class EzClassify.ProcessResult : System.IEquatable<EzClassify.ProcessResult>
   property public System.Collections.Generic.IReadOnlyDictionary<System.String, EzClassify.RenderResult> Renders { get; init; }
   property public System.Collections.Generic.IReadOnlyDictionary<System.String, EzClassify.SuggestResult> SuggestionsFor { get; init; }
   property public System.Collections.Generic.IReadOnlyList<EzClassify.Assertion> Assertions { get; init; }
-  property public System.Collections.Generic.IReadOnlyList<EzClassify.Assertion> AssertionsBeforeRepair { get; init; }
   property public System.Collections.Generic.IReadOnlyList<EzClassify.Change> AppliedFixes { get; init; }
   property public System.Collections.Generic.IReadOnlyList<EzClassify.Fix> ProposedFixes { get; init; }
   property public System.Collections.Generic.IReadOnlyList<EzClassify.Notice> Notices { get; init; }
@@ -1183,14 +1084,10 @@ struct EzClassify.RecognitionLimit : System.IEquatable<EzClassify.RecognitionLim
   method public virtual System.Int32 GetHashCode()
   method public virtual System.String ToString()
   property public System.Boolean IsKnown { get; }
-  property public static EzClassify.RecognitionLimit Aborted { get; }
-  property public static EzClassify.RecognitionLimit Depth { get; }
-  property public static EzClassify.RecognitionLimit GrammarSize { get; }
   property public static EzClassify.RecognitionLimit InputLength { get; }
   property public static EzClassify.RecognitionLimit LiveStates { get; }
   property public static EzClassify.RecognitionLimit Lookups { get; }
   property public static EzClassify.RecognitionLimit Transitions { get; }
-  property public static EzClassify.RecognitionLimit WallClock { get; }
 
 class EzClassify.RecognitionResult : System.IEquatable<EzClassify.RecognitionResult>
   ctor public .ctor(EzClassify.RecognitionStatus Status, System.Collections.Generic.IReadOnlyList<EzClassify.InputSpan> Unmatched, System.String InputFormat = null, EzClassify.StructuralRole? Role = null, System.String Surface = null)
@@ -1275,38 +1172,17 @@ class EzClassify.RenderResult : System.IEquatable<EzClassify.RenderResult>
   property public System.String Rendered { get; init; }
 
 class sealed EzClassify.RestClientCredentials
-  ctor public .ctor(System.String accessToken, System.String contextToken)
-  ctor public .ctor(System.String accessToken, System.String contextToken, System.String applicationCredential)
+  ctor public .ctor(System.String accessToken, System.String contextToken, System.String applicationId = null)
   property public System.String AccessToken { get; }
-  property public System.String ApplicationCredential { get; }
+  property public System.String ApplicationId { get; }
   property public System.String ContextToken { get; }
   property public static EzClassify.RestClientCredentials None { get; }
 
-class EzClassify.RuleDescription : System.IEquatable<EzClassify.RuleDescription>
-  ctor public .ctor(EzClassify.RuleReference Rule, EzClassify.ArtifactReference Guide, System.String Name, System.String OutcomeText, System.Boolean IsComputed, System.Collections.Generic.IReadOnlyList<EzClassify.RuleReference> DependsOn, System.Collections.Generic.IReadOnlyList<EzClassify.RuleReference> Overrides, System.Collections.Generic.IReadOnlyList<System.String> Lines, System.String Description = null, System.String WhenText = null)
-  property public EzClassify.ArtifactReference Guide { get; init; }
-  property public EzClassify.RuleReference Rule { get; init; }
-  property public System.Boolean IsComputed { get; init; }
-  property public System.Collections.Generic.IReadOnlyList<EzClassify.RuleReference> DependsOn { get; init; }
-  property public System.Collections.Generic.IReadOnlyList<EzClassify.RuleReference> Overrides { get; init; }
-  property public System.Collections.Generic.IReadOnlyList<System.String> Lines { get; init; }
-  property public System.String Description { get; init; }
-  property public System.String Name { get; init; }
-  property public System.String OutcomeText { get; init; }
-  property public System.String WhenText { get; init; }
-
 class EzClassify.RuleReference : System.IEquatable<EzClassify.RuleReference>
-  ctor public .ctor(EzClassify.ArtifactReference Artifact, System.String RuleId, System.String RuleDigest, EzClassify.RuleSourceReference Source = null)
+  ctor public .ctor(EzClassify.ArtifactReference Artifact, System.String RuleId, System.String RuleDigest)
   property public EzClassify.ArtifactReference Artifact { get; init; }
-  property public EzClassify.RuleSourceReference Source { get; init; }
   property public System.String RuleDigest { get; init; }
   property public System.String RuleId { get; init; }
-
-class EzClassify.RuleSourceReference : System.IEquatable<EzClassify.RuleSourceReference>
-  ctor public .ctor(System.String ProviderId, EzClassify.SourceReproducibility Reproducibility, System.String SnapshotId = null)
-  property public EzClassify.SourceReproducibility Reproducibility { get; init; }
-  property public System.String ProviderId { get; init; }
-  property public System.String SnapshotId { get; init; }
 
 class EzClassify.ScanLimits : System.IEquatable<EzClassify.ScanLimits>
   ctor public .ctor(System.Int32 RegionsFound, EzClassify.ScanStatus Status, EzClassify.RecognitionLimit? LimitHit = null, System.Boolean? RegionsCapped = null)
@@ -1353,11 +1229,6 @@ class EzClassify.SchemeContextFormats : System.IEquatable<EzClassify.SchemeConte
   property public System.Collections.Generic.IReadOnlyList<System.String> Part { get; init; }
   property public System.Collections.Generic.IReadOnlyList<System.String> Whole { get; init; }
 
-class EzClassify.SchemeGrammar : System.IEquatable<EzClassify.SchemeGrammar>
-  ctor public .ctor(System.Boolean CaseSensitive, System.Boolean StripWhitespace)
-  property public System.Boolean CaseSensitive { get; init; }
-  property public System.Boolean StripWhitespace { get; init; }
-
 class EzClassify.SchemeScope : System.IEquatable<EzClassify.SchemeScope>
   ctor public .ctor(System.String Id, System.String Label)
   property public System.String Id { get; init; }
@@ -1400,44 +1271,6 @@ class EzClassify.SchemeViewCategory : System.IEquatable<EzClassify.SchemeViewCat
   property public System.Collections.Generic.IReadOnlyList<EzClassify.ConceptView> Items { get; init; }
   property public System.String Id { get; init; }
   property public System.String Label { get; init; }
-
-struct EzClassify.Severity : System.IEquatable<EzClassify.Severity>
-  ctor public .ctor(System.String value)
-  method public System.Boolean Equals(EzClassify.Severity other)
-  method public System.String ToWire()
-  method public static EzClassify.Severity Parse(System.String value)
-  method public static System.Boolean TryParse(System.String value, out EzClassify.Severity result)
-  method public static System.Boolean op_Equality(EzClassify.Severity left, EzClassify.Severity right)
-  method public static System.Boolean op_Inequality(EzClassify.Severity left, EzClassify.Severity right)
-  method public virtual System.Boolean Equals(System.Object obj)
-  method public virtual System.Int32 GetHashCode()
-  method public virtual System.String ToString()
-  property public System.Boolean IsKnown { get; }
-  property public static EzClassify.Severity Error { get; }
-  property public static EzClassify.Severity Warning { get; }
-
-class EzClassify.SourceReference : System.IEquatable<EzClassify.SourceReference>
-  ctor public .ctor(System.String ProviderId, EzClassify.Attribution Attribution, EzClassify.SourceReproducibility Reproducibility, System.String SnapshotId = null, System.String Locator = null)
-  property public EzClassify.Attribution Attribution { get; init; }
-  property public EzClassify.SourceReproducibility Reproducibility { get; init; }
-  property public System.String Locator { get; init; }
-  property public System.String ProviderId { get; init; }
-  property public System.String SnapshotId { get; init; }
-
-struct EzClassify.SourceReproducibility : System.IEquatable<EzClassify.SourceReproducibility>
-  ctor public .ctor(System.String value)
-  method public System.Boolean Equals(EzClassify.SourceReproducibility other)
-  method public System.String ToWire()
-  method public static EzClassify.SourceReproducibility Parse(System.String value)
-  method public static System.Boolean TryParse(System.String value, out EzClassify.SourceReproducibility result)
-  method public static System.Boolean op_Equality(EzClassify.SourceReproducibility left, EzClassify.SourceReproducibility right)
-  method public static System.Boolean op_Inequality(EzClassify.SourceReproducibility left, EzClassify.SourceReproducibility right)
-  method public virtual System.Boolean Equals(System.Object obj)
-  method public virtual System.Int32 GetHashCode()
-  method public virtual System.String ToString()
-  property public System.Boolean IsKnown { get; }
-  property public static EzClassify.SourceReproducibility BestEffort { get; }
-  property public static EzClassify.SourceReproducibility Reproducible { get; }
 
 struct EzClassify.StructuralRole : System.IEquatable<EzClassify.StructuralRole>
   ctor public .ctor(System.String value)
@@ -1506,11 +1339,10 @@ class EzClassify.TraceInference : System.IEquatable<EzClassify.TraceInference>
   property public System.String RuleId { get; init; }
 
 class EzClassify.TraceRepair : System.IEquatable<EzClassify.TraceRepair>
-  ctor public .ctor(System.String RuleId, System.String Description, System.String Confidence, System.String Before, System.String After, System.Boolean? Cosmetic = null)
+  ctor public .ctor(System.String RuleId, System.String Description, System.String Before, System.String After, System.Boolean? Cosmetic = null)
   property public System.Boolean? Cosmetic { get; init; }
   property public System.String After { get; init; }
   property public System.String Before { get; init; }
-  property public System.String Confidence { get; init; }
   property public System.String Description { get; init; }
   property public System.String RuleId { get; init; }
 
@@ -1607,14 +1439,12 @@ class EzClassify.ValidateResult : System.IEquatable<EzClassify.ValidateResult>
   property public System.String Rendered { get; init; }
 
 class EzClassify.ValidationError : System.IEquatable<EzClassify.ValidationError>
-  ctor public .ctor(System.String ConstraintId, System.String Message, System.Collections.Generic.IReadOnlyList<System.String> AffectedConcepts = null, System.String CategoryId = null, System.Collections.Generic.IReadOnlyList<System.String> DidYouMean = null, EzClassify.Severity? Severity = null, System.String SuggestedFix = null)
-  property public EzClassify.Severity? Severity { get; init; }
+  ctor public .ctor(System.String ConstraintId, System.String Message, System.Collections.Generic.IReadOnlyList<System.String> AffectedConcepts = null, System.String CategoryId = null, System.Collections.Generic.IReadOnlyList<System.String> DidYouMean = null)
   property public System.Collections.Generic.IReadOnlyList<System.String> AffectedConcepts { get; init; }
   property public System.Collections.Generic.IReadOnlyList<System.String> DidYouMean { get; init; }
   property public System.String CategoryId { get; init; }
   property public System.String ConstraintId { get; init; }
   property public System.String Message { get; init; }
-  property public System.String SuggestedFix { get; init; }
 
 class EzClassify.Warning : System.IEquatable<EzClassify.Warning>
   ctor public .ctor(EzClassify.WarningKind Kind, System.String Message, System.String CategoryId = null, System.String ConceptId = null, System.String ConceptName = null, System.String Replacement = null, System.String ReplacementName = null, System.String RuleId = null)

@@ -192,8 +192,6 @@ public class WireCorpusReplayTests
             async c => await c.Scheme!.FormatsAsync(),
             Check<IReadOnlyList<FormatView>>((formats, body) =>
                 Assert.Equal(body.AsArray().Select(f => f!["id"]!.GetValue<string>()), formats.Select(f => f.Id)))),
-        ["ctx-scheme-grammar.ok"] = Ctx("ez-presets", "ctx-scheme-grammar.ok",
-            async c => await c.Scheme!.GrammarAsync()),
         ["ctx-scheme-scopes.ok"] = Ctx("ez-presets", "ctx-scheme-scopes.ok",
             async c => await c.Scheme!.ScopesAsync(),
             Check<IReadOnlyList<SchemeScope>>((scopes, body) =>
@@ -234,8 +232,6 @@ public class WireCorpusReplayTests
             async c => await c.Scheme!.FormatsAsync(),
             Check<IReadOnlyList<FormatView>>((formats, body) =>
                 Assert.Equal(body.AsArray().Select(f => f!["id"]!.GetValue<string>()), formats.Select(f => f.Id)))),
-        ["ctx-scheme-grammar.full"] = Ctx("ez-full", "ctx-scheme-grammar.full",
-            async c => await c.Scheme!.GrammarAsync()),
         ["ctx-scheme-scopes.full"] = Ctx("ez-full", "ctx-scheme-scopes.full",
             async c => await c.Scheme!.ScopesAsync(),
             Check<IReadOnlyList<SchemeScope>>((scopes, body) =>
@@ -340,8 +336,6 @@ public class WireCorpusReplayTests
             })),
         ["ctx-scheme-process.unknown-scheme"] = Ctx("ez-crosswalk", "ctx-scheme-process.unknown-scheme",
             async c => await c.Schemes!.Get("no-such-scheme").ProcessAsync("OPEN")),
-        ["ctx-scheme-normalize.ok"] = Ctx("ez-full", "ctx-scheme-normalize.ok",
-            async c => await c.Scheme!.NormalizeAsync("open")),
         ["ctx-scheme-render.ok"] = Ctx("ez-full", "ctx-scheme-render.ok",
             async c => await c.Scheme!.RenderAsync(new[] { Open })),
         ["ctx-scheme-render.empty"] = Ctx("ez-full", "ctx-scheme-render.empty",
@@ -359,10 +353,6 @@ public class WireCorpusReplayTests
                 Assert.Equal(body["result"]!["marking"]!.GetValue<string>(), view.Result.Marking))),
         ["ctx-scheme-notices.ok"] = Ctx("ez-full", "ctx-scheme-notices.ok",
             async c => await c.Scheme!.NoticesAsync(new[] { Open })),
-        ["ctx-scheme-filter-concepts.ok"] = Ctx("ez-full", "ctx-scheme-filter-concepts.ok",
-            async c => await c.Scheme!.FilterConceptsAsync("open")),
-        ["ctx-scheme-filter-concepts.no-match"] = Ctx("ez-full", "ctx-scheme-filter-concepts.no-match",
-            async c => await c.Scheme!.FilterConceptsAsync("zzznomatch")),
         ["ctx-scheme-suggest.ok"] = Ctx("ez-full", "ctx-scheme-suggest.ok",
             async c => await c.Scheme!.SuggestAsync(""),
             Check<ContextSchemeSuggestResult>((r, body) =>
@@ -392,8 +382,6 @@ public class WireCorpusReplayTests
         ["ctx-access-check.two-attributes"] = Ctx("ez-full", "ctx-access-check.two-attributes",
             async c => await c.Access!.CheckByMarkingAsync("OPEN", """{"clearance":"OPEN","organization":"records"}""", RecordedContext("ctx-access-check.two-attributes")),
             Check<ContextAccessDecisionResult>((r, body) => Assert.Equal(body["result"]!["granted"]!.GetValue<bool>(), r.Result.Granted))),
-        ["ctx-access-describe-rule.ok"] = Ctx("ez-full", "ctx-access-describe-rule.ok",
-            async c => await c.Access!.DescribeRuleAsync("level-rule")),
         ["ctx-access-describe-requirements.ok"] = Ctx("ez-full", "ctx-access-describe-requirements.ok",
             async c => await c.Access!.DescribeRequirementsAsync("OPEN")),
         ["ctx-access-rules.ok"] = Ctx("ez-full", "ctx-access-rules.ok",
@@ -411,10 +399,6 @@ public class WireCorpusReplayTests
             async c => await c.Guide!.EvaluateAsync("ez-test", new[] { "rule-sensitive" })),
         ["ctx-guide-evaluate.selections"] = Ctx("ez-full", "ctx-guide-evaluate.selections",
             async c => await c.Guide!.EvaluateManyAsync(new[] { new GuideRuleSelection("ez-test", "rule-sensitive") })),
-        ["ctx-guide-describe-rule.ok"] = Ctx("ez-full", "ctx-guide-describe-rule.ok",
-            async c => await c.Guide!.DescribeRuleAsync("rule-sensitive")),
-        ["ctx-guide-describe-rule.unknown-guide"] = Ctx("ez-full", "ctx-guide-describe-rule.unknown-guide",
-            async c => await c.Guide!.DescribeRuleAsync("rule-sensitive", "no-such-guide")),
         ["ctx-guide-view.by-id"] = Ctx("ez-full", "ctx-guide-view.by-id",
             async c => await c.Guide!.ViewAsync("ez-test")),
         ["ctx-guide-view.ok"] = Ctx("ez-full", "ctx-guide-view.ok",
@@ -429,8 +413,6 @@ public class WireCorpusReplayTests
             async c => await c.Guide!.ViewAsync(),
             Check<ContextGuideViewResult>((view, body) =>
                 Assert.Equal(body["result"]!["marking"]!.GetValue<string>(), view.Result.Marking))),
-        ["ctx-guide-filter-rules.ok"] = Ctx("ez-full", "ctx-guide-filter-rules.ok",
-            async c => await c.Guide!.FilterRulesAsync("sensitive")),
 
         // -- crosswalks ---------------------------------------------------------
         ["ctx-crosswalk-translate.marking"] = Ctx("ez-full", "ctx-crosswalk-translate.marking",
@@ -520,7 +502,6 @@ public class WireCorpusReplayTests
         ["ctx-scheme-process.undeclared-request-field-unknownField"] = Raw("ctx-scheme-process.undeclared-request-field-unknownField", UnformableRequest),
         ["ctx-scheme-validate.undeclared-field"] = Raw("ctx-scheme-validate.undeclared-field", UnformableRequest),
         ["ctx-scheme-explain.undeclared-field"] = Raw("ctx-scheme-explain.undeclared-field", UnformableRequest),
-        ["ctx-scheme-normalize.undeclared-field"] = Raw("ctx-scheme-normalize.undeclared-field", UnformableRequest),
         ["ctx-scheme-aggregate.undeclared-field"] = Raw("ctx-scheme-aggregate.undeclared-field", UnformableRequest),
         ["ctx-scheme-suggest.undeclared-field"] = Raw("ctx-scheme-suggest.undeclared-field", UnformableRequest),
         ["ctx-scheme-suggest-for-categories.undeclared-field"] = Raw("ctx-scheme-suggest-for-categories.undeclared-field", UnformableRequest),

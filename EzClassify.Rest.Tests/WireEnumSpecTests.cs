@@ -40,8 +40,6 @@ public class WireEnumSpecTests
         [typeof(RenderFormatMode)] = "RenderFormatMode",
         [typeof(ScanStatus)] = "ScanStatus",
         [typeof(FormatSyntaxType)] = "FormatSyntaxType",
-        [typeof(Severity)] = "ValidationSeverity",
-        [typeof(SourceReproducibility)] = "Reproducibility",
         [typeof(StructuralRole)] = "ProcessingRole",
         [typeof(UnrepresentableFactReason)] = "UnrepresentableFactReason",
         [typeof(UnrepresentableOutputReason)] = "UnrepresentableOutputReason",

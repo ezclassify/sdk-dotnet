@@ -76,7 +76,7 @@ public class WireEnumsTests
     [Fact]
     public void TheSweepSeesEveryWireEnum()
     {
-        Assert.Equal(24, ExtensibleEnums.Count);
+        Assert.Equal(22, ExtensibleEnums.Count);
         Assert.Contains(typeof(Confidence), ExtensibleEnums);
         Assert.Contains(typeof(ArtifactKind), ExtensibleEnums);
         Assert.DoesNotContain(typeof(RenderPreservation), ExtensibleEnums);

@@ -7,17 +7,6 @@ namespace EzClassify.Tests;
 public class ContextResultParserTolerantParsingTests
 {
     [Fact]
-    public void SchemeGrammar_ParsesTheBodyTheServerSends()
-    {
-        // The wire corpus's ctx-scheme-grammar.ok body. The contract declares no
-        // separator on the grammar, and the server sends none.
-        var grammar = ContextResultParser.ParseSchemeGrammar("""{"caseSensitive":false,"stripWhitespace":true}""");
-
-        Assert.False(grammar.CaseSensitive);
-        Assert.True(grammar.StripWhitespace);
-    }
-
-    [Fact]
     public void SchemeView_ReadsItsVocabularyOverrides()
     {
         var view = ContextResultParser.ParseSchemeView("""
@@ -144,7 +133,7 @@ public class ContextResultParserTolerantParsingTests
     public void DocumentEnvelope_MissingResponseProjectionThrows()
     {
         var audit = """
-          {"resolution":{"contextId":"ctx","resolvedVersion":"1.0.0","artifacts":[],"sources":[]},"operationLimitations":[],
+          {"resolution":{"contextId":"ctx","resolvedVersion":"1.0.0","artifacts":[]},
            "result":{"whole":null,"wholes":[],"wholeValidation":null,"parts":[],"wholeCoversParts":null,"unmarkedSpans":[],"proceduralFlags":[],"overallVerdict":"pass","vocabulary":null,"documentDigest":"sha256:d","guideAssessment":null,"markingRequirements":{"whole":false,"part":false},"limitations":[]}}
           """;
 
@@ -245,12 +234,12 @@ public class ContextResultParserTolerantParsingTests
 public class ContextResultParserRequiredFieldTests
 {
     private const string Resolution =
-        """{"contextId":"ctx","resolvedVersion":"1.0.0","artifacts":[],"sources":[]}""";
+        """{"contextId":"ctx","resolvedVersion":"1.0.0","artifacts":[]}""";
 
     [Fact]
     public void Envelope_MissingResult_ThrowsJsonException()
     {
-        var json = $$"""{"resolution":{{Resolution}},"operationLimitations":[]}""";
+        var json = $$"""{"resolution":{{Resolution}}}""";
 
         Assert.Throws<JsonException>(() => ContextResultParser.ParseContextSchemeProcessResult(json));
     }
@@ -258,7 +247,7 @@ public class ContextResultParserRequiredFieldTests
     [Fact]
     public void Envelope_MissingResolution_ThrowsJsonException()
     {
-        var json = """{"result":{"rendered":"LOW","valid":true},"operationLimitations":[]}""";
+        var json = """{"result":{"rendered":"LOW","valid":true}}""";
 
         Assert.Throws<JsonException>(() => ContextResultParser.ParseContextSchemeProcessResult(json));
     }

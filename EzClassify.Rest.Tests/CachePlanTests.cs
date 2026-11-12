@@ -34,7 +34,6 @@ public class CachePlanTests
     private static readonly IReadOnlySet<string> NotApplicable = new HashSet<string>(StringComparer.Ordinal)
     {
         "explicitNullMember",
-        "sharedRouteOperations",
     };
 
     private static readonly JsonNode Plans = JsonNode.Parse(File.ReadAllText(
@@ -58,21 +57,8 @@ public class CachePlanTests
     public async Task PlanHolds(string id)
     {
         var plan = AllPlans.Single(candidate => candidate["id"]!.GetValue<string>() == id);
-        // A plan that refuses construction has no steps and is covered below.
         await using var runner = await CachePlanRunner.StartAsync(plan, WireCorpus.Vendored, Plans["denialCase"]!.GetValue<string>());
-        if (runner is not null) await runner.RunAsync();
-    }
-
-    [Fact]
-    public async Task RefusedConstructionPlansFailBeforeAnyRequest()
-    {
-        var refused = AllPlans.Where(plan => plan["client"]!["construction"]?.GetValue<string>() == "refused").ToList();
-        Assert.NotEmpty(refused);
-        foreach (var plan in refused)
-        {
-            Assert.Empty(plan["steps"]!.AsArray());
-            Assert.Null(await CachePlanRunner.StartAsync(plan, WireCorpus.Vendored, Plans["denialCase"]!.GetValue<string>()));
-        }
+        await runner.RunAsync();
     }
 
     [Fact]
@@ -101,7 +87,7 @@ public class CachePlanTests
     }
 
     // An item goes unrun only when every plan for it needs a capability declared
-    // absent above; C05 binds only a port with two operations over one route and body.
+    // absent above.
     [Fact]
     public void EveryChecklistItemIsCoveredByAPlanThisSdkRunsOrBindsOnlyAnAbsentCapability()
     {
@@ -111,7 +97,7 @@ public class CachePlanTests
         var missing = Plans["checklist"]!.AsArray().Select(item => item!["id"]!.GetValue<string>())
             .Where(id => !covered.Contains(id) && !planned.Contains(id));
         Assert.Empty(missing);
-        Assert.Equal(new[] { "C05" }, planned.Except(covered).OrderBy(id => id, StringComparer.Ordinal));
+        Assert.Empty(planned.Except(covered));
     }
 
     // An unset optional member is always omitted, so the one plan that needs an

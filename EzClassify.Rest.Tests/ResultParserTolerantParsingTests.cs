@@ -25,9 +25,6 @@ public class ResultParserAssertionDefaultsTests
               "conceptId": "U",
               "confidence": "inferred",
               "source": "rule",
-              "expiresAt": "2026-12-31",
-              "metadata": {"origin": "scanner"},
-              "provenance": {"providerId":"guide-1","attribution":{"name":"Guide","license":"internal"},"reproducibility":"reproducible","snapshotId":"snapshot-1"},
               "sourceRule": "rule-1",
               "value": "U"
             }
@@ -38,11 +35,6 @@ public class ResultParserAssertionDefaultsTests
         Assert.Equal("U", a.ConceptId);
         Assert.Equal(Confidence.Inferred, a.Confidence);
         Assert.Equal("rule", a.Source);
-        Assert.Equal("2026-12-31", a.ExpiresAt);
-        var metadata = Assert.IsType<JsonElement>(a.Metadata);
-        Assert.Equal("scanner", metadata.GetProperty("origin").GetString());
-        Assert.NotNull(a.Provenance);
-        Assert.Equal("guide-1", a.Provenance!.ProviderId);
         Assert.Equal("rule-1", a.SourceRule);
         Assert.Equal("U", a.Value);
     }
@@ -57,37 +49,8 @@ public class ResultParserAssertionDefaultsTests
         Assert.Equal("U", a.ConceptId);
         Assert.Equal(Confidence.Certain, a.Confidence);
         Assert.Equal("parse", a.Source);
-        Assert.Null(a.ExpiresAt);
-        Assert.Null(a.Metadata);
-        Assert.Null(a.Provenance);
         Assert.Null(a.SourceRule);
         Assert.Null(a.Value);
-    }
-
-    [Fact]
-    public void ParseAssertion_OpaqueFieldsSurviveDocumentDisposal()
-    {
-        Assertion a;
-        using (var doc = JsonDocument.Parse(
-            """{"categoryId":"level","conceptId":"U","confidence":"certain","source":"parse","metadata":{"origin":"scanner"}}"""))
-        {
-            a = ResultParser.ParseAssertion(doc.RootElement);
-        }
-
-        // Clones must not reference the disposed document's buffer.
-        var metadata = Assert.IsType<JsonElement>(a.Metadata);
-        Assert.Equal("scanner", metadata.GetProperty("origin").GetString());
-    }
-
-    [Fact]
-    public void ParseAssertion_OpaqueFieldsExplicitNull_YieldNull()
-    {
-        using var doc = JsonDocument.Parse(
-            """{"categoryId":"level","conceptId":"U","confidence":"certain","source":"parse","metadata":null,"provenance":null}""");
-        var a = ResultParser.ParseAssertion(doc.RootElement);
-
-        Assert.Null(a.Metadata);
-        Assert.Null(a.Provenance);
     }
 
     [Theory]
@@ -106,11 +69,10 @@ public class ResultParserAssertionDefaultsTests
     public void ParseAssertion_OptionalStringFieldsExplicitNull_ReadAsAbsent()
     {
         using var doc = JsonDocument.Parse(
-            """{"categoryId":"level","conceptId":"U","confidence":"certain","source":"parse","expiresAt":null,"sourceRule":null,"value":null}""");
+            """{"categoryId":"level","conceptId":"U","confidence":"certain","source":"parse","sourceRule":null,"value":null}""");
         var a = ResultParser.ParseAssertion(doc.RootElement);
 
         Assert.Equal(Confidence.Certain, a.Confidence);
-        Assert.Null(a.ExpiresAt);
         Assert.Null(a.SourceRule);
         Assert.Null(a.Value);
     }
@@ -159,10 +121,8 @@ public class ResultParserValidationErrorDefaultsTests
             {
               "constraintId": "C1",
               "message": "too complex",
-              "severity": "warning",
               "categoryId": "level",
               "affectedConcepts": ["ALPHA", "CHARLIE"],
-              "suggestedFix": "drop to U",
               "didYouMean": ["HIGH", "HOLD"]
             }
             """);
@@ -172,9 +132,7 @@ public class ResultParserValidationErrorDefaultsTests
         Assert.Equal(new[] { "HIGH", "HOLD" }, e.DidYouMean);
         Assert.Equal("C1", e.ConstraintId);
         Assert.Equal("too complex", e.Message);
-        Assert.Equal(Severity.Warning, e.Severity);
         Assert.Equal("level", e.CategoryId);
-        Assert.Equal("drop to U", e.SuggestedFix);
     }
 
     [Fact]
@@ -186,9 +144,7 @@ public class ResultParserValidationErrorDefaultsTests
         Assert.Equal("C1", e.ConstraintId);
         Assert.Equal("something wrong", e.Message);
         Assert.Null(e.AffectedConcepts);
-        Assert.Null(e.Severity);
         Assert.Null(e.CategoryId);
-        Assert.Null(e.SuggestedFix);
         // Absent is no evidence the token was stray text, so it stays null.
         Assert.Null(e.DidYouMean);
     }
@@ -302,11 +258,9 @@ public class ResultParserProcessResultTests
     }
 
     [Fact]
-    public void ParseProcessResult_CarriesWhatWasReadBeforeRepairAndTheDisplayColor()
+    public void ParseProcessResult_CarriesTheDisplayColor()
     {
-        // The wire sends the reading only when repair changed it, and a fix for a rule repair
-        // enforced is applied to it, so the parser must not drop it. The display color travels
-        // the same hand-written path and must survive it too.
+        // The display color travels the hand-written parse path and must survive it.
         const string json = """
             {
               "valid": false,
@@ -315,10 +269,6 @@ public class ResultParserProcessResultTests
               "assessment":{"emitted":[],"omitted":[],"collapsed":[],"conflicts":[],"unrepresentable":[]},
               "inputWasValid": false,
               "assertions": [{"conceptId":"SENSITIVE","categoryId":"level","confidence":"certain","source":"user"}],
-              "assertionsBeforeRepair": [
-                {"conceptId":"OPEN","categoryId":"level","confidence":"certain","source":"user"},
-                {"conceptId":"SENSITIVE","categoryId":"level","confidence":"certain","source":"user"}
-              ],
               "errors": [],
               "warnings": [],
               "appliedFixes": [],
@@ -329,10 +279,6 @@ public class ResultParserProcessResultTests
             """;
         var result = ResultParser.ParseProcessResult(json);
 
-        Assert.NotNull(result.AssertionsBeforeRepair);
-        Assert.Equal(
-            new[] { "OPEN", "SENSITIVE" },
-            result.AssertionsBeforeRepair!.Select(a => a.ConceptId));
         Assert.Equal(new ConceptColor("#c62828", "#ffffff"), result.DisplayColor);
     }
 
@@ -350,7 +296,6 @@ public class ResultParserProcessResultTests
         Assert.False(result.Valid);
         Assert.Equal("", result.Rendered);
         Assert.False(result.InputWasValid);
-        Assert.Null(result.AssertionsBeforeRepair);
         Assert.Null(result.DisplayColor);
         Assert.Null(result.Recognition);
         // Nothing beyond the one rendering was asked for.
@@ -486,7 +431,7 @@ public class ResultParserProcessResultTests
               "schemeId": "cedar-valley-protection",
               "rendered": "RS/AR",
               "entries": [{"stage": "repair", "action": "uppercase", "detail": "S -> uppercase", "conceptId": "S", "ruleId": "case-1", "triggerConceptIds": ["S"]}],
-              "repairs": [{"ruleId": "case-1", "description": "normalize case", "confidence": "safe", "before": "s", "after": "S", "cosmetic": true}],
+              "repairs": [{"ruleId": "case-1", "description": "normalize case", "before": "s", "after": "S", "cosmetic": true}],
               "inferences": [{"ruleId": "sci-1", "conceptId": "AR", "explanation": "AR from context"}],
               "validationErrors": [{"constraintId": "need-caveat", "message": "caveat required"}],
               "finalAssertions": [{"categoryId": "level", "conceptId": "RS", "confidence": "certain", "source": "parse"}]
@@ -501,7 +446,6 @@ public class ResultParserProcessResultTests
         Assert.Equal("uppercase", ex.Entries[0].Action);
         Assert.Equal(new[] { "S" }, ex.Entries[0].TriggerConceptIds);
         Assert.Single(ex.Repairs);
-        Assert.Equal("safe", ex.Repairs[0].Confidence);
         Assert.True(ex.Repairs[0].Cosmetic);
         Assert.Single(ex.Inferences);
         Assert.Equal("AR", ex.Inferences[0].ConceptId);
@@ -850,9 +794,8 @@ public class ResultParserGuideScanResultsTests
             [{
               "rule": {"id":"r1","name":"Confidential","outcome":{}},
               "matchedKeywords": ["confidential"],
-              "spans": [{"end":12,"keyword":"confidential","start":0,"confidence":0.85}],
-              "guideId": "guide-1",
-              "provenance": {"providerId":"keyword","attribution":{"name":"Scanner","license":"internal"},"reproducibility":"best-effort"}
+              "spans": [{"end":12,"keyword":"confidential","start":0}],
+              "guideId": "guide-1"
             }]
             """;
         var results = ResultParser.ParseGuideScanResults(json);
@@ -862,19 +805,6 @@ public class ResultParserGuideScanResultsTests
         Assert.Equal(12, results[0].Spans[0].End);
         Assert.Equal("confidential", results[0].Spans[0].Keyword);
         Assert.Equal(0, results[0].Spans[0].Start);
-        Assert.Equal(0.85, results[0].Spans[0].Confidence);
-        Assert.NotNull(results[0].Provenance);
-        Assert.Equal("keyword", results[0].Provenance!.ProviderId);
-    }
-
-    [Fact]
-    public void ParseGuideScanResults_SpanConfidenceAbsent_YieldsNull()
-    {
-        var results = ResultParser.ParseGuideScanResults(
-            """[{"rule":{"id":"r1","name":"Rule","outcome":{}},"guideId":"g1","matchedKeywords":[],"spans":[{"end":5,"keyword":"k","start":1}]}]""");
-
-        Assert.Null(results[0].Spans[0].Confidence);
-        Assert.Null(results[0].Provenance);
     }
 
     [Fact]
@@ -1059,16 +989,6 @@ public class ResultParserAccessDecisionTests
     public void ParseAccessDecision_NoRulesProperty_Throws()
     {
         Assert.ThrowsAny<JsonException>(() => ResultParser.ParseAccessDecision("""{"granted":true}"""));
-    }
-
-    [Fact]
-    public void ParseAccessDecision_Provenance_CarriedThrough()
-    {
-        var decision = ResultParser.ParseAccessDecision(
-            """{"granted":true,"rules":[],"warnings":[],"provenance":{"providerId":"policy","attribution":{"name":"Policy","license":"internal"},"reproducibility":"reproducible","snapshotId":"3"}}""");
-
-        Assert.NotNull(decision.Provenance);
-        Assert.Equal("3", decision.Provenance!.SnapshotId);
     }
 }
 

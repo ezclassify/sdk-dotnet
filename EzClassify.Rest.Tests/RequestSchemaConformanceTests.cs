@@ -38,11 +38,6 @@ public class RequestSchemaConformanceTests
         ConceptId: "HIGH",
         Confidence: Confidence.Certain,
         Source: "parse",
-        ExpiresAt: "2030-01-01T00:00:00Z",
-        Metadata: JsonDocument.Parse("""{ "origin": "import" }""").RootElement.Clone(),
-        Provenance: new SourceReference(
-            "idp", new Attribution("IdP", "internal", "https://example.test/license", "IdP directory"),
-            SourceReproducibility.Reproducible, SnapshotId: "snap-1", Locator: "idp://levels/high"),
         ReplacedConceptId: "LEGACY_HIGH",
         SourceRule: "rule-7",
         Value: "H");
@@ -96,12 +91,9 @@ public class RequestSchemaConformanceTests
                 "text H text", outputFormat: "banner", inputFormat: "portion")),
             ["scheme.render"] = ("scheme/render", c => c.Schemes!.Get("source").RenderAsync(
                 new[] { Level }, outputFormat: "banner", preservation: RenderPreservation.Full)),
-            ["scheme.normalize"] = ("scheme/normalize", c => c.Schemes!.Get("source").NormalizeAsync(
-                "h", outputFormat: "banner", inputFormat: "portion")),
             ["scheme.check-coverage"] = ("scheme/check-coverage", c => c.Schemes!.Get("source").CheckCoverageAsync(
                 new[] { "L" }, "H", outputFormat: "banner", inputFormat: "portion")),
             ["scheme.diff"] = ("scheme/diff", c => c.Schemes!.Get("source").DiffAsync("H", "L", inputFormat: "portion")),
-            ["scheme.filter-concepts"] = ("scheme/filter-concepts", c => c.Schemes!.Get("source").FilterConceptsAsync("hi")),
             ["scheme.notices"] = ("scheme/notices", c => c.Schemes!.Get("source").NoticesAsync(new[] { Level })),
             ["scheme.view"] = ("scheme/view", c => c.Schemes!.Get("source").ViewAsync()),
             ["scheme.apply-preset"] = ("scheme/apply-preset", c => c.Schemes!.Get("source").ApplyPresetAsync(
@@ -109,8 +101,6 @@ public class RequestSchemaConformanceTests
             ["guide.scan"] = ("guide/scan", c => c.Guide!.ScanAsync("secret text", guideId: "g1")),
             ["guide.evaluate"] = ("guide/evaluate", c => c.Guide!.EvaluateAsync("g1", new[] { "r1" })),
             ["guide.evaluateMany"] = ("guide/evaluate", c => c.Guide!.EvaluateManyAsync(new[] { new GuideRuleSelection("g1", "r1") })),
-            ["guide.filter-rules"] = ("guide/filter-rules", c => c.Guide!.FilterRulesAsync("sec", guideId: "g1")),
-            ["guide.describe-rule"] = ("guide/describe-rule", c => c.Guide!.DescribeRuleAsync("r1", guideId: "g1")),
             ["guide.view"] = ("guide/view", c => c.Guide!.ViewAsync(guideId: "g1")),
             ["access.check"] = ("access/check", c => c.Access!.CheckAsync(
                 new[] { Level }, """{ "clearance": "high" }""", contextJson: """{ "orgs": ["org-1"] }""")),
@@ -118,7 +108,6 @@ public class RequestSchemaConformanceTests
                 "H", """{ "clearance": "high" }""", contextJson: """{ "orgs": ["org-1"] }""")),
             ["access.describe-requirements"] = ("access/describe-requirements", c => c.Access!.DescribeRequirementsAsync(
                 "H", new[] { Level })),
-            ["access.describe-rule"] = ("access/describe-rule", c => c.Access!.DescribeRuleAsync("rule-1")),
             ["crosswalk.translate-marking"] = ("crosswalk/translate", c => c.Crosswalk!.TranslateAsync("cw-1", "H")),
             ["crosswalk.translate-assertions"] = ("crosswalk/translate", c => c.Crosswalk!.TranslateAsync("cw-1", new[] { Level })),
             ["document.audit"] = ("document/audit", c => c.Document!.AuditAsync(
@@ -187,7 +176,6 @@ public class RequestSchemaConformanceTests
             [RoutePrefix + "scheme/concepts"] = c => c.Schemes!.Get("source").ConceptsAsync(),
             [RoutePrefix + "scheme/categories"] = c => c.Schemes!.Get("source").CategoriesAsync(),
             [RoutePrefix + "scheme/formats"] = c => c.Schemes!.Get("source").FormatsAsync(),
-            [RoutePrefix + "scheme/grammar"] = c => c.Schemes!.Get("source").GrammarAsync(),
             [RoutePrefix + "scheme/scopes"] = c => c.Schemes!.Get("source").ScopesAsync(),
             [RoutePrefix + "scheme/label-presets"] = c => c.Schemes!.Get("source").LabelPresetsAsync(),
             [RoutePrefix + "scheme/describe-concept"] = c => c.Schemes!.Get("source").DescribeConceptAsync("HIGH", "level", view: "short"),
@@ -459,6 +447,7 @@ internal sealed class OpenApiRequestSchemas
         var root = (JsonObject)ToJson(yaml.Documents[0].RootNode)!;
 
         var components = (JsonObject)root["components"]!["schemas"]!;
+        var parameters = (JsonObject)root["components"]!["parameters"]!;
         var schemas = new Dictionary<Operation, JsonObject>();
         var queries = new Dictionary<Operation, HashSet<string>>();
         var statuses = new Dictionary<Operation, HashSet<string>>();
@@ -472,8 +461,9 @@ internal sealed class OpenApiRequestSchemas
                 statuses[key] = ((JsonObject)operation!["responses"]!).Select(response => response.Key).ToHashSet(StringComparer.Ordinal);
                 queries[key] = (operation?["parameters"] as JsonArray ?? new JsonArray())
                     .OfType<JsonObject>()
-                    .Select(parameter => parameter["$ref"] is null ? parameter
-                        : throw new NotSupportedException($"{path} declares a $ref parameter; teach Load to follow it."))
+                    .Select(parameter => parameter["$ref"] is JsonValue reference
+                        ? (JsonObject)parameters[reference.GetValue<string>().Split('/')[^1]]!
+                        : parameter)
                     .Where(parameter => parameter["in"]?.GetValue<string>() == "query")
                     .Select(parameter => parameter["name"]!.GetValue<string>())
                     .ToHashSet(StringComparer.Ordinal);

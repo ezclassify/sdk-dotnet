@@ -31,10 +31,11 @@ internal static class CachePlanCalls
     {
         // -- cached --------------------------------------------------------------
         ["scheme.process|ctx-scheme-process.ok"] = async (c, ct, _, _) => Of(await c.Scheme!.ProcessAsync("OPEN", cancellationToken: ct)),
+        ["scheme.process|ctx-scheme-process.outputs-and-options"] = async (c, ct, _, _) =>
+            Of(await c.Scheme!.ProcessAsync("OPEN", outputs: new[] { "default" }, suggestFor: new[] { "level" }, cancellationToken: ct)),
         ["scheme.process|ctx-scheme-process.undeclared-format"] = async (c, ct, _, _) => Of(await c.Scheme!.ProcessAsync("OPEN", outputFormat: "nope", cancellationToken: ct)),
         ["scheme.validate|ctx-scheme-validate.ok"] = async (c, ct, _, _) => Of(await c.Scheme!.ValidateAsync("OPEN", cancellationToken: ct)),
         ["scheme.explain|ctx-scheme-explain.ok"] = async (c, ct, _, _) => Of(await c.Scheme!.ExplainAsync("OPEN", cancellationToken: ct)),
-        ["scheme.normalize|ctx-scheme-normalize.ok"] = async (c, ct, _, _) => Of(await c.Scheme!.NormalizeAsync("open", cancellationToken: ct)),
         ["scheme.render|ctx-scheme-render.ok"] = async (c, ct, _, _) => Of(await c.Scheme!.RenderAsync(new[] { Open }, cancellationToken: ct)),
         ["scheme.diff|ctx-scheme-diff.ok"] = async (c, ct, _, _) => Of(await c.Scheme!.DiffAsync("OPEN", "SENSITIVE", cancellationToken: ct)),
         ["scheme.aggregate|ctx-scheme-aggregate.ok"] = async (c, ct, _, _) => Of(await c.Scheme!.AggregateAsync(new[] { "OPEN", "SENSITIVE" }, cancellationToken: ct)),
@@ -70,23 +71,17 @@ internal static class CachePlanCalls
 
         // -- uncached ------------------------------------------------------------
         ["scheme.buildSchemeView|ctx-scheme-view.ok"] = async (c, ct, _, _) => Of(await c.Scheme!.ViewAsync(ct)),
-        ["scheme.filterConcepts|ctx-scheme-filter-concepts.ok"] = async (c, ct, _, _) => Of(await c.Scheme!.FilterConceptsAsync("open", ct)),
         ["scheme.checkCoverage|ctx-scheme-check-coverage.ok"] = async (c, ct, _, _) => Of(await c.Scheme!.CheckCoverageAsync(new[] { "OPEN" }, "SENSITIVE", cancellationToken: ct)),
         ["scheme.collectNotices|ctx-scheme-notices.ok"] = async (c, ct, _, _) => Of(await c.Scheme!.NoticesAsync(new[] { Open }, ct)),
         ["guide.scan|ctx-guide-scan.ok"] = async (c, ct, _, _) => Of(await c.Guide!.ScanAsync("This paragraph is confidential.", cancellationToken: ct)),
         ["guide.evaluate|ctx-guide-evaluate.ok"] = async (c, ct, _, _) => Of(await c.Guide!.EvaluateAsync("ez-test", new[] { "rule-sensitive" }, ct)),
-        ["guide.describeRule|ctx-guide-describe-rule.ok"] = async (c, ct, _, _) => Of(await c.Guide!.DescribeRuleAsync("rule-sensitive", cancellationToken: ct)),
-        ["guide.filterRules|ctx-guide-filter-rules.ok"] = async (c, ct, _, _) => Of(await c.Guide!.FilterRulesAsync("sensitive", cancellationToken: ct)),
         ["guide.buildGuideView|ctx-guide-view.ok"] = async (c, ct, _, _) => Of(await c.Guide!.ViewAsync(cancellationToken: ct)),
-        ["access.describeAccessRule|ctx-access-describe-rule.ok"] = async (c, ct, _, _) => Of(await c.Access!.DescribeRuleAsync("level-rule", ct)),
-        ["access.describeAccessRequirements|ctx-access-describe-requirements.ok"] = async (c, ct, _, _) => Of(await c.Access!.DescribeRequirementsAsync("OPEN", ct)),
 
         // -- scheme resources: per-call operations that reach the server every time --
         ["scheme.summary|ctx-scheme-summary.full"] = async (c, ct, _, _) => Of(await c.Scheme!.SummaryAsync(cancellationToken: ct)),
         ["scheme.concepts|ctx-scheme-concepts.full"] = async (c, ct, _, _) => Of(await c.Scheme!.ConceptsAsync(cancellationToken: ct)),
         ["scheme.categories|ctx-scheme-categories.full"] = async (c, ct, _, _) => Of(await c.Scheme!.CategoriesAsync(cancellationToken: ct)),
         ["scheme.formats|ctx-scheme-formats.full"] = async (c, ct, _, _) => Of(await c.Scheme!.FormatsAsync(cancellationToken: ct)),
-        ["scheme.grammar|ctx-scheme-grammar.full"] = async (c, ct, _, _) => Of(await c.Scheme!.GrammarAsync(cancellationToken: ct)),
         ["scheme.scopes|ctx-scheme-scopes.full"] = async (c, ct, _, _) => Of(await c.Scheme!.ScopesAsync(cancellationToken: ct)),
         ["scheme.labelPresets|ctx-scheme-label-presets.full"] = async (c, ct, _, _) => Of(await c.Scheme!.LabelPresetsAsync(ct)),
     };

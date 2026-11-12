@@ -20,7 +20,6 @@ public readonly struct Confidence : IEquatable<Confidence>, IWireToken<Confidenc
     private const string CertainValue = "certain";
     private const string InferredValue = "inferred";
     private const string RepairedValue = "repaired";
-    private const string UncertainValue = "uncertain";
 
     private readonly string? _value;
 
@@ -38,11 +37,8 @@ public readonly struct Confidence : IEquatable<Confidence>, IWireToken<Confidenc
     /// <summary>Produced by a repair of malformed input.</summary>
     public static Confidence Repaired { get; } = new(RepairedValue);
 
-    /// <summary>A low-confidence guess the caller should review.</summary>
-    public static Confidence Uncertain { get; } = new(UncertainValue);
-
     /// <summary>Whether this version of the SDK declares the token. False for a value a newer server sent.</summary>
-    public bool IsKnown => _value is CertainValue or InferredValue or RepairedValue or UncertainValue;
+    public bool IsKnown => _value is CertainValue or InferredValue or RepairedValue;
 
     /// <summary>Decode a token a caller supplies; only a declared confidence value is accepted.</summary>
     /// <param name="value">The wire token.</param>
@@ -82,69 +78,6 @@ public readonly struct Confidence : IEquatable<Confidence>, IWireToken<Confidenc
     string? IWireToken<Confidence>.Token => _value;
 
     Confidence IWireToken<Confidence>.FromToken(string value) => new(value);
-}
-
-/// <summary>Whether a validation finding blocks the marking or merely flags it.</summary>
-[JsonConverter(typeof(WireTokenJsonConverter<Severity>))]
-public readonly struct Severity : IEquatable<Severity>, IWireToken<Severity>
-{
-    private const string ErrorValue = "error";
-    private const string WarningValue = "warning";
-
-    private readonly string? _value;
-
-    /// <summary>Wraps a wire token, whether or not this SDK declares it.</summary>
-    /// <param name="value">The token exactly as it travels on the wire.</param>
-    /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
-    public Severity(string value) => _value = value ?? throw new ArgumentNullException(nameof(value));
-
-    /// <summary>A blocking problem: the marking is invalid and must be corrected.</summary>
-    public static Severity Error { get; } = new(ErrorValue);
-
-    /// <summary>A non-blocking concern the caller may surface but need not act on.</summary>
-    public static Severity Warning { get; } = new(WarningValue);
-
-    /// <summary>Whether this version of the SDK declares the token. False for a value a newer server sent.</summary>
-    public bool IsKnown => _value is ErrorValue or WarningValue;
-
-    /// <summary>Decode a token a caller supplies; only a declared severity value is accepted.</summary>
-    /// <param name="value">The wire token.</param>
-    /// <returns>The declared value.</returns>
-    /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
-    /// <exception cref="ArgumentException"><paramref name="value"/> is not a severity value this SDK declares.</exception>
-    public static Severity Parse(string value) => WireToken.Parse<Severity>(value, "severity value");
-
-    /// <summary>Decode a token a caller supplies without throwing; only a declared severity value is accepted.</summary>
-    /// <param name="value">The wire token.</param>
-    /// <param name="result">The declared value, or <c>default</c> when the token is not declared.</param>
-    /// <returns>True when <paramref name="value"/> is a declared token.</returns>
-    public static bool TryParse(string? value, out Severity result) => WireToken.TryParse(value, out result);
-
-    /// <summary>The wire token, exactly as it was received or constructed.</summary>
-    /// <exception cref="InvalidOperationException">The value is <c>default(Severity)</c>, which carries no token.</exception>
-    public string ToWire() => WireToken.Require(_value, nameof(Severity));
-
-    /// <summary>The wire token; empty for <c>default(Severity)</c>.</summary>
-    public override string ToString() => _value ?? string.Empty;
-
-    /// <summary>Ordinal comparison of the wire tokens.</summary>
-    public bool Equals(Severity other) => string.Equals(_value, other._value, StringComparison.Ordinal);
-
-    /// <inheritdoc />
-    public override bool Equals(object? obj) => obj is Severity other && Equals(other);
-
-    /// <inheritdoc />
-    public override int GetHashCode() => WireToken.Hash(_value);
-
-    /// <summary>Ordinal comparison of the wire tokens.</summary>
-    public static bool operator ==(Severity left, Severity right) => left.Equals(right);
-
-    /// <summary>Ordinal comparison of the wire tokens.</summary>
-    public static bool operator !=(Severity left, Severity right) => !left.Equals(right);
-
-    string? IWireToken<Severity>.Token => _value;
-
-    Severity IWireToken<Severity>.FromToken(string value) => new(value);
 }
 
 /// <summary>What class of advisory a <see cref="Warning"/> carries.</summary>
@@ -862,14 +795,10 @@ public readonly struct RecognitionCorrectionReason : IEquatable<RecognitionCorre
 [JsonConverter(typeof(WireTokenJsonConverter<RecognitionLimit>))]
 public readonly struct RecognitionLimit : IEquatable<RecognitionLimit>, IWireToken<RecognitionLimit>
 {
-    private const string AbortedValue = "aborted";
     private const string InputLengthValue = "input-length";
     private const string TransitionsValue = "transitions";
     private const string LookupsValue = "lookups";
     private const string LiveStatesValue = "live-states";
-    private const string WallClockValue = "wall-clock";
-    private const string GrammarSizeValue = "grammar-size";
-    private const string DepthValue = "depth";
 
     private readonly string? _value;
 
@@ -877,9 +806,6 @@ public readonly struct RecognitionLimit : IEquatable<RecognitionLimit>, IWireTok
     /// <param name="value">The token exactly as it travels on the wire.</param>
     /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
     public RecognitionLimit(string value) => _value = value ?? throw new ArgumentNullException(nameof(value));
-
-    /// <summary>The caller aborted recognition.</summary>
-    public static RecognitionLimit Aborted { get; } = new(AbortedValue);
 
     /// <summary>The input length ceiling was reached.</summary>
     public static RecognitionLimit InputLength { get; } = new(InputLengthValue);
@@ -893,17 +819,8 @@ public readonly struct RecognitionLimit : IEquatable<RecognitionLimit>, IWireTok
     /// <summary>The live-state ceiling was reached.</summary>
     public static RecognitionLimit LiveStates { get; } = new(LiveStatesValue);
 
-    /// <summary>The elapsed-time ceiling was reached.</summary>
-    public static RecognitionLimit WallClock { get; } = new(WallClockValue);
-
-    /// <summary>The grammar-size ceiling was reached.</summary>
-    public static RecognitionLimit GrammarSize { get; } = new(GrammarSizeValue);
-
-    /// <summary>The recursion-depth ceiling was reached.</summary>
-    public static RecognitionLimit Depth { get; } = new(DepthValue);
-
     /// <summary>Whether this version of the SDK declares the token. False for a value a newer server sent.</summary>
-    public bool IsKnown => _value is AbortedValue or InputLengthValue or TransitionsValue or LookupsValue or LiveStatesValue or WallClockValue or GrammarSizeValue or DepthValue;
+    public bool IsKnown => _value is InputLengthValue or TransitionsValue or LookupsValue or LiveStatesValue;
 
     /// <summary>Decode a token a caller supplies; only a declared recognition limit is accepted.</summary>
     /// <param name="value">The wire token.</param>

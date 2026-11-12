@@ -76,30 +76,8 @@ internal static class ContextResultParser
         );
     }
 
-    /// <summary>Parse a filter result (concepts or guide rules) from a JSON string.</summary>
-    public static FilterResult ParseFilterResult(string json)
-    {
-        using var doc = JsonDocument.Parse(json);
-        ResponseCheck.Require("FilterResult", doc.RootElement);
-        return ParseFilterResultElement(doc.RootElement);
-    }
-
     // Element core: a nested occurrence is read from the element already
     // in hand instead of being re-serialized and re-parsed.
-    internal static FilterResult ParseFilterResultElement(JsonElement root)
-    {
-        var counts = JsonRead.RequiredProperty(root, "categoryCounts");
-        JsonRead.RequireObject(counts, "category counts");
-        var byCategory = new Dictionary<string, FilterCount>();
-        foreach (var entry in counts.EnumerateObject()) byCategory[entry.Name] = ParseFilterCount(entry.Value);
-
-        return new FilterResult(
-            VisibleIds: JsonRead.StrictStringList(root, "visibleIds"),
-            CategoryCounts: new ReadOnlyDictionary<string, FilterCount>(byCategory),
-            Total: ParseFilterCount(JsonRead.RequiredProperty(root, "total"))
-        );
-    }
-
     /// <summary>Parse the list of concept notices from a JSON string.</summary>
     public static IReadOnlyList<Notice> ParseNotices(string json)
     {
@@ -174,32 +152,8 @@ internal static class ContextResultParser
         return new ReadOnlyDictionary<string, SuggestResult>(map);
     }
 
-    /// <summary>Parse a guide rule description from a JSON string.</summary>
-    public static RuleDescription ParseRuleDescription(string json)
-    {
-        using var doc = JsonDocument.Parse(json);
-        ResponseCheck.Require("RuleDescription", doc.RootElement);
-        return ParseRuleDescriptionElement(doc.RootElement);
-    }
-
     // Element core: a nested occurrence is read from the element already
     // in hand instead of being re-serialized and re-parsed.
-    internal static RuleDescription ParseRuleDescriptionElement(JsonElement root)
-    {
-        return new RuleDescription(
-            Rule: ReadRuleReference(JsonRead.RequiredProperty(root, "rule")),
-            Guide: ReadArtifactReference(JsonRead.RequiredProperty(root, "guide")),
-            Name: JsonRead.RequiredString(root, "name"),
-            OutcomeText: JsonRead.RequiredString(root, "outcomeText"),
-            IsComputed: JsonRead.RequiredBool(root, "isComputed"),
-            DependsOn: JsonRead.RequiredList(root, "dependsOn", ReadRuleReference),
-            Overrides: JsonRead.RequiredList(root, "overrides", ReadRuleReference),
-            Lines: JsonRead.StrictStringList(root, "lines"),
-            Description: JsonRead.OptionalString(root, "description"),
-            WhenText: JsonRead.OptionalString(root, "whenText")
-        );
-    }
-
     /// <summary>Parse an access rule description from a JSON string.</summary>
     public static AccessRuleDescription ParseAccessRuleDescription(string json)
     {
@@ -224,7 +178,6 @@ internal static class ContextResultParser
         AttributesNeeded: JsonRead.StrictStringList(el, "attributesNeeded"),
         DependsOn: JsonRead.RequiredList(el, "dependsOn", ReadRuleReference),
         Overrides: JsonRead.RequiredList(el, "overrides", ReadRuleReference),
-        Lines: JsonRead.StrictStringList(el, "lines"),
         Description: JsonRead.OptionalString(el, "description"),
         WhenText: JsonRead.OptionalString(el, "whenText")
     );
@@ -250,7 +203,6 @@ internal static class ContextResultParser
             Rules: JsonRead.RequiredList(root, "rules", ReadAccessRuleDescription),
             CombinedRequirementText: JsonRead.RequiredString(root, "combinedRequirementText"),
             CombinedAttributesNeeded: JsonRead.StrictStringList(root, "combinedAttributesNeeded"),
-            Lines: JsonRead.StrictStringList(root, "lines"),
             Marking: JsonRead.OptionalString(root, "marking")
         );
     }
@@ -397,7 +349,6 @@ internal static class ContextResultParser
         return new ContextDocumentAuditResult(
             ParseContextResolutionElement(JsonRead.RequiredProperty(root, "resolution")),
             ReadDocumentAuditReport(JsonRead.RequiredProperty(root, "result")),
-            JsonRead.RequiredList(root, "operationLimitations", ParseAssessmentLimitationElement),
             ParseDocumentResponseProjectionElement(JsonRead.RequiredProperty(root, "responseProjection")));
     }
 
@@ -405,14 +356,14 @@ internal static class ContextResultParser
     public static ContextSchemeProcessResult ParseContextSchemeProcessResult(string json)
     {
         var envelope = ParseContextEnvelope(json, "scheme process", "ContextSchemeProcessResult", ResultParser.ParseProcessResultElement);
-        return new(envelope.Resolution, envelope.Result, envelope.Limitations);
+        return new(envelope.Resolution, envelope.Result);
     }
 
     /// <summary>Parse the resolved Context envelope for scheme validation or label preset expansion.</summary>
     public static ContextSchemeValidateResult ParseContextSchemeValidateResult(string json)
     {
         var envelope = ParseContextEnvelope(json, "scheme validation", "ContextSchemeValidateResult", ResultParser.ParseValidateResultElement);
-        return new(envelope.Resolution, envelope.Result, envelope.Limitations);
+        return new(envelope.Resolution, envelope.Result);
     }
 
     /// <summary>Parse the resolved Context envelope for a scheme explanation.</summary>
@@ -423,35 +374,35 @@ internal static class ContextResultParser
             JsonRead.RequireObject(el, "explanation trace");
             return ResultParser.ReadExplanationTrace(el);
         });
-        return new(envelope.Resolution, envelope.Result, envelope.Limitations);
+        return new(envelope.Resolution, envelope.Result);
     }
 
     /// <summary>Parse the resolved Context envelope for scheme suggestions.</summary>
     public static ContextSchemeSuggestResult ParseContextSchemeSuggestResult(string json)
     {
         var envelope = ParseContextEnvelope(json, "scheme suggestions", "ContextSchemeSuggestResult", ParseSuggestResultElement);
-        return new(envelope.Resolution, envelope.Result, envelope.Limitations);
+        return new(envelope.Resolution, envelope.Result);
     }
 
     /// <summary>Parse the resolved Context envelope for per-category scheme suggestions.</summary>
     public static ContextSchemeSuggestForCategoriesResult ParseContextSchemeSuggestForCategoriesResult(string json)
     {
         var envelope = ParseContextEnvelope(json, "per-category scheme suggestions", "ContextSchemeSuggestForCategoriesResult", ParseSuggestResultsByCategoryElement);
-        return new(envelope.Resolution, envelope.Result, envelope.Limitations);
+        return new(envelope.Resolution, envelope.Result);
     }
 
     /// <summary>Parse the resolved Context envelope for scheme aggregation.</summary>
     public static ContextSchemeAggregateResult ParseContextSchemeAggregateResult(string json)
     {
         var envelope = ParseContextEnvelope(json, "scheme aggregation", "ContextSchemeAggregateResult", ResultParser.ParseAggregateResultElement);
-        return new(envelope.Resolution, envelope.Result, envelope.Limitations);
+        return new(envelope.Resolution, envelope.Result);
     }
 
     /// <summary>Parse the resolved Context envelope for scheme scanning.</summary>
     public static ContextSchemeScanResult ParseContextSchemeScanResult(string json)
     {
         var envelope = ParseContextEnvelope(json, "scheme scan", "ContextSchemeScanResult", ResultParser.ParseScanResponseElement);
-        return new(envelope.Resolution, envelope.Result, envelope.Limitations);
+        return new(envelope.Resolution, envelope.Result);
     }
 
     /// <summary>Parse the resolved Context envelope for scheme rendering.</summary>
@@ -460,112 +411,77 @@ internal static class ContextResultParser
         var envelope = ParseContextEnvelope(json, "scheme render", "ContextSchemeRenderResult", el => new RenderResponse(
             ParseRenderResultElement(el),
             ResultParser.ParseRenderAssessmentElement(JsonRead.RequiredProperty(el, "assessment"))));
-        return new(envelope.Resolution, envelope.Result, envelope.Limitations);
-    }
-
-    /// <summary>Parse the resolved Context envelope for scheme normalization.</summary>
-    public static ContextSchemeNormalizeResult ParseContextSchemeNormalizeResult(string json)
-    {
-        var envelope = ParseContextEnvelope(json, "scheme normalize", "ContextSchemeNormalizeResult", el => new NormalizeResponse(ParseNormalizeResultElement(el)));
-        return new(envelope.Resolution, envelope.Result, envelope.Limitations);
+        return new(envelope.Resolution, envelope.Result);
     }
 
     /// <summary>Parse the resolved Context envelope for scheme coverage checks.</summary>
     public static ContextSchemeCoverageResult ParseContextSchemeCoverageResult(string json)
     {
         var envelope = ParseContextEnvelope(json, "scheme coverage", "ContextSchemeCoverageResult", el => ReadCoverageReport(el) ?? throw new JsonException("Expected a coverage report object"));
-        return new(envelope.Resolution, envelope.Result, envelope.Limitations);
+        return new(envelope.Resolution, envelope.Result);
     }
 
     /// <summary>Parse the resolved Context envelope for concept descriptions.</summary>
     public static ContextSchemeConceptDescriptionResult ParseContextSchemeConceptDescriptionResult(string json)
     {
         var envelope = ParseContextEnvelope(json, "concept description", "ContextSchemeConceptDescriptionResult", ParseConceptDescriptionElement);
-        return new(envelope.Resolution, envelope.Result, envelope.Limitations);
+        return new(envelope.Resolution, envelope.Result);
     }
 
     /// <summary>Parse the resolved Context envelope for scheme diffs.</summary>
     public static ContextSchemeDiffResult ParseContextSchemeDiffResult(string json)
     {
         var envelope = ParseContextEnvelope(json, "scheme diff", "ContextSchemeDiffResult", ResultParser.ParseDiffResultElement);
-        return new(envelope.Resolution, envelope.Result, envelope.Limitations);
-    }
-
-    /// <summary>Parse the resolved Context envelope for concept filtering.</summary>
-    public static ContextSchemeFilterConceptsResult ParseContextSchemeFilterConceptsResult(string json)
-    {
-        var envelope = ParseContextEnvelope(json, "concept filter", "ContextSchemeFilterConceptsResult", ParseFilterResultElement);
-        return new(envelope.Resolution, envelope.Result, envelope.Limitations);
+        return new(envelope.Resolution, envelope.Result);
     }
 
     /// <summary>Parse the resolved Context envelope for scheme notices.</summary>
     public static ContextSchemeNoticesResult ParseContextSchemeNoticesResult(string json)
     {
         var envelope = ParseContextEnvelope(json, "scheme notices", "ContextSchemeNoticesResult", ParseNoticesElement);
-        return new(envelope.Resolution, envelope.Result, envelope.Limitations);
+        return new(envelope.Resolution, envelope.Result);
     }
 
     /// <summary>Parse the resolved Context envelope for a scheme structural view.</summary>
     public static ContextSchemeViewResult ParseContextSchemeViewResult(string json)
     {
         var envelope = ParseContextEnvelope(json, "scheme view", "ContextSchemeViewResult", ReadSchemeView);
-        return new(envelope.Resolution, envelope.Result, envelope.Limitations);
+        return new(envelope.Resolution, envelope.Result);
     }
 
     /// <summary>Parse the resolved Context envelope for guide scanning.</summary>
     public static ContextGuideScanResult ParseContextGuideScanResult(string json)
     {
         var envelope = ParseContextEnvelope(json, "guide scan", "ContextGuideScanResult", ResultParser.ParseGuideScanResultsElement);
-        return new(envelope.Resolution, envelope.Result, envelope.Limitations);
+        return new(envelope.Resolution, envelope.Result);
     }
 
     /// <summary>Parse the resolved Context envelope for guide evaluation.</summary>
     public static ContextGuideEvaluationResult ParseContextGuideEvaluationResult(string json)
     {
         var envelope = ParseContextEnvelope(json, "guide evaluation", "ContextGuideEvaluationResult", ResultParser.ReadEvaluationResult);
-        return new(envelope.Resolution, envelope.Result, envelope.Limitations);
-    }
-
-    /// <summary>Parse the resolved Context envelope for guide-rule filtering.</summary>
-    public static ContextGuideFilterRulesResult ParseContextGuideFilterRulesResult(string json)
-    {
-        var envelope = ParseContextEnvelope(json, "guide rule filter", "ContextGuideFilterRulesResult", ParseFilterResultElement);
-        return new(envelope.Resolution, envelope.Result, envelope.Limitations);
-    }
-
-    /// <summary>Parse the resolved Context envelope for guide-rule descriptions.</summary>
-    public static ContextGuideRuleDescriptionResult ParseContextGuideRuleDescriptionResult(string json)
-    {
-        var envelope = ParseContextEnvelope(json, "guide rule description", "ContextGuideRuleDescriptionResult", ParseRuleDescriptionElement);
-        return new(envelope.Resolution, envelope.Result, envelope.Limitations);
+        return new(envelope.Resolution, envelope.Result);
     }
 
     /// <summary>Parse the resolved Context envelope for a guide structural view.</summary>
     public static ContextGuideViewResult ParseContextGuideViewResult(string json)
     {
         var envelope = ParseContextEnvelope(json, "guide view", "ContextGuideViewResult", ReadGuideView);
-        return new(envelope.Resolution, envelope.Result, envelope.Limitations);
+        return new(envelope.Resolution, envelope.Result);
     }
 
     /// <summary>Parse the resolved Context envelope for an access decision.</summary>
     public static ContextAccessDecisionResult ParseContextAccessDecisionResult(string json)
     {
         var envelope = ParseContextEnvelope(json, "access decision", "ContextAccessDecisionResult", ResultParser.ReadAccessDecision);
-        return new(envelope.Resolution, envelope.Result, envelope.Limitations);
+        return new(envelope.Resolution, envelope.Result);
     }
 
     /// <summary>Parse the resolved Context envelope for access requirements.</summary>
     public static ContextAccessRequirementsResult ParseContextAccessRequirementsResult(string json)
     {
         var envelope = ParseContextEnvelope(json, "access requirements", "ContextAccessRequirementsResult", ParseAccessRequirementsDescriptionElement);
-        return new(envelope.Resolution, envelope.Result, envelope.Limitations);
-    }
-
-    /// <summary>Parse the resolved Context envelope for an access-rule description.</summary>
-    public static ContextAccessRuleDescriptionResult ParseContextAccessRuleDescriptionResult(string json)
-    {
-        var envelope = ParseContextEnvelope(json, "access rule description", "ContextAccessRuleDescriptionResult", ReadAccessRuleDescription);
-        return new(envelope.Resolution, envelope.Result, envelope.Limitations);
+        return new(envelope.Resolution, envelope.Result);
     }
 
     /// <summary>Parse every access-rule description from the Context resource response.</summary>
@@ -668,7 +584,7 @@ internal static class ContextResultParser
     public static ContextCrosswalkTranslationResult ParseContextCrosswalkTranslationResult(string json)
     {
         var envelope = ParseContextEnvelope(json, "crosswalk translation", "ContextCrosswalkTranslationResult", el => el.Clone());
-        return new(envelope.Resolution, envelope.Result, envelope.Limitations);
+        return new(envelope.Resolution, envelope.Result);
     }
 
     // --- scheme resource projections ----------------------------------------
@@ -859,18 +775,6 @@ internal static class ContextResultParser
         return new FormatSyntax(new FormatSyntaxType(JsonRead.RequiredString(el, "type")));
     }
 
-    /// <summary>Parse a scheme's parse grammar from a JSON string.</summary>
-    public static SchemeGrammar ParseSchemeGrammar(string json)
-    {
-        using var doc = JsonDocument.Parse(json);
-        var root = doc.RootElement;
-        JsonRead.RequireObject(root, "scheme grammar");
-        ResponseCheck.Require("SchemeGrammar", root);
-        return new SchemeGrammar(
-            CaseSensitive: JsonRead.RequiredBool(root, "caseSensitive"),
-            StripWhitespace: JsonRead.RequiredBool(root, "stripWhitespace"));
-    }
-
     /// <summary>
     /// Parse a scheme's scope definitions from a JSON string. The contract
     /// answers an array rather than a map, because the order is the order a
@@ -951,23 +855,9 @@ internal static class ContextResultParser
         return JsonRead.RequiredString(root, "result");
     }
 
-    /// <summary>Parse the <c>{ result }</c> envelope returned by a normalize op.</summary>
-    public static string ParseNormalizeResult(string json)
-    {
-        using var doc = JsonDocument.Parse(json);
-        if (doc.RootElement.ValueKind == JsonValueKind.Object) ResponseCheck.Require("NormalizeResponse", doc.RootElement);
-        return ParseNormalizeResultElement(doc.RootElement);
-    }
-
     // Element core: a nested occurrence is read from the element already
     // in hand instead of being re-serialized and re-parsed.
-    internal static string ParseNormalizeResultElement(JsonElement root)
-    {
-        JsonRead.RequireObject(root, "result envelope");
-        return JsonRead.RequiredString(root, "result");
-    }
-
-    private static (ContextResolution Resolution, T Result, IReadOnlyList<AssessmentLimitation> Limitations)
+    private static (ContextResolution Resolution, T Result)
         ParseContextEnvelope<T>(string json, string operation, string component, Func<JsonElement, T> parseResult)
     {
         using var doc = JsonDocument.Parse(json);
@@ -976,8 +866,7 @@ internal static class ContextResultParser
         ResponseCheck.Require(component, root);
         return (
             ParseContextResolutionElement(JsonRead.RequiredProperty(root, "resolution")),
-            parseResult(JsonRead.RequiredProperty(root, "result")),
-            JsonRead.RequiredList(root, "operationLimitations", ParseAssessmentLimitationElement));
+            parseResult(JsonRead.RequiredProperty(root, "result")));
     }
 
     /// <summary>Parse an immutable artifact reference.</summary>
@@ -1010,27 +899,7 @@ internal static class ContextResultParser
         return new RuleReference(
             ReadArtifactReference(JsonRead.RequiredProperty(el, "artifact")),
             JsonRead.RequiredString(el, "ruleId"),
-            JsonRead.RequiredString(el, "ruleDigest"),
-            el.TryGetProperty("source", out var source) && source.ValueKind == JsonValueKind.Object
-                ? ParseRuleSourceReferenceElement(source) : null);
-    }
-
-    /// <summary>Parse an observed source reference.</summary>
-    public static SourceReference ParseSourceReferenceElement(JsonElement el)
-    {
-        ResponseCheck.Require("SourceReference", el);
-        return ReadSourceReference(el);
-    }
-
-    internal static SourceReference ReadSourceReference(JsonElement el)
-    {
-        JsonRead.RequireObject(el, "source reference");
-        return new SourceReference(
-            JsonRead.RequiredString(el, "providerId"),
-            ParseAttributionElement(JsonRead.RequiredProperty(el, "attribution")),
-            new SourceReproducibility(JsonRead.RequiredString(el, "reproducibility")),
-            JsonRead.OptionalString(el, "snapshotId"),
-            JsonRead.OptionalString(el, "locator"));
+            JsonRead.RequiredString(el, "ruleDigest"));
     }
 
     /// <summary>Parse access-rule activation evidence.</summary>
@@ -1175,8 +1044,7 @@ internal static class ContextResultParser
 
     private static ContextResolution ParseContextResolutionElement(JsonElement el) => new(
         JsonRead.RequiredString(el, "contextId"), JsonRead.RequiredString(el, "resolvedVersion"),
-        JsonRead.RequiredList(el, "artifacts", ReadArtifactReference),
-        JsonRead.RequiredList(el, "sources", ReadSourceReference), JsonRead.OptionalString(el, "requestedVersion"));
+        JsonRead.RequiredList(el, "artifacts", ReadArtifactReference), JsonRead.OptionalString(el, "requestedVersion"));
 
     private static DocumentResponseProjection ParseDocumentResponseProjectionElement(JsonElement el) => new(
         new DocumentResponseProfile(JsonRead.RequiredString(el, "profile")),
@@ -1185,18 +1053,10 @@ internal static class ContextResultParser
 
     private static DocumentResponseCounts ParseDocumentResponseCountsElement(JsonElement el) => new(
         JsonRead.RequiredInt(el, "nominations"), JsonRead.RequiredInt(el, "evidenceSpans"),
-        JsonRead.RequiredInt(el, "guideUnits"), JsonRead.RequiredInt(el, "accessRuleResults"),
-        JsonRead.RequiredInt(el, "contentRequirements"), JsonRead.RequiredInt(el, "contextRequirements"));
+        JsonRead.RequiredInt(el, "guideUnits"));
 
     private static AssessmentLimitation ParseAssessmentLimitationElement(JsonElement el) => new(
         JsonRead.RequiredString(el, "code"), JsonRead.RequiredString(el, "reason"), JsonRead.OptionalString(el, "scope"));
-
-    private static RuleSourceReference ParseRuleSourceReferenceElement(JsonElement el) => new(
-        JsonRead.RequiredString(el, "providerId"), new SourceReproducibility(JsonRead.RequiredString(el, "reproducibility")),
-        JsonRead.OptionalString(el, "snapshotId"));
-
-    private static Attribution ParseAttributionElement(JsonElement el) => new(
-        JsonRead.RequiredString(el, "name"), JsonRead.RequiredString(el, "license"), JsonRead.OptionalString(el, "licenseUrl"), JsonRead.OptionalString(el, "citation"));
 
     // Optional wire fields: absent or explicitly null reads as null. A present
     // value is still decoded strictly, so a wrong type is a contract violation
@@ -1297,10 +1157,5 @@ internal static class ContextResultParser
             Rendered: JsonRead.RequiredString(el, "rendered")
         );
     }
-
-    private static FilterCount ParseFilterCount(JsonElement el) => new(
-        Visible: JsonRead.RequiredInt(el, "visible"),
-        Total: JsonRead.RequiredInt(el, "total")
-    );
 
 }

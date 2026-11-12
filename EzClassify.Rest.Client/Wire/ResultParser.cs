@@ -25,10 +25,6 @@ internal static class ResultParser
         ConceptId: JsonRead.RequiredString(a, "conceptId"),
         Confidence: new Confidence(JsonRead.RequiredString(a, "confidence")),
         Source: JsonRead.RequiredString(a, "source"),
-        ExpiresAt: JsonRead.OptionalString(a, "expiresAt"),
-        Metadata: OptionalOpaque(a, "metadata"),
-        Provenance: a.TryGetProperty("provenance", out var provenance) && provenance.ValueKind == JsonValueKind.Object
-            ? ContextResultParser.ReadSourceReference(provenance) : null,
         ReplacedConceptId: JsonRead.OptionalString(a, "replacedConceptId"),
         SourceRule: JsonRead.OptionalString(a, "sourceRule"),
         Value: JsonRead.OptionalString(a, "value")
@@ -44,11 +40,9 @@ internal static class ResultParser
     internal static ValidationError ReadValidationError(JsonElement e) => new(
         ConstraintId: JsonRead.RequiredString(e, "constraintId"),
         Message: JsonRead.RequiredString(e, "message"),
-        Severity: WireToken.ReadOptional<Severity>(JsonRead.OptionalString(e, "severity")),
         AffectedConcepts: JsonRead.TolerantOptionalStringList(e, "affectedConcepts"),
         CategoryId: JsonRead.OptionalString(e, "categoryId"),
-        DidYouMean: JsonRead.TolerantOptionalStringList(e, "didYouMean"),
-        SuggestedFix: JsonRead.OptionalString(e, "suggestedFix")
+        DidYouMean: JsonRead.TolerantOptionalStringList(e, "didYouMean")
     );
 
     /// <summary>Parse a warning from a JSON element.</summary>
@@ -153,7 +147,6 @@ internal static class ResultParser
     internal static TraceRepair ReadTraceRepair(JsonElement el) => new(
         RuleId: JsonRead.RequiredString(el, "ruleId"),
         Description: JsonRead.RequiredString(el, "description"),
-        Confidence: JsonRead.RequiredString(el, "confidence"),
         Before: JsonRead.RequiredString(el, "before"),
         After: JsonRead.RequiredString(el, "after"),
         Cosmetic: el.TryGetProperty("cosmetic", out var cos)
@@ -292,9 +285,6 @@ internal static class ResultParser
             Renders: ParseRenderResults(root),
             Valid: JsonRead.RequiredBool(root, "valid"),
             Warnings: JsonRead.RequiredList(root, "warnings", ReadWarning),
-            // Sent only when repair changed the marking. A fix for a rule repair enforced is
-            // applied to this reading, not to Assertions, so dropping it breaks that fix.
-            AssertionsBeforeRepair: JsonRead.TolerantOptionalList(root, "assertionsBeforeRepair", ReadAssertion),
             DisplayColor: OptionalDisplayColor(root),
             Recognition: Present(root, "recognition")
                 ? ParseRecognitionWithCorrections(root.GetProperty("recognition"))
@@ -584,12 +574,8 @@ internal static class ResultParser
             Spans: JsonRead.RequiredList(el, "spans", span => new GuideScanSpan(
                 End: JsonRead.RequiredInt(span, "end"),
                 Keyword: JsonRead.RequiredString(span, "keyword"),
-                Start: JsonRead.RequiredInt(span, "start"),
-                Confidence: span.TryGetProperty("confidence", out var confidence) && confidence.ValueKind == JsonValueKind.Number
-                    ? confidence.GetDouble() : (double?)null)),
-            GuideId: JsonRead.RequiredString(el, "guideId"),
-            Provenance: el.TryGetProperty("provenance", out var provenance) && provenance.ValueKind == JsonValueKind.Object
-                ? ContextResultParser.ReadSourceReference(provenance) : null));
+                Start: JsonRead.RequiredInt(span, "start"))),
+            GuideId: JsonRead.RequiredString(el, "guideId")));
     }
 
     /// <summary>Parse a single evaluation result from a JSON string.</summary>
@@ -657,10 +643,7 @@ internal static class ResultParser
                 Skipped: JsonRead.RequiredBool(rule, "skipped"),
                 ModernizedFrom: JsonRead.TolerantOptionalList(rule, "modernizedFrom", ReadConceptModernization),
                 Reason: JsonRead.OptionalString(rule, "reason"))),
-            Warnings: JsonRead.RequiredList(root, "warnings", ReadWarning),
-            Provenance: root.TryGetProperty("provenance", out var provenance) && provenance.ValueKind == JsonValueKind.Object
-                ? ContextResultParser.ReadSourceReference(provenance)
-                : null
+            Warnings: JsonRead.RequiredList(root, "warnings", ReadWarning)
         );
     }
 

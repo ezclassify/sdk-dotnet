@@ -110,21 +110,16 @@ public record TraceEntry(
 
 /// <summary>
 /// One repair the engine applied while normalizing malformed input, with the
-/// before/after strings. <see cref="Confidence"/> is an open string
-/// (<c>'safe'</c> | <c>'uncertain'</c> are documented) rather than the typed
-/// <see cref="EzClassify.Confidence"/>; the repair confidence vocabulary
-/// is a distinct, deliberately open set on the wire.
+/// before/after strings.
 /// </summary>
 /// <param name="RuleId">The id of the repair rule that fired.</param>
 /// <param name="Description">What the repair does, as the scheme describes it.</param>
-/// <param name="Confidence">The confidence the scheme declares for the repair rule.</param>
 /// <param name="Before">The text before the repair.</param>
 /// <param name="After">The text after the repair.</param>
 /// <param name="Cosmetic">True when the repair changed only formatting and left the assertions as they were.</param>
 public record TraceRepair(
     string RuleId,
     string Description,
-    string Confidence,
     string Before,
     string After,
     bool? Cosmetic = null
@@ -258,27 +253,6 @@ public record ConceptDescription(
     IReadOnlyList<string>? Rules = null
 );
 
-/// <summary>Visible/total pair for a filter bucket.</summary>
-/// <param name="Visible">Items that matched the query.</param>
-/// <param name="Total">Items in every category.</param>
-public record FilterCount(
-    int Visible,
-    int Total
-);
-
-/// <summary>
-/// Substring-filter result over concepts or guide rules: which ids matched,
-/// per-category counts, and the global visible/total tally.
-/// </summary>
-/// <param name="VisibleIds">IDs of concepts or rules that matched the query.</param>
-/// <param name="CategoryCounts">Per-category counts.</param>
-/// <param name="Total">Aggregate counts across all categories.</param>
-public record FilterResult(
-    IReadOnlyList<string> VisibleIds,
-    IReadOnlyDictionary<string, FilterCount> CategoryCounts,
-    FilterCount Total
-);
-
 /// <summary>A regulatory or handling notice attached to a concept, collected for a set of assertions.</summary>
 /// <param name="ConceptId">The concept the notice is attached to.</param>
 /// <param name="ConceptName">The concept's display name, for showing beside the notice.</param>
@@ -295,30 +269,6 @@ public record Notice(
     IReadOnlyDictionary<string, string>? Views = null
 );
 
-/// <summary>Server-side description of a single guide rule.</summary>
-/// <param name="Rule">Qualified rule being described.</param>
-/// <param name="Guide">Guide artifact that owns the rule.</param>
-/// <param name="Name">Human-readable rule name.</param>
-/// <param name="OutcomeText">Human-readable outcome expression.</param>
-/// <param name="IsComputed">Whether the rule is computed from other guide facts.</param>
-/// <param name="DependsOn">Qualified rules referenced by this rule's activation block.</param>
-/// <param name="Overrides">Qualified rules this rule overrides when it fires.</param>
-/// <param name="Lines">Flattened multi-line description matching <c>ConceptDescription.lines</c>.</param>
-/// <param name="Description">Optional policy-authored description.</param>
-/// <param name="WhenText">Human-readable activation expression.</param>
-public record RuleDescription(
-    RuleReference Rule,
-    ArtifactReference Guide,
-    string Name,
-    string OutcomeText,
-    bool IsComputed,
-    IReadOnlyList<RuleReference> DependsOn,
-    IReadOnlyList<RuleReference> Overrides,
-    IReadOnlyList<string> Lines,
-    string? Description = null,
-    string? WhenText = null
-);
-
 /// <summary>Server-side description of a single access rule.</summary>
 /// <param name="Rule">Qualified rule being described.</param>
 /// <param name="Access">Access artifact that owns the rule.</param>
@@ -328,7 +278,6 @@ public record RuleDescription(
 /// <param name="AttributesNeeded">Subject or context paths required to evaluate the rule.</param>
 /// <param name="DependsOn">Qualified rules this rule depends on.</param>
 /// <param name="Overrides">Qualified rules this rule overrides.</param>
-/// <param name="Lines">Line-oriented rendering of the description.</param>
 /// <param name="Description">Optional policy-authored description.</param>
 /// <param name="WhenText">Human-readable activation expression.</param>
 public record AccessRuleDescription(
@@ -340,7 +289,6 @@ public record AccessRuleDescription(
     IReadOnlyList<string> AttributesNeeded,
     IReadOnlyList<RuleReference> DependsOn,
     IReadOnlyList<RuleReference> Overrides,
-    IReadOnlyList<string> Lines,
     string? Description = null,
     string? WhenText = null
 );
@@ -357,7 +305,6 @@ public record AccessRuleDescription(
 /// <param name="Rules">Per-rule immutable-policy descriptions.</param>
 /// <param name="CombinedRequirementText">Combined human-readable requirement expression.</param>
 /// <param name="CombinedAttributesNeeded">Union of subject and context paths needed to evaluate the target.</param>
-/// <param name="Lines">Line-oriented rendering of the combined description.</param>
 /// <param name="Marking">Normalized marking when the caller supplied or derived one.</param>
 public record AccessRequirementsDescription(
     IReadOnlyList<Assertion> Assertions,
@@ -368,7 +315,6 @@ public record AccessRequirementsDescription(
     IReadOnlyList<AccessRuleDescription> Rules,
     string CombinedRequirementText,
     IReadOnlyList<string> CombinedAttributesNeeded,
-    IReadOnlyList<string> Lines,
     string? Marking = null
 );
 
@@ -897,14 +843,6 @@ public record FormatHeaderAssociation(
 /// <param name="Type">The framing this format writes its text in.</param>
 public record FormatSyntax(
     FormatSyntaxType Type
-);
-
-/// <summary>The parse grammar a scheme's marking strings follow.</summary>
-/// <param name="CaseSensitive">Whether the vocabulary is matched case-sensitively.</param>
-/// <param name="StripWhitespace">Whether surrounding whitespace is ignored when a spelling is compared.</param>
-public record SchemeGrammar(
-    bool CaseSensitive,
-    bool StripWhitespace
 );
 
 /// <summary>One scope a scheme declares, as the scopes resource lists it.</summary>

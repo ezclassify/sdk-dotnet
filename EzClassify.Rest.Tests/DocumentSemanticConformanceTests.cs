@@ -402,11 +402,9 @@ public class DocumentSemanticConformanceTests
     private static RuleReference DecodeRule(JsonObject raw)
     {
         var artifact = raw["artifact"]!.AsObject();
-        var source = raw["source"] as JsonObject;
         return new RuleReference(
             new ArtifactReference(ArtifactKind.Parse(artifact["kind"]!.GetValue<string>()), artifact["id"]!.GetValue<string>(), artifact["version"]!.GetValue<string>(), OptionalString(artifact, "digest")),
-            raw["ruleId"]!.GetValue<string>(), raw["ruleDigest"]!.GetValue<string>(),
-            source is null ? null : new RuleSourceReference(source["providerId"]!.GetValue<string>(), SourceReproducibility.Parse(source["reproducibility"]!.GetValue<string>()), OptionalString(source, "snapshotId")));
+            raw["ruleId"]!.GetValue<string>(), raw["ruleDigest"]!.GetValue<string>());
     }
 
     private static List<ContentEvidenceSpan> DecodeEvidence(JsonArray raw) => raw.Select(item =>

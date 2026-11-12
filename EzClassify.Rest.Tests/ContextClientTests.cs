@@ -32,7 +32,6 @@ internal sealed class CtxMockHandler : HttpMessageHandler
         "/scheme/concepts",
         "/scheme/categories",
         "/scheme/formats",
-        "/scheme/grammar",
         "/scheme/scopes",
         "/scheme/label-presets",
         "/access/rules",
@@ -78,9 +77,9 @@ internal sealed class CtxMockHandler : HttpMessageHandler
             && (path.Contains("/scheme/") || path.Contains("/guide/") || path.Contains("/access/") || path.Contains("/crosswalk/"))
             && !respBody.Contains("\"resolution\""))
         {
-            respBody = """{"resolution":{"contextId":"acme-marking","resolvedVersion":"1.0.0","artifacts":[],"sources":[]},"result":"""
+            respBody = """{"resolution":{"contextId":"acme-marking","resolvedVersion":"1.0.0","artifacts":[]},"result":"""
                 + respBody
-                + ""","operationLimitations":[]}""";
+                + """}""";
         }
 
         var resp = new HttpResponseMessage(status)
@@ -223,12 +222,14 @@ public class ContextClientTests
     }
 
     [Fact]
-    public async Task AccessDecisionsReachServerUnlessPinnedCallerOptsIn()
+    public async Task AccessDecisionsAlwaysReachTheServer()
     {
         var routes = new Dictionary<string, (HttpStatusCode, string)>
         {
             ["/access/check"] = (HttpStatusCode.OK, """{ "granted": false, "rules": [], "warnings": [] }"""),
         };
+        // Caching is on by default. A decision still goes out every time so the
+        // deployment holds an audit record of each one.
         var (client, handler) = await CtxClientFactory.ConnectAsync(routes);
         using (client)
         {
@@ -236,33 +237,6 @@ public class ContextClientTests
             await client.Access.CheckByMarkingAsync("H", "{}");
             Assert.Equal(2, handler.Requests.FindAll(request => request.Path.Contains("/access/check")).Count);
         }
-
-        var (optedIn, optedInHandler) = await CtxClientFactory.ConnectAsync(
-            routes, cacheOptions: new ContextCacheOptions(CacheAccessDecisions: true));
-        using (optedIn)
-        {
-            await optedIn.Access!.CheckByMarkingAsync("H", "{}");
-            await optedIn.Access.CheckByMarkingAsync("H", "{}");
-            Assert.Single(optedInHandler.Requests.FindAll(request => request.Path.Contains("/access/check")));
-        }
-    }
-
-    [Theory]
-    [InlineData("latest")]
-    [InlineData(null)]
-    public async Task AccessDecisionCachingIsRefusedAtConnectionForAnUnpinnedBinding(string? version)
-    {
-        var options = new ContextCacheOptions(CacheAccessDecisions: true);
-
-        var handler = new CtxMockHandler();
-        using var http = new HttpClient(handler) { BaseAddress = new Uri("http://localhost:8080") };
-        var refusal = await Assert.ThrowsAsync<ArgumentException>(() => EzClassifyClient.ConnectAsync(
-            http, "acme-marking", version, RestClientCredentials.None, options));
-        Assert.Equal("cacheOptions", refusal.ParamName);
-        Assert.Empty(handler.Requests);
-
-        await Assert.ThrowsAsync<ArgumentException>(() => EzClassifyClient.ConnectAsync(
-            "http://localhost:8080", "acme-marking", version, RestClientCredentials.None, options));
     }
 
     [Fact]
@@ -888,22 +862,6 @@ public class ContextClientTests
     }
 
     [Fact]
-    public async Task Normalize_UnwrapsResultEnvelope()
-    {
-        var routes = new Dictionary<string, (HttpStatusCode, string)>
-        {
-            ["/scheme/normalize"] = (HttpStatusCode.OK, """{ "result": "LEVEL-HIGH" }"""),
-        };
-        var (client, handler) = await CtxClientFactory.ConnectAsync(routes);
-        using (client)
-        {
-            var normalized = await client.Scheme!.NormalizeAsync("high");
-            Assert.Equal("LEVEL-HIGH", normalized.Result.Result);
-            Assert.Equal("/v1/ctx/acme-marking/1.0.0/scheme/normalize", handler.Requests[^1].Path);
-        }
-    }
-
-    [Fact]
     public async Task CheckCoverage_ParsesReport()
     {
         var routes = new Dictionary<string, (HttpStatusCode, string)>
@@ -965,27 +923,6 @@ public class ContextClientTests
             var diff = await client.Scheme!.DiffAsync("A", "B");
             Assert.Single(diff.Result.Added);
             Assert.Equal("/v1/ctx/acme-marking/1.0.0/scheme/diff", handler.Requests[^1].Path);
-        }
-    }
-
-    [Fact]
-    public async Task FilterConcepts_ParsesCountsAndIds()
-    {
-        var routes = new Dictionary<string, (HttpStatusCode, string)>
-        {
-            ["/scheme/filter-concepts"] = (HttpStatusCode.OK, """
-                { "visibleIds": ["a", "b"], "categoryCounts": { "level": { "visible": 2, "total": 5 } }, "total": { "visible": 2, "total": 9 } }
-                """),
-        };
-        var (client, handler) = await CtxClientFactory.ConnectAsync(routes);
-        using (client)
-        {
-            var result = await client.Scheme!.FilterConceptsAsync("hi");
-            Assert.Equal(2, result.Result.VisibleIds.Count);
-            Assert.Equal(2, result.Result.CategoryCounts["level"].Visible);
-            Assert.Equal(5, result.Result.CategoryCounts["level"].Total);
-            Assert.Equal(9, result.Result.Total.Total);
-            Assert.Equal("/v1/ctx/acme-marking/1.0.0/scheme/filter-concepts", handler.Requests[^1].Path);
         }
     }
 
@@ -1488,25 +1425,6 @@ public class ContextClientTests
     }
 
     [Fact]
-    public async Task SchemeGrammar_ParsesParseRules()
-    {
-        var routes = new Dictionary<string, (HttpStatusCode, string)>
-        {
-            ["/scheme/grammar"] = (HttpStatusCode.OK,
-                """{ "caseSensitive": false, "stripWhitespace": true }"""),
-        };
-        var (client, handler) = await CtxClientFactory.ConnectAsync(routes);
-        using (client)
-        {
-            var grammar = await client.Scheme!.GrammarAsync();
-
-            Assert.False(grammar.CaseSensitive);
-            Assert.True(grammar.StripWhitespace);
-            Assert.Equal("/v1/ctx/acme-marking/1.0.0/scheme/grammar", handler.Requests[^1].Path);
-        }
-    }
-
-    [Fact]
     public async Task SchemeScopes_CarriesOrderedArray()
     {
         var routes = new Dictionary<string, (HttpStatusCode, string)>
@@ -1684,18 +1602,15 @@ public class ContextClientTests
             ["scheme/aggregate"] = ops => ops.AggregateAsync(new[] { "H", "L" }),
             ["scheme/scan"] = ops => ops.ScanAsync("text H text"),
             ["scheme/render"] = ops => ops.RenderAsync(Array.Empty<Assertion>()),
-            ["scheme/normalize"] = ops => ops.NormalizeAsync("h"),
             ["scheme/check-coverage"] = ops => ops.CheckCoverageAsync(new[] { "L" }, "H"),
             ["scheme/describe-concept"] = ops => ops.DescribeConceptAsync("HIGH", "level"),
             ["scheme/diff"] = ops => ops.DiffAsync("H", "L"),
-            ["scheme/filter-concepts"] = ops => ops.FilterConceptsAsync("hi"),
             ["scheme/notices"] = ops => ops.NoticesAsync(Array.Empty<Assertion>()),
             ["scheme/view"] = ops => ops.ViewAsync(),
             ["scheme"] = ops => ops.SummaryAsync(),
             ["scheme/concepts"] = ops => ops.ConceptsAsync(),
             ["scheme/categories"] = ops => ops.CategoriesAsync(),
             ["scheme/formats"] = ops => ops.FormatsAsync(),
-            ["scheme/grammar"] = ops => ops.GrammarAsync(),
             ["scheme/scopes"] = ops => ops.ScopesAsync(),
             ["scheme/label-presets"] = ops => ops.LabelPresetsAsync(),
             ["scheme/apply-preset"] = ops => ops.ApplyPresetAsync("default-label"),
@@ -1975,45 +1890,6 @@ public class ContextClientTests
     }
 
     [Fact]
-    public async Task GuideFilterRules_ParsesResult()
-    {
-        var routes = new Dictionary<string, (HttpStatusCode, string)>
-        {
-            ["/guide/filter-rules"] = (HttpStatusCode.OK, """
-                { "visibleIds": ["r1"], "categoryCounts": {}, "total": { "visible": 1, "total": 3 } }
-                """),
-        };
-        var (client, handler) = await CtxClientFactory.ConnectAsync(routes);
-        using (client)
-        {
-            var result = await client.Guide!.FilterRulesAsync("sec");
-            Assert.Single(result.Result.VisibleIds);
-            Assert.Equal(3, result.Result.Total.Total);
-            Assert.Equal("/v1/ctx/acme-marking/1.0.0/guide/filter-rules", handler.Requests[^1].Path);
-        }
-    }
-
-    [Fact]
-    public async Task GuideDescribeRule_ParsesResult()
-    {
-        var routes = new Dictionary<string, (HttpStatusCode, string)>
-        {
-            ["/guide/describe-rule"] = (HttpStatusCode.OK, """
-                { "rule":{"artifact":{"kind":"guide","id":"g1","version":"1.0.0"},"ruleId":"r1","ruleDigest":"sha256:r1"}, "guide":{"kind":"guide","id":"g1","version":"1.0.0"}, "name": "Rule", "outcomeText": "marks H", "isComputed": false, "dependsOn": [], "overrides": [], "lines": ["Rule — marks H"] }
-                """),
-        };
-        var (client, handler) = await CtxClientFactory.ConnectAsync(routes);
-        using (client)
-        {
-            var desc = await client.Guide!.DescribeRuleAsync("r1", "g1");
-            Assert.Equal("Rule", desc.Result.Name);
-            Assert.Equal("marks H", desc.Result.OutcomeText);
-            Assert.False(desc.Result.IsComputed);
-            Assert.Equal("/v1/ctx/acme-marking/1.0.0/guide/describe-rule", handler.Requests[^1].Path);
-        }
-    }
-
-    [Fact]
     public async Task GuideView_ParsesStructuralTree()
     {
         var routes = new Dictionary<string, (HttpStatusCode, string)>
@@ -2141,25 +2017,6 @@ public class ContextClientTests
     }
 
     [Fact]
-    public async Task AccessDescribeRule_ParsesResult()
-    {
-        var routes = new Dictionary<string, (HttpStatusCode, string)>
-        {
-            ["/access/describe-rule"] = (HttpStatusCode.OK, """
-                { "rule":{"artifact":{"kind":"access","id":"ap","version":"1.0.0"},"ruleId":"r1","ruleDigest":"sha256:r1"}, "access":{"kind":"access","id":"ap","version":"1.0.0"}, "scheme":{"kind":"scheme","id":"s","version":"1.0.0"}, "name": "SO", "requirementText": "Staff only", "attributesNeeded": ["nationality"], "dependsOn": [], "overrides": [], "lines": [] }
-                """),
-        };
-        var (client, handler) = await CtxClientFactory.ConnectAsync(routes);
-        using (client)
-        {
-            var rule = await client.Access!.DescribeRuleAsync("r1");
-            Assert.Equal("SO", rule.Result.Name);
-            Assert.Single(rule.Result.AttributesNeeded);
-            Assert.Equal("/v1/ctx/acme-marking/1.0.0/access/describe-rule", handler.Requests[^1].Path);
-        }
-    }
-
-    [Fact]
     public async Task AccessRules_ListsDescriptionsAndIdsFromOneResource()
     {
         var routes = new Dictionary<string, (HttpStatusCode, string)>
@@ -2268,8 +2125,7 @@ public class ContextClientTests
         var routes = new Dictionary<string, (HttpStatusCode, string)>
         {
             ["/document/audit"] = (HttpStatusCode.OK, """
-                { "resolution":{"contextId":"acme-marking","requestedVersion":"1.0.0","resolvedVersion":"1.0.0","artifacts":[],"sources":[]},
-                  "operationLimitations":[], "responseProjection":{"profile":"standard","detailsComplete":false,"omittedFields":["/result/unmarkedSpans/0/text"],"counts":{"nominations":0,"evidenceSpans":0,"guideUnits":0,"accessRuleResults":0,"contentRequirements":0,"contextRequirements":0}},
+                { "resolution":{"contextId":"acme-marking","requestedVersion":"1.0.0","resolvedVersion":"1.0.0","artifacts":[]}, "responseProjection":{"profile":"standard","detailsComplete":false,"omittedFields":["/result/unmarkedSpans/0/text"],"counts":{"nominations":0,"evidenceSpans":0,"guideUnits":0,"accessRuleResults":0,"contentRequirements":0,"contextRequirements":0}},
                   "result": { "whole": "RS/SO",
                   "wholes": [ { "marking": "RS/SO", "start": 0, "end": 6, "offsetEncoding":"utf-8-bytes" } ],
                   "wholeValidation": { "assertions": [ { "categoryId": "level", "conceptId": "RS", "confidence": "certain", "source": "parse" } ],
@@ -2486,18 +2342,6 @@ public class ConnectOwnedClientDisposalTests
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(
             () => EzClassifyClient.ConnectOwnedAsync(http, "ctx-demo", null, cts.Token));
-        Assert.True(handler.Disposed);
-    }
-
-    [Fact]
-    public async Task ConnectOwned_UnpinnedAccessCaching_DisposesOwnedClientWithoutProbing()
-    {
-        var handler = new DisposalTrackingHandler(HttpStatusCode.OK);
-        var http = new HttpClient(handler) { BaseAddress = new Uri("http://localhost:8080") };
-
-        await Assert.ThrowsAsync<ArgumentException>(() => EzClassifyClient.ConnectOwnedAsync(
-            http, "ctx-demo", "latest", RestClientCredentials.None,
-            new ContextCacheOptions(CacheAccessDecisions: true), CancellationToken.None));
         Assert.True(handler.Disposed);
     }
 

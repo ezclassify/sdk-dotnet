@@ -77,7 +77,7 @@ function toPascalCase(name) {
 const OPAQUE = new Set([
   'TraceEntry',
   'GuideMatchSpec', 'GuideRuleOutcome', 'RuleCondition',
-  'RuleWhen', 'RuleWhenNode',
+  'GuideWhen', 'GuideWhenNode',
 ]);
 
 /**

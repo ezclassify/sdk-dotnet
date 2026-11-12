@@ -1,4 +1,4 @@
-// Code generated from json-schemas@0cc449eb3b4c2a6d2cdd34ccd22629a7ed90cb1d4638886f377c4f4fa6db56ca by gen.mjs@6282fbdd32c586ae2fcd0f13abaa725d812507d7359e630e6d24b62ce222ce55. DO NOT EDIT.
+// Code generated from json-schemas@ff89206818fc0916b2cbe5a83fe14c015543af6a4d0deec649ce11e92bc5c360 by gen.mjs@31c7811148de145e864820cc8d94e6ab08557f1023aff9998a5bc92bae2300f8. DO NOT EDIT.
 // Re-run via: make regen
 #nullable enable
 #pragma warning disable CS1573
@@ -11,11 +11,8 @@ namespace EzClassify;
 /// <summary>A concept asserted in a category during processing, with confidence and provenance metadata.</summary>
 /// <param name="CategoryId">The id of the category the concept is asserted in.</param>
 /// <param name="ConceptId">The id of the concept.</param>
-/// <param name="Confidence">How the assertion was produced: <c>certain</c> when read or handed in as stated, <c>inferred</c> when an inference rule added it, or <c>repaired</c> when the engine added or rewrote it while repairing the marking. The engine does not assign <c>uncertain</c> itself.</param>
+/// <param name="Confidence">How the assertion was produced: <c>certain</c> when read or handed in as stated, <c>inferred</c> when an inference rule added it, or <c>repaired</c> when the engine added or rewrote it while repairing the marking.</param>
 /// <param name="Source">Where this assertion came from. An open string: the engine labels the facts it adds, and a caller or a host may label the facts it hands in however it likes.</param>
-/// <param name="ExpiresAt">Caller-supplied ISO 8601 expiry date; the engine does not evaluate it.</param>
-/// <param name="Metadata">Caller-defined data attached to the assertion. The engine assigns it no meaning.</param>
-/// <param name="Provenance">Source provenance for the concept that backed this assertion.</param>
 /// <param name="ReplacedConceptId">The deprecated concept this assertion was modernized from.</param>
 /// <param name="SourceRule">The id of the scheme rule that produced this assertion, when one did. Otherwise an engine-owned id beginning with <c>_</c>, set when the scheme's structure, not a rule, added the assertion. The engine writes two: <c>_tier_child_requires_parent</c> (a tier parent required by a stated child) and <c>_header_of_stated_member</c> (a header filled in for a stated member). A scheme rule id never begins with <c>_</c>.</param>
 /// <param name="Value">The value of a concept that takes one (<c>text_input</c>).</param>
@@ -24,9 +21,6 @@ public record Assertion(
     string ConceptId,
     Confidence Confidence,
     string Source,
-    string? ExpiresAt = null,
-    JsonElement? Metadata = null,
-    SourceReference? Provenance = null,
     string? ReplacedConceptId = null,
     string? SourceRule = null,
     string? Value = null
@@ -38,16 +32,12 @@ public record Assertion(
 /// <param name="AffectedConcepts">Concept IDs involved in this validation failure.</param>
 /// <param name="CategoryId">Category ID this error relates to (when determinable from the constraint).</param>
 /// <param name="DidYouMean">The ids of the concepts the unread token was likely meant as. Never empty. They are ids for a program to act on, not spellings to show an author: <c>message</c> gives the same hint in words, naming the spellings.</param>
-/// <param name="Severity">Severity: 'error' blocks validity, 'warning' is advisory. Default: 'error'.</param>
-/// <param name="SuggestedFix">The <c>message</c> of the proposed fix that answers this error, such as "Add CTRL-A".</param>
 public record ValidationError(
     string ConstraintId,
     string Message,
     IReadOnlyList<string>? AffectedConcepts = null,
     string? CategoryId = null,
-    IReadOnlyList<string>? DidYouMean = null,
-    Severity? Severity = null,
-    string? SuggestedFix = null
+    IReadOnlyList<string>? DidYouMean = null
 );
 
 /// <summary>A non-blocking informational signal: a deprecated concept, an authored warn rule, or an engine notice.</summary>
@@ -174,7 +164,7 @@ public record RecognitionWithCorrections(
 /// <param name="AppliedFixes">Every change the engine actually made while settling the marking: a departure from canonical spelling or order that recognition read through, a repair, a fact a rule required, a handed-in fact settling removed, or text read in the other role from the one the request names. A removed fact is named with the reason it was removed, including a fact handed in with a derived source label that the run does not derive again. A requirement that conflicts with an existing concept is not added and appears in errors and proposed fixes, with no applied change. Repair never removes an author-stated concept. These are the reasons a marking can be <c>valid</c> while <c>inputWasValid</c> is false.</param>
 /// <param name="Assertions">The facts the marking states, as the engine settled them.</param>
 /// <param name="Assessment">The assessment of <c>rendered</c>: what it wrote of these facts, what it left out, what collapsed into an equivalent, and what it could not write at all. When <c>rendered</c> carries more than one surface, this is the combined assessment <c>RenderResult</c> describes. Read it before treating <c>rendered</c> as a transport.</param>
-/// <param name="Errors">What the scheme's rules find wrong with the settled marking. An entry whose severity is <c>error</c> makes <c>valid</c> false.</param>
+/// <param name="Errors">What the scheme's rules find wrong with the settled marking. Any entry makes <c>valid</c> false.</param>
 /// <param name="InputWasValid">True when the text or facts as given needed no change to stand.</param>
 /// <param name="Notices">The notices the scheme attaches to the concepts in <c>assertions</c>, collected the same way the notices operation collects them. Always present, empty when the marking carries none, so a consumer can read the field without checking that it exists.</param>
 /// <param name="Rendered">The settled marking, in one string.</param>
@@ -200,15 +190,14 @@ public record ValidateResult(
 /// <param name="AppliedFixes">Every change the engine actually made while settling the marking: a departure from canonical spelling or order that recognition read through, a repair, a fact a rule required, a handed-in fact settling removed, or text read in the other role from the one the request names. A removed fact is named with the reason it was removed, including a fact handed in with a derived source label that the run does not derive again. A requirement that conflicts with an existing concept is not added and appears in errors and proposed fixes, with no applied change. Repair never removes an author-stated concept. These are the reasons a marking can be <c>valid</c> while <c>inputWasValid</c> is false.</param>
 /// <param name="Assertions">The facts the marking states, as the engine settled them.</param>
 /// <param name="Assessment">The assessment of <c>rendered</c>: what it wrote of these facts, what it left out, what collapsed into an equivalent, and what it could not write at all. When <c>rendered</c> carries more than one surface, this is the combined assessment <c>RenderResult</c> describes. Read it before treating <c>rendered</c> as a transport.</param>
-/// <param name="Errors">What the scheme's rules find wrong with the settled marking. An entry whose severity is <c>error</c> makes <c>valid</c> false.</param>
+/// <param name="Errors">What the scheme's rules find wrong with the settled marking. Any entry makes <c>valid</c> false.</param>
 /// <param name="InputWasValid">True when the text or facts as given needed no change to stand.</param>
 /// <param name="Notices">The notices the scheme attaches to the concepts in <c>assertions</c>, collected the same way the notices operation collects them. Always present, empty when the marking carries none, so a consumer can read the field without checking that it exists.</param>
-/// <param name="ProposedFixes">The ways to make the resulting value valid, computed from that value after applied changes, each a whole marking the engine has read back and found valid before offering it. Empty when the marking is valid, or when no change the engine could prove would make it so. An error's <c>suggestedFix</c> names one of these by its <c>message</c>.</param>
+/// <param name="ProposedFixes">The ways to make the resulting value valid, computed from that value after applied changes, each a whole marking the engine has read back and found valid before offering it. Empty when the marking is valid, or when no change the engine could prove would make it so.</param>
 /// <param name="Rendered">The settled marking, in one string.</param>
 /// <param name="Renders">The outputs the request named in <c>outputs</c>, one entry each, keyed by output address. Empty when the request named none.</param>
 /// <param name="Valid">True when the marking stands once the engine has settled it: read, repaired, completed by what the scheme's rules imply, and judged with no error left.</param>
 /// <param name="Warnings">Advisories that do not affect <c>valid</c>, such as a deprecated concept. On a process result whose fix paths were not all proven, this carries a notice whose <c>ruleId</c> is <c>_fixes_unproven</c>, as <c>ProcessResult.proposedFixes</c> describes.</param>
-/// <param name="AssertionsBeforeRepair">What was read before repair: the assertions the input stated, before the repair pass took anything away or rewrote it. A retired concept appears under its replacement's name, as it does in <c>assertions</c> and in the fixes.</param>
 /// <param name="DisplayColor">Portable scheme-derived display color for the settled marking. Embedding hosts may override this presentation default.</param>
 /// <param name="Recognition">What recognition made of the text, with the corrections that turn it into canonical text. Present exactly when there was text to recognize.</param>
 /// <param name="SuggestionsFor">The options for each category the request named in <c>suggestFor</c>, answered against these settled facts exactly as <c>suggestForCategories</c> answers them, in the request's output format and surface.</param>
@@ -224,7 +213,6 @@ public record ProcessResult(
     IReadOnlyDictionary<string, RenderResult> Renders,
     bool Valid,
     IReadOnlyList<Warning> Warnings,
-    IReadOnlyList<Assertion>? AssertionsBeforeRepair = null,
     ConceptColor? DisplayColor = null,
     RecognitionWithCorrections? Recognition = null,
     IReadOnlyDictionary<string, SuggestResult>? SuggestionsFor = null
@@ -312,12 +300,10 @@ public record UnreadMark(
 /// <param name="End">Offset in the scanned text just past the end of the match, in UTF-16 code units.</param>
 /// <param name="Keyword">The keyword that matched, or the label of the matcher that did.</param>
 /// <param name="Start">Offset in the scanned text where the match starts, in UTF-16 code units.</param>
-/// <param name="Confidence">Advisory confidence in [0, 1], present only when the scan asked for it with the <c>confidence</c> scan option. An ordinal hint derived from the match's shape, not a calibrated probability.</param>
 public record GuideScanSpan(
     int End,
     string Keyword,
-    int Start,
-    double? Confidence = null
+    int Start
 );
 
 /// <summary>A rule in a marking guide, paired with its scan metadata.</summary>
@@ -330,7 +316,7 @@ public record GuideScanSpan(
 /// <param name="Match">Named pattern matchers for content evaluation. Each entry is a <c>MatchNode</c>: a leaf spec referencing a built-in matcher (e.g. <c>{ type: 'ipv4' }</c>) or a custom regex (<c>{ type: 'regex', pattern: '...' }</c>), or a combinator node (<c>any</c> / <c>all</c> / <c>not</c> / <c>near</c> / <c>context</c> / <c>validate</c>) composed over child nodes. When content is evaluated, both <c>keywords</c> and <c>match</c> are checked.</param>
 /// <param name="Overrides">Rule IDs whose outcomes this rule replaces when active. When omitted (default), this rule's outcome is additive: it contributes alongside the rules it depends on.</param>
 /// <param name="Rationale">Explanation of why this outcome applies.</param>
-/// <param name="When">When present, this rule auto-activates based on other rules' selection state. Uses the same when framework as scheme rules. <c>has</c> references guide rule IDs. Rules with <c>when</c> are "computed"; they don't appear as checkboxes.</param>
+/// <param name="When">When present, the rule is computed: it activates when this block holds over the rules the user selected, and it is not offered as a checkbox.</param>
 public record GuideRule(
     string Id,
     string Name,
@@ -349,13 +335,11 @@ public record GuideRule(
 /// <param name="MatchedKeywords">Each keyword or matcher label that fired, once each.</param>
 /// <param name="Rule">The guide rule that matched.</param>
 /// <param name="Spans">Every place in the text where the rule fired, in the order found.</param>
-/// <param name="Provenance">Source provenance for the guide-rule source that supplied the matched rule.</param>
 public record GuideScanResult(
     string GuideId,
     IReadOnlyList<string> MatchedKeywords,
     GuideRule Rule,
-    IReadOnlyList<GuideScanSpan> Spans,
-    SourceReference? Provenance = null
+    IReadOnlyList<GuideScanSpan> Spans
 );
 
 /// <summary>Output of evaluating selected guide rules into a single aggregate marking.</summary>
@@ -367,7 +351,6 @@ public record GuideScanResult(
 /// <param name="SelectedRules">The selected rules that were evaluated. Rules with a <c>when</c> condition are computed, not selected, and are not listed here.</param>
 /// <param name="AggregatedMarkings">Aggregated output keyed by target scheme id. Present when guide evaluation routed through more than one target scheme.</param>
 /// <param name="GuideId">The id of the guide evaluated. Absent when the result combines several guides.</param>
-/// <param name="Provenance">External guide-rule source observation used by this evaluation.</param>
 public record EvaluationResult(
     IReadOnlyList<GuideRule> ActiveComputedRules,
     string AggregatedMarking,
@@ -376,8 +359,7 @@ public record EvaluationResult(
     IReadOnlyList<string> EffectiveMarkings,
     IReadOnlyList<GuideRule> SelectedRules,
     IReadOnlyDictionary<string, string>? AggregatedMarkings = null,
-    string? GuideId = null,
-    SourceReference? Provenance = null
+    string? GuideId = null
 );
 
 /// <summary>One deprecated-to-current concept substitution that processing applied before an access rule was evaluated.</summary>
@@ -418,10 +400,8 @@ public record AccessRuleResult(
 /// <param name="Granted">True when every rule that was not skipped granted access.</param>
 /// <param name="Rules">One result per rule in the policy, in policy order.</param>
 /// <param name="Warnings">Warnings from preparing and evaluating the target, including automatic changes. Present on granted and denied decisions; empty when none apply.</param>
-/// <param name="Provenance">Source provenance for the access-rule source that evaluated this decision.</param>
 public record AccessDecision(
     bool Granted,
     IReadOnlyList<AccessRuleResult> Rules,
-    IReadOnlyList<Warning> Warnings,
-    SourceReference? Provenance = null
+    IReadOnlyList<Warning> Warnings
 );

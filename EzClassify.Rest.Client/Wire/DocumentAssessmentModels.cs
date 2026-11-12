@@ -496,69 +496,6 @@ public readonly struct GuideFactKind : IEquatable<GuideFactKind>, IWireToken<Gui
     GuideFactKind IWireToken<GuideFactKind>.FromToken(string value) => new(value);
 }
 
-/// <summary>Source reproducibility guarantee.</summary>
-[JsonConverter(typeof(WireTokenJsonConverter<SourceReproducibility>))]
-public readonly struct SourceReproducibility : IEquatable<SourceReproducibility>, IWireToken<SourceReproducibility>
-{
-    private const string ReproducibleValue = "reproducible";
-    private const string BestEffortValue = "best-effort";
-
-    private readonly string? _value;
-
-    /// <summary>Wraps a wire token, whether or not this SDK declares it.</summary>
-    /// <param name="value">The token exactly as it travels on the wire.</param>
-    /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
-    public SourceReproducibility(string value) => _value = value ?? throw new ArgumentNullException(nameof(value));
-
-    /// <summary>Source has an immutable snapshot identity.</summary>
-    public static SourceReproducibility Reproducible { get; } = new(ReproducibleValue);
-
-    /// <summary>Source cannot promise immutable replay.</summary>
-    public static SourceReproducibility BestEffort { get; } = new(BestEffortValue);
-
-    /// <summary>Whether this version of the SDK declares the token. False for a value a newer server sent.</summary>
-    public bool IsKnown => _value is ReproducibleValue or BestEffortValue;
-
-    /// <summary>Decode a token a caller supplies; only a declared source reproducibility is accepted.</summary>
-    /// <param name="value">The wire token.</param>
-    /// <returns>The declared value.</returns>
-    /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
-    /// <exception cref="ArgumentException"><paramref name="value"/> is not a source reproducibility this SDK declares.</exception>
-    public static SourceReproducibility Parse(string value) => WireToken.Parse<SourceReproducibility>(value, "source reproducibility");
-
-    /// <summary>Decode a token a caller supplies without throwing; only a declared source reproducibility is accepted.</summary>
-    /// <param name="value">The wire token.</param>
-    /// <param name="result">The declared value, or <c>default</c> when the token is not declared.</param>
-    /// <returns>True when <paramref name="value"/> is a declared token.</returns>
-    public static bool TryParse(string? value, out SourceReproducibility result) => WireToken.TryParse(value, out result);
-
-    /// <summary>The wire token, exactly as it was received or constructed.</summary>
-    /// <exception cref="InvalidOperationException">The value is <c>default(SourceReproducibility)</c>, which carries no token.</exception>
-    public string ToWire() => WireToken.Require(_value, nameof(SourceReproducibility));
-
-    /// <summary>The wire token; empty for <c>default(SourceReproducibility)</c>.</summary>
-    public override string ToString() => _value ?? string.Empty;
-
-    /// <summary>Ordinal comparison of the wire tokens.</summary>
-    public bool Equals(SourceReproducibility other) => string.Equals(_value, other._value, StringComparison.Ordinal);
-
-    /// <inheritdoc />
-    public override bool Equals(object? obj) => obj is SourceReproducibility other && Equals(other);
-
-    /// <inheritdoc />
-    public override int GetHashCode() => WireToken.Hash(_value);
-
-    /// <summary>Ordinal comparison of the wire tokens.</summary>
-    public static bool operator ==(SourceReproducibility left, SourceReproducibility right) => left.Equals(right);
-
-    /// <summary>Ordinal comparison of the wire tokens.</summary>
-    public static bool operator !=(SourceReproducibility left, SourceReproducibility right) => !left.Equals(right);
-
-    string? IWireToken<SourceReproducibility>.Token => _value;
-
-    SourceReproducibility IWireToken<SourceReproducibility>.FromToken(string value) => new(value);
-}
-
 /// <summary>Identifies an immutable artifact participating in an operation.</summary>
 /// <param name="Kind">Artifact family.</param>
 /// <param name="Id">Artifact identifier.</param>
@@ -566,45 +503,14 @@ public readonly struct SourceReproducibility : IEquatable<SourceReproducibility>
 /// <param name="Digest">Content digest when the resolver can supply one.</param>
 public record ArtifactReference(ArtifactKind Kind, string Id, string Version, string? Digest = null);
 
-/// <summary>Attribution and license metadata for an observed source.</summary>
-/// <param name="Name">Display name of the upstream source (e.g. "NIST CSWP-29").</param>
-/// <param name="License">SPDX identifier or short license token (e.g. "CC-BY-4.0", "public-domain").</param>
-/// <param name="LicenseUrl">Canonical URL where the license terms can be inspected.</param>
-/// <param name="Citation">Suggested citation string for academic / regulatory use.</param>
-public record Attribution(string Name, string License, string? LicenseUrl = null, string? Citation = null);
-
-/// <summary>Observed source identity and reproducibility metadata.</summary>
-/// <param name="ProviderId">Stable identifier for the source provider.</param>
-/// <param name="Attribution">Attribution and license information for the observed source.</param>
-/// <param name="Reproducibility">Whether the source observation can be reproduced byte-for-byte.</param>
-/// <param name="SnapshotId">Immutable content identity.</param>
-/// <param name="Locator">Location from which the content was observed.</param>
-public record SourceReference(
-    string ProviderId,
-    Attribution Attribution,
-    SourceReproducibility Reproducibility,
-    string? SnapshotId = null,
-    string? Locator = null);
-
-/// <summary>Compact source identity attached to a qualified rule.</summary>
-/// <param name="ProviderId">Stable identifier for the source provider.</param>
-/// <param name="Reproducibility">Whether the source observation can be reproduced byte-for-byte.</param>
-/// <param name="SnapshotId">Immutable snapshot containing the rule.</param>
-public record RuleSourceReference(
-    string ProviderId,
-    SourceReproducibility Reproducibility,
-    string? SnapshotId = null);
-
 /// <summary>Identifies the exact resolved semantics of one policy rule.</summary>
 /// <param name="Artifact">Artifact that owns the rule.</param>
 /// <param name="RuleId">Rule identifier within the owning artifact.</param>
 /// <param name="RuleDigest">RFC 8785/SHA-256 digest of the canonical resolved rule content.</param>
-/// <param name="Source">External source identity when the rule was not supplied inline.</param>
 public record RuleReference(
     ArtifactReference Artifact,
     string RuleId,
-    string RuleDigest,
-    RuleSourceReference? Source = null);
+    string RuleDigest);
 
 /// <summary>Compact assertion identity without production metadata.</summary>
 /// <param name="CategoryId">Category containing the asserted concept.</param>
@@ -616,13 +522,11 @@ public record AssertionReference(string CategoryId, string ConceptId, string? Va
 /// <param name="ContextId">Resolved Context identifier.</param>
 /// <param name="ResolvedVersion">Concrete Context version used by the operation.</param>
 /// <param name="Artifacts">Ordered artifacts participating in the composition.</param>
-/// <param name="Sources">De-duplicated source observations used by the operation.</param>
 /// <param name="RequestedVersion">The version the request named, an alias such as <c>latest</c> included, and <c>latest</c> when the request named none. <c>resolvedVersion</c> is the concrete version that answered. Absent only from a resolution produced in process without a request.</param>
 public record ContextResolution(
     string ContextId,
     string ResolvedVersion,
     IReadOnlyList<ArtifactReference> Artifacts,
-    IReadOnlyList<SourceReference> Sources,
     string? RequestedVersion = null);
 
 /// <summary>Stable explanation of a constrained assessment dimension.</summary>
@@ -635,16 +539,10 @@ public record AssessmentLimitation(string Code, string Reason, string? Scope = n
 /// <param name="Nominations">Number of lexical nominations.</param>
 /// <param name="EvidenceSpans">Number of evidence spans.</param>
 /// <param name="GuideUnits">Number of evaluated guide units.</param>
-/// <param name="AccessRuleResults">Access-rule results across all scenarios.</param>
-/// <param name="ContentRequirements">Content requirements across all scenarios.</param>
-/// <param name="ContextRequirements">Context requirements across all scenarios.</param>
 public record DocumentResponseCounts(
     int Nominations,
     int EvidenceSpans,
-    int GuideUnits,
-    int AccessRuleResults,
-    int ContentRequirements,
-    int ContextRequirements);
+    int GuideUnits);
 
 /// <summary>Explicit detail projection applied after full evaluation.</summary>
 /// <param name="Profile">Requested response detail profile.</param>
@@ -894,10 +792,8 @@ public record DocumentGuideAssessment(
 /// <summary>Resolved Context envelope returned by document audit.</summary>
 /// <param name="Resolution">Single resolved composition used throughout the operation.</param>
 /// <param name="Result">Typed operation result.</param>
-/// <param name="OperationLimitations">Limitations applying to the operation as a whole.</param>
 /// <param name="ResponseProjection">Projection metadata, present only for document operations.</param>
 public record ContextDocumentAuditResult(
     ContextResolution Resolution,
     DocumentAuditReport Result,
-    IReadOnlyList<AssessmentLimitation> OperationLimitations,
     DocumentResponseProjection ResponseProjection);

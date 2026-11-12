@@ -134,7 +134,7 @@ public class ClientSynchronizationContextTests
         {
             var handler = new AsyncCompletionHandler(req =>
                 req.RequestUri!.AbsolutePath.EndsWith("/scheme/process", StringComparison.Ordinal)
-                    ? """{"resolution":{"contextId":"ctx-demo","resolvedVersion":"1.0.0","artifacts":[],"sources":[]},"result":""" + ProcessJson + ""","operationLimitations":[]}"""
+                    ? """{"resolution":{"contextId":"ctx-demo","resolvedVersion":"1.0.0","artifacts":[]},"result":""" + ProcessJson + """}"""
                     : ContextProbe.Body);
             using var http = new HttpClient(handler) { BaseAddress = new Uri("http://localhost:8080/") };
 

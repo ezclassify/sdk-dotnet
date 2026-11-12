@@ -230,8 +230,7 @@ public class ContextResultParserTests
     public void ParseDocumentAuditEnvelope_PreservesProjectionAndOmittedText()
     {
         var result = ContextResultParser.ParseContextDocumentAuditResult("""
-          {"resolution":{"contextId":"ctx","requestedVersion":"latest","resolvedVersion":"1.0.0","artifacts":[],"sources":[]},
-           "operationLimitations":[],
+          {"resolution":{"contextId":"ctx","requestedVersion":"latest","resolvedVersion":"1.0.0","artifacts":[]},
            "responseProjection":{"profile":"standard","detailsComplete":false,"omittedFields":["/result/unmarkedSpans/0/text"],"counts":{"nominations":1,"evidenceSpans":1,"guideUnits":1,"accessRuleResults":0,"contentRequirements":0,"contextRequirements":0}},
            "result":{"whole":null,"wholes":[],"wholeValidation":null,"parts":[],"wholeCoversParts":null,
              "unmarkedSpans":[{"start":0,"end":4,"offsetEncoding":"utf-8-bytes"}],"proceduralFlags":["missing-whole"],
