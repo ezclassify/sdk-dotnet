@@ -1,4 +1,4 @@
-.PHONY: regen check-generated check-architecture test test-verbose smoke build clean distclean conformance-server api-surface check-api-surface notices check-notices
+.PHONY: regen check-generated check-architecture check-dependency-age test test-verbose smoke build clean distclean conformance-server api-surface check-api-surface notices check-notices
 
 # Canonical JSON Schemas, committed to vendor/spec/json-schemas by the spec bot.
 # `make regen` reads from here and rewrites the committed Models.g.cs; CI reruns
@@ -28,6 +28,12 @@ check-generated:
 
 check-architecture:
 	node scripts/check-architecture.mjs
+
+# Refuses a third-party package or pinned tool published inside the seven-day
+# quarantine window. Reads the restore graph, so restore first.
+check-dependency-age:
+	node --test scripts/*.test.mjs
+	node scripts/check-dependency-age.mjs
 
 build:
 	$(DOTNET) build EzClassify.sln --configuration Release

@@ -94,6 +94,13 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore EzClassify.sln
 
+      - name: Dependency quarantine
+        # Refuses a third-party package or pinned tool that nuget.org published
+        # less than seven days ago. It reads the restore graph just written and
+        # runs before anything builds, so a package's build targets never run
+        # before it clears. Fails closed when nuget.org cannot be read.
+        run: make check-dependency-age
+
       - name: Dependency license compliance
         # Resolves the transitive production closure of the two published
         # packages (dotnet list package --include-transitive) and checks each

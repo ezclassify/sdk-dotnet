@@ -74,6 +74,8 @@ the transport.
   declaration owners, generated-path drift, and inline package versions.
 - `make check-generated` verifies both committed outputs against the pinned
   generator, OpenAPI, and JSON Schemas.
+- `make check-dependency-age` refuses, right after restore, any third-party
+  package or pinned tool nuget.org published less than seven days ago.
 - `dotnet format EzClassify.sln --verify-no-changes --no-restore`
 - `dotnet build EzClassify.sln --no-restore --configuration Release`
 - `dotnet test EzClassify.sln --no-build --configuration Release --filter "Category!=Live"`

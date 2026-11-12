@@ -28,6 +28,7 @@ same commands for parity with the other SDKs.
 | Build | `dotnet build` | or `make build`. Builds every project in the solution. |
 | Generate API reference | `make docs` | Builds the solution and generates HTML at `artifacts/docs/index.html`. |
 | Test | `dotnet test --filter "Category!=Live"` | or `make test` (`make test-verbose` for detailed output). `make smoke URL=<server-url>` runs the `Live` category against a running, content-configured REST deployment. |
+| Dependency quarantine | `make check-dependency-age` | After a restore. Fails on any third-party package or pinned tool nuget.org published less than seven days ago (`EZCLASSIFY_DEPENDENCY_AGE_DAYS` changes the window), and when nuget.org cannot be read. |
 | Regenerate generated models | `make regen` | Rewrites the committed `*.g.cs` models after a spec-update PR. Wrapper-only changes don't touch [`vendor/`](vendor/). |
 | Format | `dotnet format` | Ships with the SDK; CI runs `dotnet format --verify-no-changes`. |
 | Package the NuGet | `dotnet pack -c Release` | Produces the `.nupkg` under each project's `bin/Release/`. |
