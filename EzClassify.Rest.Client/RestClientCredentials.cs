@@ -32,12 +32,21 @@ public sealed class RestClientCredentials
     /// </summary>
     public string? ApplicationId { get; }
 
-    /// <summary>Create caller authorization and, optionally, the application id.</summary>
+    /// <summary>Create caller authorization without an application id.</summary>
+    /// <param name="accessToken">Bearer token identifying the caller, or <c>null</c>.</param>
+    /// <param name="contextToken">Signed Context authorization token, or <c>null</c>.</param>
+    /// <exception cref="ArgumentException">A token is blank.</exception>
+    public RestClientCredentials(string? accessToken, string? contextToken)
+        : this(accessToken, contextToken, null)
+    {
+    }
+
+    /// <summary>Create caller authorization and the application id.</summary>
     /// <param name="accessToken">Bearer token identifying the caller, or <c>null</c>.</param>
     /// <param name="contextToken">Signed Context authorization token, or <c>null</c>.</param>
     /// <param name="applicationId">The id the application is registered under, or <c>null</c>: 1 to 128 printable ASCII characters (0x21 to 0x7E), with no spaces.</param>
-    /// <exception cref="ArgumentException">A value is blank or malformed, or the application id is outside its grammar.</exception>
-    public RestClientCredentials(string? accessToken, string? contextToken, string? applicationId = null)
+    /// <exception cref="ArgumentException">A token is blank, or the application id is outside its grammar.</exception>
+    public RestClientCredentials(string? accessToken, string? contextToken, string? applicationId)
     {
         if (applicationId is not null && !IsApplicationId(applicationId))
             throw new ArgumentException(ApplicationIdRule, nameof(applicationId));

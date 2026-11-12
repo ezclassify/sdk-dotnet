@@ -1172,7 +1172,8 @@ class sealed EzClassify.RenderResult : System.IEquatable<EzClassify.RenderResult
   property public System.String Rendered { get; }
 
 class sealed EzClassify.RestClientCredentials
-  ctor public .ctor(System.String accessToken, System.String contextToken, System.String applicationId = null)
+  ctor public .ctor(System.String accessToken, System.String contextToken)
+  ctor public .ctor(System.String accessToken, System.String contextToken, System.String applicationId)
   property public System.String AccessToken { get; }
   property public System.String ApplicationId { get; }
   property public System.String ContextToken { get; }

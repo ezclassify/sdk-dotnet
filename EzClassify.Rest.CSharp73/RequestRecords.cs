@@ -46,6 +46,18 @@ namespace EzClassify.CSharp73
             return new GuideDeterminationInput(new[] { finding }, new[] { manual });
         }
 
+        /// <summary>Caller authorization without an application id.</summary>
+        public static RestClientCredentials Tokens()
+        {
+            return new RestClientCredentials("caller-token", "context-token");
+        }
+
+        /// <summary>Caller authorization with the id the application is registered under.</summary>
+        public static RestClientCredentials TokensWithApplication()
+        {
+            return new RestClientCredentials("caller-token", "context-token", "case-intake-portal");
+        }
+
         /// <summary>Cache choices for a connected client, with caching turned off.</summary>
         public static ContextCacheOptions CacheOff()
         {
