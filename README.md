@@ -224,7 +224,7 @@ var options = keystroke.SuggestionsFor!["level"].Suggestions;
 
 `Renders` holds only the outputs you name, and `SuggestionsFor` is null unless you name categories. Outputs are spelled the way the scheme declares them: a format id here, a `surface/view` address for a scheme that declares surfaces. `SuggestForCategoriesAsync` answers the same map on its own, for a picker that needs options without processing the marking.
 
-Inputs and results are immutable records with init-only properties. Build one with an object initializer, as `Assertion` is built above: the compiler insists on the members marked `required`, and the optional ones start null. A member a later release adds is optional, so code that builds these records keeps compiling. Building one takes C# 11 or later; reading one works from any version.
+Inputs and results are immutable records with init-only properties. Build one with an object initializer, as `Assertion` is built above: the compiler insists on the members marked `required`, and the optional ones start null. A member a later release adds is optional, so code that builds these records keeps compiling. Building one takes C# 9 or later on a compiler that knows required members: the .NET 7 SDK or Visual Studio 2022 17.4 and later. A .NET Framework project defaults to C# 7.3, so it sets `<LangVersion>9.0</LangVersion>` or higher to build one. Reading one works from any language version.
 
 An error about text the engine could not read may carry `DidYouMean`, the ids of the concepts the text was likely meant as, for a program to act on. The message says the same in words. It is a hint, not a fix: only `ProposedFixes` are proven.
 
