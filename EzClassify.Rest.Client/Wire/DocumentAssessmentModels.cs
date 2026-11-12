@@ -497,303 +497,464 @@ public readonly struct GuideFactKind : IEquatable<GuideFactKind>, IWireToken<Gui
 }
 
 /// <summary>Identifies an immutable artifact participating in an operation.</summary>
-/// <param name="Kind">Artifact family.</param>
-/// <param name="Id">Artifact identifier.</param>
-/// <param name="Version">Resolved immutable artifact version.</param>
-/// <param name="Digest">Content digest when the resolver can supply one.</param>
-public record ArtifactReference(ArtifactKind Kind, string Id, string Version, string? Digest = null);
+public record ArtifactReference
+{
+    /// <summary>Artifact family.</summary>
+    public required ArtifactKind Kind { get; init; }
+
+    /// <summary>Artifact identifier.</summary>
+    public required string Id { get; init; }
+
+    /// <summary>Resolved immutable artifact version.</summary>
+    public required string Version { get; init; }
+
+    /// <summary>Content digest when the resolver can supply one.</summary>
+    public string? Digest { get; init; }
+}
 
 /// <summary>Identifies the exact resolved semantics of one policy rule.</summary>
-/// <param name="Artifact">Artifact that owns the rule.</param>
-/// <param name="RuleId">Rule identifier within the owning artifact.</param>
-/// <param name="RuleDigest">RFC 8785/SHA-256 digest of the canonical resolved rule content.</param>
-public record RuleReference(
-    ArtifactReference Artifact,
-    string RuleId,
-    string RuleDigest);
+public record RuleReference
+{
+    /// <summary>Artifact that owns the rule.</summary>
+    public required ArtifactReference Artifact { get; init; }
+
+    /// <summary>Rule identifier within the owning artifact.</summary>
+    public required string RuleId { get; init; }
+
+    /// <summary>RFC 8785/SHA-256 digest of the canonical resolved rule content.</summary>
+    public required string RuleDigest { get; init; }
+}
 
 /// <summary>Compact assertion identity without production metadata.</summary>
-/// <param name="CategoryId">Category containing the asserted concept.</param>
-/// <param name="ConceptId">Asserted concept identifier.</param>
-/// <param name="Value">Captured value for value-bearing concepts.</param>
-public record AssertionReference(string CategoryId, string ConceptId, string? Value = null);
+public record AssertionReference
+{
+    /// <summary>Category containing the asserted concept.</summary>
+    public required string CategoryId { get; init; }
+
+    /// <summary>Asserted concept identifier.</summary>
+    public required string ConceptId { get; init; }
+
+    /// <summary>Captured value for value-bearing concepts.</summary>
+    public string? Value { get; init; }
+}
 
 /// <summary>Single Context resolution shared by an operation's result branches.</summary>
-/// <param name="ContextId">Resolved Context identifier.</param>
-/// <param name="ResolvedVersion">Concrete Context version used by the operation.</param>
-/// <param name="Artifacts">Ordered artifacts participating in the composition.</param>
-/// <param name="RequestedVersion">The version the request named, an alias such as <c>latest</c> included, and <c>latest</c> when the request named none. <c>resolvedVersion</c> is the concrete version that answered. Absent only from a resolution produced in process without a request.</param>
-public record ContextResolution(
-    string ContextId,
-    string ResolvedVersion,
-    IReadOnlyList<ArtifactReference> Artifacts,
-    string? RequestedVersion = null);
+public record ContextResolution
+{
+    /// <summary>Resolved Context identifier.</summary>
+    public required string ContextId { get; init; }
+
+    /// <summary>Concrete Context version used by the operation.</summary>
+    public required string ResolvedVersion { get; init; }
+
+    /// <summary>Ordered artifacts participating in the composition.</summary>
+    public required IReadOnlyList<ArtifactReference> Artifacts { get; init; }
+
+    /// <summary>The version the request named, an alias such as <c>latest</c> included, and <c>latest</c> when the request named none. <c>resolvedVersion</c> is the concrete version that answered. Absent only from a resolution produced in process without a request.</summary>
+    public string? RequestedVersion { get; init; }
+}
 
 /// <summary>Stable explanation of a constrained assessment dimension.</summary>
-/// <param name="Code">Stable machine-readable limitation code.</param>
-/// <param name="Reason">Human-readable explanation safe for the selected response profile.</param>
-/// <param name="Scope">Optional operation scope affected by the limitation.</param>
-public record AssessmentLimitation(string Code, string Reason, string? Scope = null);
+public record AssessmentLimitation
+{
+    /// <summary>Stable machine-readable limitation code.</summary>
+    public required string Code { get; init; }
+
+    /// <summary>Human-readable explanation safe for the selected response profile.</summary>
+    public required string Reason { get; init; }
+
+    /// <summary>Optional operation scope affected by the limitation.</summary>
+    public string? Scope { get; init; }
+}
 
 /// <summary>Counts from the full result before response projection.</summary>
-/// <param name="Nominations">Number of lexical nominations.</param>
-/// <param name="EvidenceSpans">Number of evidence spans.</param>
-/// <param name="GuideUnits">Number of evaluated guide units.</param>
-public record DocumentResponseCounts(
-    int Nominations,
-    int EvidenceSpans,
-    int GuideUnits);
+public record DocumentResponseCounts
+{
+    /// <summary>Number of lexical nominations.</summary>
+    public required int Nominations { get; init; }
+
+    /// <summary>Number of evidence spans.</summary>
+    public required int EvidenceSpans { get; init; }
+
+    /// <summary>Number of evaluated guide units.</summary>
+    public required int GuideUnits { get; init; }
+}
 
 /// <summary>Explicit detail projection applied after full evaluation.</summary>
-/// <param name="Profile">Requested response detail profile.</param>
-/// <param name="DetailsComplete">True only when the full profile returned every detail.</param>
-/// <param name="OmittedFields">JSON-pointer paths omitted by the selected profile.</param>
-/// <param name="Counts">Counts from the full result before projection.</param>
-public record DocumentResponseProjection(
-    DocumentResponseProfile Profile,
-    bool DetailsComplete,
-    IReadOnlyList<string> OmittedFields,
-    DocumentResponseCounts Counts);
+public record DocumentResponseProjection
+{
+    /// <summary>Requested response detail profile.</summary>
+    public required DocumentResponseProfile Profile { get; init; }
+
+    /// <summary>True only when the full profile returned every detail.</summary>
+    public required bool DetailsComplete { get; init; }
+
+    /// <summary>JSON-pointer paths omitted by the selected profile.</summary>
+    public required IReadOnlyList<string> OmittedFields { get; init; }
+
+    /// <summary>Counts from the full result before projection.</summary>
+    public required DocumentResponseCounts Counts { get; init; }
+}
 
 /// <summary>Typed value source captured during access evaluation.</summary>
-/// <param name="Source">Source domain from which the value was read.</param>
-/// <param name="Path">Dot-path for subject or context operands.</param>
-/// <param name="CategoryId">Category addressed by an assertion operand.</param>
-/// <param name="Assertions">Assertions addressed by an assertion operand.</param>
-/// <param name="Value">Literal or resolved opaque value.</param>
-public record AccessOperand(
-    AccessOperandSource Source,
-    string? Path = null,
-    string? CategoryId = null,
-    IReadOnlyList<AssertionReference>? Assertions = null,
-    JsonElement? Value = null);
+public record AccessOperand
+{
+    /// <summary>Source domain from which the value was read.</summary>
+    public required AccessOperandSource Source { get; init; }
+
+    /// <summary>Dot-path for subject or context operands.</summary>
+    public string? Path { get; init; }
+
+    /// <summary>Category addressed by an assertion operand.</summary>
+    public string? CategoryId { get; init; }
+
+    /// <summary>Assertions addressed by an assertion operand.</summary>
+    public IReadOnlyList<AssertionReference>? Assertions { get; init; }
+
+    /// <summary>Literal or resolved opaque value.</summary>
+    public JsonElement? Value { get; init; }
+}
 
 /// <summary>Machine-readable result of one access comparison.</summary>
-/// <param name="Left">Left comparison operand.</param>
-/// <param name="Operator">Policy operator applied to the operands.</param>
-/// <param name="Right">Right comparison operand.</param>
-/// <param name="Matched">Whether the comparison succeeded.</param>
-/// <param name="Missing">Required values missing from the evaluated operand, when applicable.</param>
-public record AccessComparisonResult(
-    AccessOperand Left,
-    string Operator,
-    AccessOperand Right,
-    bool Matched,
-    IReadOnlyList<JsonElement?>? Missing = null);
+public record AccessComparisonResult
+{
+    /// <summary>Left comparison operand.</summary>
+    public required AccessOperand Left { get; init; }
+
+    /// <summary>Policy operator applied to the operands.</summary>
+    public required string Operator { get; init; }
+
+    /// <summary>Right comparison operand.</summary>
+    public required AccessOperand Right { get; init; }
+
+    /// <summary>Whether the comparison succeeded.</summary>
+    public required bool Matched { get; init; }
+
+    /// <summary>Required values missing from the evaluated operand, when applicable.</summary>
+    public IReadOnlyList<JsonElement?>? Missing { get; init; }
+}
 
 /// <summary>Machine-readable record of why an access rule activated.</summary>
-/// <param name="Matched">Whether the rule's activation predicate matched.</param>
-/// <param name="Assertions">Assertions that activated the rule.</param>
-/// <param name="ContextPaths">Context paths consulted by activation.</param>
-public record AccessRuleActivation(
-    bool Matched,
-    IReadOnlyList<AssertionReference> Assertions,
-    IReadOnlyList<string> ContextPaths);
+public record AccessRuleActivation
+{
+    /// <summary>Whether the rule's activation predicate matched.</summary>
+    public required bool Matched { get; init; }
+
+    /// <summary>Assertions that activated the rule.</summary>
+    public required IReadOnlyList<AssertionReference> Assertions { get; init; }
+
+    /// <summary>Context paths consulted by activation.</summary>
+    public required IReadOnlyList<string> ContextPaths { get; init; }
+}
 
 /// <summary>UTF-8 byte range containing guide evidence.</summary>
-/// <param name="Start">Zero-based inclusive byte offset.</param>
-/// <param name="End">Zero-based exclusive byte offset.</param>
-/// <param name="OffsetEncoding">Frozen offset encoding for document evidence.</param>
-/// <param name="Rule">Qualified rule that produced the evidence.</param>
-/// <param name="Matched">Matched source text, present only in the full response profile.</param>
-public record ContentEvidenceSpan(
-    int Start,
-    int End,
-    string OffsetEncoding,
-    RuleReference Rule,
-    string? Matched = null);
+public record ContentEvidenceSpan
+{
+    /// <summary>Zero-based inclusive byte offset.</summary>
+    public required int Start { get; init; }
+
+    /// <summary>Zero-based exclusive byte offset.</summary>
+    public required int End { get; init; }
+
+    /// <summary>Frozen offset encoding for document evidence.</summary>
+    public required string OffsetEncoding { get; init; }
+
+    /// <summary>Qualified rule that produced the evidence.</summary>
+    public required RuleReference Rule { get; init; }
+
+    /// <summary>Matched source text, present only in the full response profile.</summary>
+    public string? Matched { get; init; }
+}
 
 /// <summary>Lexical nomination requiring analyst review.</summary>
-/// <param name="FindingId">Deterministic identity of this evidence occurrence.</param>
-/// <param name="DocumentDigest">Digest of the exact scanned document bytes.</param>
-/// <param name="Rule">Qualified rule nominated by the evidence.</param>
-/// <param name="Evidence">Evidence occurrences supporting the nomination.</param>
-/// <param name="ProposedAssertions">Assertions the rule would propose if accepted.</param>
-/// <param name="Origin">Nomination source; lexical evidence is never authoritative itself.</param>
-/// <param name="Rationale">Rule-authored explanation for the nomination.</param>
-public record GuideNomination(
-    string FindingId,
-    string DocumentDigest,
-    RuleReference Rule,
-    IReadOnlyList<ContentEvidenceSpan> Evidence,
-    IReadOnlyList<AssertionReference> ProposedAssertions,
-    string Origin,
-    string? Rationale = null);
+public record GuideNomination
+{
+    /// <summary>Deterministic identity of this evidence occurrence.</summary>
+    public required string FindingId { get; init; }
+
+    /// <summary>Digest of the exact scanned document bytes.</summary>
+    public required string DocumentDigest { get; init; }
+
+    /// <summary>Qualified rule nominated by the evidence.</summary>
+    public required RuleReference Rule { get; init; }
+
+    /// <summary>Evidence occurrences supporting the nomination.</summary>
+    public required IReadOnlyList<ContentEvidenceSpan> Evidence { get; init; }
+
+    /// <summary>Assertions the rule would propose if accepted.</summary>
+    public required IReadOnlyList<AssertionReference> ProposedAssertions { get; init; }
+
+    /// <summary>Nomination source; lexical evidence is never authoritative itself.</summary>
+    public required string Origin { get; init; }
+
+    /// <summary>Rule-authored explanation for the nomination.</summary>
+    public string? Rationale { get; init; }
+}
 
 /// <summary>Explicit analyst decision about one nomination.</summary>
-/// <param name="FindingId">Stable identifier of the exact nominated occurrence.</param>
-/// <param name="DocumentDigest">Digest of the exact document revision reviewed.</param>
-/// <param name="Decision">Analyst decision for the nominated occurrence.</param>
-/// <param name="Reason">Analyst-supplied reason for the decision.</param>
-/// <param name="ProposalOrigin">Optional provenance for how the decision proposal was drafted.</param>
-public record GuideFindingDetermination(
-    string FindingId,
-    string DocumentDigest,
-    GuideFindingDecision Decision,
-    string Reason,
-    DecisionProposalOrigin? ProposalOrigin = null);
+public record GuideFindingDetermination
+{
+    /// <summary>Stable identifier of the exact nominated occurrence.</summary>
+    public required string FindingId { get; init; }
+
+    /// <summary>Digest of the exact document revision reviewed.</summary>
+    public required string DocumentDigest { get; init; }
+
+    /// <summary>Analyst decision for the nominated occurrence.</summary>
+    public required GuideFindingDecision Decision { get; init; }
+
+    /// <summary>Analyst-supplied reason for the decision.</summary>
+    public required string Reason { get; init; }
+
+    /// <summary>Optional provenance for how the decision proposal was drafted.</summary>
+    public DecisionProposalOrigin? ProposalOrigin { get; init; }
+}
 
 /// <summary>Analyst-selected rule input that lexical scanning missed.</summary>
-/// <param name="DocumentDigest">Digest of the exact document revision reviewed.</param>
-/// <param name="Rule">Qualified loaded rule selected by the analyst.</param>
-/// <param name="Evidence">Evidence in the submitted document supporting the selection.</param>
-/// <param name="Reason">Analyst-supplied reason for the selection.</param>
-/// <param name="ProposalOrigin">Optional provenance for how the selection proposal was drafted.</param>
-public record ManualGuideSelectionInput(
-    string DocumentDigest,
-    RuleReference Rule,
-    IReadOnlyList<ContentEvidenceSpan> Evidence,
-    string Reason,
-    DecisionProposalOrigin? ProposalOrigin = null);
+public record ManualGuideSelectionInput
+{
+    /// <summary>Digest of the exact document revision reviewed.</summary>
+    public required string DocumentDigest { get; init; }
+
+    /// <summary>Qualified loaded rule selected by the analyst.</summary>
+    public required RuleReference Rule { get; init; }
+
+    /// <summary>Evidence in the submitted document supporting the selection.</summary>
+    public required IReadOnlyList<ContentEvidenceSpan> Evidence { get; init; }
+
+    /// <summary>Analyst-supplied reason for the selection.</summary>
+    public required string Reason { get; init; }
+
+    /// <summary>Optional provenance for how the selection proposal was drafted.</summary>
+    public DecisionProposalOrigin? ProposalOrigin { get; init; }
+}
 
 /// <summary>Validated manual guide fact bound to a document revision.</summary>
-/// <param name="DocumentDigest">Digest of the exact document revision reviewed.</param>
-/// <param name="Rule">Qualified loaded rule selected by the analyst.</param>
-/// <param name="Evidence">Evidence in the submitted document supporting the selection.</param>
-/// <param name="Reason">Analyst-supplied reason for the selection.</param>
-/// <param name="SelectionId">Deterministic selection identity.</param>
-/// <param name="ProposalOrigin">Optional provenance for how the selection proposal was drafted.</param>
-public record ManualGuideSelection(
-    string DocumentDigest,
-    RuleReference Rule,
-    IReadOnlyList<ContentEvidenceSpan> Evidence,
-    string Reason,
-    string SelectionId,
-    DecisionProposalOrigin? ProposalOrigin = null);
+public record ManualGuideSelection
+{
+    /// <summary>Digest of the exact document revision reviewed.</summary>
+    public required string DocumentDigest { get; init; }
+
+    /// <summary>Qualified loaded rule selected by the analyst.</summary>
+    public required RuleReference Rule { get; init; }
+
+    /// <summary>Evidence in the submitted document supporting the selection.</summary>
+    public required IReadOnlyList<ContentEvidenceSpan> Evidence { get; init; }
+
+    /// <summary>Analyst-supplied reason for the selection.</summary>
+    public required string Reason { get; init; }
+
+    /// <summary>Deterministic selection identity.</summary>
+    public required string SelectionId { get; init; }
+
+    /// <summary>Optional provenance for how the selection proposal was drafted.</summary>
+    public DecisionProposalOrigin? ProposalOrigin { get; init; }
+}
 
 /// <summary>Analyst determinations submitted with a document operation.</summary>
-/// <param name="Findings">Decisions for lexical nominations.</param>
-/// <param name="ManualSelections">Qualified rules manually selected by the analyst.</param>
-public record GuideDeterminationInput(
-    IReadOnlyList<GuideFindingDetermination> Findings,
-    IReadOnlyList<ManualGuideSelectionInput> ManualSelections);
+public record GuideDeterminationInput
+{
+    /// <summary>Decisions for lexical nominations.</summary>
+    public required IReadOnlyList<GuideFindingDetermination> Findings { get; init; }
+
+    /// <summary>Qualified rules manually selected by the analyst.</summary>
+    public required IReadOnlyList<ManualGuideSelectionInput> ManualSelections { get; init; }
+}
 
 /// <summary>Join from assertion support to an authority-bearing guide fact.</summary>
-/// <param name="Kind">Authority state of the referenced guide fact.</param>
-/// <param name="FactId">Finding or manual-selection identifier.</param>
-public record GuideFactReference(GuideFactKind Kind, string FactId);
+public record GuideFactReference
+{
+    /// <summary>Authority state of the referenced guide fact.</summary>
+    public required GuideFactKind Kind { get; init; }
+
+    /// <summary>Finding or manual-selection identifier.</summary>
+    public required string FactId { get; init; }
+}
 
 /// <summary>De-duplicated content lineage for one compiled assertion.</summary>
-/// <param name="SupportId">Content-derived stable support identifier.</param>
-/// <param name="Assertion">Assertion supported by the cited facts and rules.</param>
-/// <param name="Rules">Direct and computed rules contributing to the assertion.</param>
-/// <param name="Evidence">Canonically ordered evidence for the assertion.</param>
-/// <param name="FactReferences">Human-decision or projected facts supplying the assertion.</param>
-public record AssertionSupport(
-    string SupportId,
-    AssertionReference Assertion,
-    IReadOnlyList<RuleReference> Rules,
-    IReadOnlyList<ContentEvidenceSpan> Evidence,
-    IReadOnlyList<GuideFactReference> FactReferences);
+public record AssertionSupport
+{
+    /// <summary>Content-derived stable support identifier.</summary>
+    public required string SupportId { get; init; }
+
+    /// <summary>Assertion supported by the cited facts and rules.</summary>
+    public required AssertionReference Assertion { get; init; }
+
+    /// <summary>Direct and computed rules contributing to the assertion.</summary>
+    public required IReadOnlyList<RuleReference> Rules { get; init; }
+
+    /// <summary>Canonically ordered evidence for the assertion.</summary>
+    public required IReadOnlyList<ContentEvidenceSpan> Evidence { get; init; }
+
+    /// <summary>Human-decision or projected facts supplying the assertion.</summary>
+    public required IReadOnlyList<GuideFactReference> FactReferences { get; init; }
+}
 
 /// <summary>Deterministic guide compilation for one authority basis and unit.</summary>
-/// <param name="Assertions">Effective compiled assertions, listed in print order as a validate result's are.</param>
-/// <param name="Rendered">Scheme-rendered marking for the compiled assertions.</param>
-/// <param name="Valid">Whether the compiled marking stands once settled, as <c>ValidateResult.valid</c> defines it.</param>
-/// <param name="Errors">Validation errors from scheme processing.</param>
-/// <param name="Warnings">Non-fatal scheme-processing warnings.</param>
-/// <param name="DirectRules">Direct rules contributing to the result.</param>
-/// <param name="ComputedRules">Computed rules contributing to the result.</param>
-/// <param name="OverriddenRules">Rules replaced by active overrides.</param>
-/// <param name="SupportIds">References into the evaluation support catalog.</param>
-/// <param name="Detail">Complete evaluation and process breakdown for the full profile.</param>
-public record GuideCompiledResult(
-    IReadOnlyList<Assertion> Assertions,
-    string Rendered,
-    bool Valid,
-    IReadOnlyList<ValidationError> Errors,
-    IReadOnlyList<Warning> Warnings,
-    IReadOnlyList<RuleReference> DirectRules,
-    IReadOnlyList<RuleReference> ComputedRules,
-    IReadOnlyList<RuleReference> OverriddenRules,
-    IReadOnlyList<string> SupportIds,
-    GuideCompiledDetail? Detail = null);
+public record GuideCompiledResult
+{
+    /// <summary>Effective compiled assertions, listed in print order as a validate result's are.</summary>
+    public required IReadOnlyList<Assertion> Assertions { get; init; }
+
+    /// <summary>Scheme-rendered marking for the compiled assertions.</summary>
+    public required string Rendered { get; init; }
+
+    /// <summary>Whether the compiled marking stands once settled, as <c>ValidateResult.valid</c> defines it.</summary>
+    public required bool Valid { get; init; }
+
+    /// <summary>Validation errors from scheme processing.</summary>
+    public required IReadOnlyList<ValidationError> Errors { get; init; }
+
+    /// <summary>Non-fatal scheme-processing warnings.</summary>
+    public required IReadOnlyList<Warning> Warnings { get; init; }
+
+    /// <summary>Direct rules contributing to the result.</summary>
+    public required IReadOnlyList<RuleReference> DirectRules { get; init; }
+
+    /// <summary>Computed rules contributing to the result.</summary>
+    public required IReadOnlyList<RuleReference> ComputedRules { get; init; }
+
+    /// <summary>Rules replaced by active overrides.</summary>
+    public required IReadOnlyList<RuleReference> OverriddenRules { get; init; }
+
+    /// <summary>References into the evaluation support catalog.</summary>
+    public required IReadOnlyList<string> SupportIds { get; init; }
+
+    /// <summary>Complete evaluation and process breakdown for the full profile.</summary>
+    public GuideCompiledDetail? Detail { get; init; }
+}
 
 /// <summary>The guide evaluation and the validate answer a compiled result was built from.</summary>
-/// <param name="Evaluation">Complete guide evaluation breakdown.</param>
-/// <param name="Process">What validate answers for the compiled assertions: the facts settled, whether they stand, and why not. A compiled marking is checked, not corrected, so it carries no fix paths.</param>
-public record GuideCompiledDetail(
-    EvaluationResult Evaluation,
-    ValidateResult Process);
+public record GuideCompiledDetail
+{
+    /// <summary>Complete guide evaluation breakdown.</summary>
+    public required EvaluationResult Evaluation { get; init; }
+
+    /// <summary>What validate answers for the compiled assertions: the facts settled, whether they stand, and why not. A compiled marking is checked, not corrected, so it carries no fix paths.</summary>
+    public required ValidateResult Process { get; init; }
+}
 
 /// <summary>Determined and projected compilation for one document unit.</summary>
-/// <param name="ScopeId">Opaque stable scope identifier.</param>
-/// <param name="Start">Zero-based inclusive UTF-8 byte offset.</param>
-/// <param name="End">Zero-based exclusive UTF-8 byte offset.</param>
-/// <param name="OffsetEncoding">Frozen byte-offset encoding.</param>
-/// <param name="FindingIds">Nomination IDs whose evidence belongs to this unit.</param>
-/// <param name="Determined">Compilation over accepted findings and manual selections.</param>
-/// <param name="Projected">Advisory compilation additionally assuming unresolved nominations.</param>
-public record GuideUnitEvaluation(
-    string ScopeId,
-    int Start,
-    int End,
-    string OffsetEncoding,
-    IReadOnlyList<string> FindingIds,
-    GuideCompiledResult? Determined,
-    GuideCompiledResult? Projected);
+public record GuideUnitEvaluation
+{
+    /// <summary>Opaque stable scope identifier.</summary>
+    public required string ScopeId { get; init; }
+
+    /// <summary>Zero-based inclusive UTF-8 byte offset.</summary>
+    public required int Start { get; init; }
+
+    /// <summary>Zero-based exclusive UTF-8 byte offset.</summary>
+    public required int End { get; init; }
+
+    /// <summary>Frozen byte-offset encoding.</summary>
+    public required string OffsetEncoding { get; init; }
+
+    /// <summary>Nomination IDs whose evidence belongs to this unit.</summary>
+    public required IReadOnlyList<string> FindingIds { get; init; }
+
+    /// <summary>Compilation over accepted findings and manual selections.</summary>
+    public required GuideCompiledResult? Determined { get; init; }
+
+    /// <summary>Advisory compilation additionally assuming unresolved nominations.</summary>
+    public required GuideCompiledResult? Projected { get; init; }
+}
 
 /// <summary>Complete evidence and compilation result for document guide evaluation.</summary>
-/// <param name="DocumentDigest">Digest of the exact evaluated document bytes.</param>
-/// <param name="Nominations">Canonically ordered lexical nominations.</param>
-/// <param name="Determinations">Validated analyst decisions.</param>
-/// <param name="ManualSelections">Validated qualified manual selections.</param>
-/// <param name="UnresolvedFindingIds">Nomination IDs awaiting analyst decision.</param>
-/// <param name="AcceptedFindingIds">Accepted nomination IDs.</param>
-/// <param name="RejectedFindingIds">Rejected nomination IDs.</param>
-/// <param name="SupportCatalog">De-duplicated assertion support graph.</param>
-/// <param name="Units">Compilation results for the document and authored parts.</param>
-/// <param name="Limitations">Guide-dimension limitations.</param>
-public record GuideContentEvaluation(
-    string DocumentDigest,
-    IReadOnlyList<GuideNomination> Nominations,
-    IReadOnlyList<GuideFindingDetermination> Determinations,
-    IReadOnlyList<ManualGuideSelection> ManualSelections,
-    IReadOnlyList<string> UnresolvedFindingIds,
-    IReadOnlyList<string> AcceptedFindingIds,
-    IReadOnlyList<string> RejectedFindingIds,
-    IReadOnlyList<AssertionSupport> SupportCatalog,
-    IReadOnlyList<GuideUnitEvaluation> Units,
-    IReadOnlyList<AssessmentLimitation> Limitations);
+public record GuideContentEvaluation
+{
+    /// <summary>Digest of the exact evaluated document bytes.</summary>
+    public required string DocumentDigest { get; init; }
+
+    /// <summary>Canonically ordered lexical nominations.</summary>
+    public required IReadOnlyList<GuideNomination> Nominations { get; init; }
+
+    /// <summary>Validated analyst decisions.</summary>
+    public required IReadOnlyList<GuideFindingDetermination> Determinations { get; init; }
+
+    /// <summary>Validated qualified manual selections.</summary>
+    public required IReadOnlyList<ManualGuideSelection> ManualSelections { get; init; }
+
+    /// <summary>Nomination IDs awaiting analyst decision.</summary>
+    public required IReadOnlyList<string> UnresolvedFindingIds { get; init; }
+
+    /// <summary>Accepted nomination IDs.</summary>
+    public required IReadOnlyList<string> AcceptedFindingIds { get; init; }
+
+    /// <summary>Rejected nomination IDs.</summary>
+    public required IReadOnlyList<string> RejectedFindingIds { get; init; }
+
+    /// <summary>De-duplicated assertion support graph.</summary>
+    public required IReadOnlyList<AssertionSupport> SupportCatalog { get; init; }
+
+    /// <summary>Compilation results for the document and authored parts.</summary>
+    public required IReadOnlyList<GuideUnitEvaluation> Units { get; init; }
+
+    /// <summary>Guide-dimension limitations.</summary>
+    public required IReadOnlyList<AssessmentLimitation> Limitations { get; init; }
+}
 
 /// <summary>Coverage of one guide unit against determined and projected requirements.</summary>
-/// <param name="ScopeId">Unit scope identifier.</param>
-/// <param name="DeterminedCoverage">Coverage against currently accepted/manual facts.</param>
-/// <param name="ProjectedCoverage">Advisory coverage assuming unresolved nominations are accepted.</param>
-public record GuideScopeCoverage(string ScopeId, CoverageReport? DeterminedCoverage, CoverageReport? ProjectedCoverage);
+public record GuideScopeCoverage
+{
+    /// <summary>Unit scope identifier.</summary>
+    public required string ScopeId { get; init; }
+
+    /// <summary>Coverage against currently accepted/manual facts.</summary>
+    public required CoverageReport? DeterminedCoverage { get; init; }
+
+    /// <summary>Advisory coverage assuming unresolved nominations are accepted.</summary>
+    public required CoverageReport? ProjectedCoverage { get; init; }
+}
 
 /// <summary>Guide dimension of a document audit.</summary>
-/// <param name="Status">Conservative status of the determined compilation.</param>
-/// <param name="NominationCount">Number of lexical nominations.</param>
-/// <param name="UnresolvedCount">Number of unresolved nominations.</param>
-/// <param name="AcceptedCount">Number of accepted nominations.</param>
-/// <param name="RejectedCount">Number of rejected nominations.</param>
-/// <param name="EvidenceSpanCount">Number of evidence spans.</param>
-/// <param name="UnitCoverage">Determined/projected coverage for each evaluation unit.</param>
-/// <param name="DeterminedRequiredWhole">Whole-document requirement from accepted/manual facts.</param>
-/// <param name="ProjectedRequiredWhole">Advisory whole-document requirement including unresolved facts.</param>
-/// <param name="DeterminedWholeCoverage">Authored whole coverage of the determined requirement.</param>
-/// <param name="ProjectedWholeCoverage">Authored whole coverage of the projected requirement.</param>
-/// <param name="Evaluation">Evidence and unit detail, omitted by the summary profile.</param>
-public record DocumentGuideAssessment(
-    GuideCompilationStatus Status,
-    int NominationCount,
-    int UnresolvedCount,
-    int AcceptedCount,
-    int RejectedCount,
-    int EvidenceSpanCount,
-    IReadOnlyList<GuideScopeCoverage> UnitCoverage,
-    GuideCompiledResult? DeterminedRequiredWhole,
-    GuideCompiledResult? ProjectedRequiredWhole,
-    CoverageReport? DeterminedWholeCoverage,
-    CoverageReport? ProjectedWholeCoverage,
-    GuideContentEvaluation? Evaluation = null);
+public record DocumentGuideAssessment
+{
+    /// <summary>Conservative status of the determined compilation.</summary>
+    public required GuideCompilationStatus Status { get; init; }
+
+    /// <summary>Number of lexical nominations.</summary>
+    public required int NominationCount { get; init; }
+
+    /// <summary>Number of unresolved nominations.</summary>
+    public required int UnresolvedCount { get; init; }
+
+    /// <summary>Number of accepted nominations.</summary>
+    public required int AcceptedCount { get; init; }
+
+    /// <summary>Number of rejected nominations.</summary>
+    public required int RejectedCount { get; init; }
+
+    /// <summary>Number of evidence spans.</summary>
+    public required int EvidenceSpanCount { get; init; }
+
+    /// <summary>Determined/projected coverage for each evaluation unit.</summary>
+    public required IReadOnlyList<GuideScopeCoverage> UnitCoverage { get; init; }
+
+    /// <summary>Whole-document requirement from accepted/manual facts.</summary>
+    public required GuideCompiledResult? DeterminedRequiredWhole { get; init; }
+
+    /// <summary>Advisory whole-document requirement including unresolved facts.</summary>
+    public required GuideCompiledResult? ProjectedRequiredWhole { get; init; }
+
+    /// <summary>Authored whole coverage of the determined requirement.</summary>
+    public required CoverageReport? DeterminedWholeCoverage { get; init; }
+
+    /// <summary>Authored whole coverage of the projected requirement.</summary>
+    public required CoverageReport? ProjectedWholeCoverage { get; init; }
+
+    /// <summary>Evidence and unit detail, omitted by the summary profile.</summary>
+    public GuideContentEvaluation? Evaluation { get; init; }
+}
 
 /// <summary>Resolved Context envelope returned by document audit.</summary>
-/// <param name="Resolution">Single resolved composition used throughout the operation.</param>
-/// <param name="Result">Typed operation result.</param>
-/// <param name="ResponseProjection">Projection metadata, present only for document operations.</param>
-public record ContextDocumentAuditResult(
-    ContextResolution Resolution,
-    DocumentAuditReport Result,
-    DocumentResponseProjection ResponseProjection);
+public record ContextDocumentAuditResult
+{
+    /// <summary>Single resolved composition used throughout the operation.</summary>
+    public required ContextResolution Resolution { get; init; }
+
+    /// <summary>Typed operation result.</summary>
+    public required DocumentAuditReport Result { get; init; }
+
+    /// <summary>Projection metadata, present only for document operations.</summary>
+    public required DocumentResponseProjection ResponseProjection { get; init; }
+}

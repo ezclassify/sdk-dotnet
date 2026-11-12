@@ -271,41 +271,39 @@ function memberDocText(description) {
   return text.replace(/<\/c> ([.,:;])/g, '</c>$1').replace(/ {2,}/g, ' ').trim();
 }
 
+/**
+ * Emit one record with init-only properties. A member the contract requires
+ * is a `required` property, so an initializer that leaves it out does not
+ * compile; an optional member is nullable and starts null. A later contract
+ * that adds an optional member adds a property and breaks no caller, which a
+ * constructor parameter list could not offer.
+ */
 function generateRecord(className, schema, summary) {
   const props = schema.properties || {};
   const required = new Set(schema.required || []);
 
-  const requiredFields = []; // required on the wire → no default
-  const optionalFields = []; // non-required fields → default null
+  const requiredFields = [];
+  const optionalFields = [];
 
   for (const [jsonName, propSchema] of Object.entries(props)) {
     const isReq = required.has(jsonName);
     const csName = toPascalCase(jsonName);
     const csType = mapType(propSchema, isReq, className + '.' + jsonName);
     const doc = memberDocText(propSchema?.description);
-    if (isReq) requiredFields.push({ csName, csType, hasDefault: false, doc });
-    else optionalFields.push({ csName, csType, hasDefault: true, doc });
+    if (!doc) throw new Error(`${className}.${jsonName} has no description in the contract`);
+    (isReq ? requiredFields : optionalFields).push({ csName, csType, isReq, doc });
   }
 
-  // C# record: required params first, then optional params with defaults
-  const allFields = [...requiredFields, ...optionalFields];
   const lines = [];
-  const docSummary = neutralizeDocText(summary);
-
-  lines.push(`/// <summary>${docSummary}</summary>`);
-  // A positional record's <param> text is also its property's IntelliSense.
-  for (const { csName, doc } of allFields) {
-    if (doc) lines.push(`/// <param name="${csName}">${doc}</param>`);
-  }
-  lines.push(`public record ${className}(`);
-
-  allFields.forEach(({ csName, csType, hasDefault }, i) => {
-    const defaultVal = hasDefault ? ' = null' : '';
-    const comma = i < allFields.length - 1 ? ',' : '';
-    lines.push(`    ${csType} ${csName}${defaultVal}${comma}`);
+  lines.push(`/// <summary>${neutralizeDocText(summary)}</summary>`);
+  lines.push(`public record ${className}`);
+  lines.push('{');
+  [...requiredFields, ...optionalFields].forEach(({ csName, csType, isReq, doc }, i) => {
+    if (i > 0) lines.push('');
+    lines.push(`    /// <summary>${doc}</summary>`);
+    lines.push(`    public ${isReq ? 'required ' : ''}${csType} ${csName} { get; init; }`);
   });
-
-  lines.push(');');
+  lines.push('}');
   return lines.join('\n');
 }
 
@@ -477,13 +475,9 @@ const schemasSha = schemaHash.digest('hex');
 
 const genSha = createHash('sha256').update(fs.readFileSync(fileURLToPath(import.meta.url))).digest('hex');
 
-// A member's <param> text comes only from the contract, so a member the
-// contract leaves undescribed has none; CS1573 would otherwise refuse the
-// record for documenting some members and not all.
 const output = `// Code generated from json-schemas@${schemasSha} by gen.mjs@${genSha}. DO NOT EDIT.
 // Re-run via: make regen
 #nullable enable
-#pragma warning disable CS1573
 
 using System.Collections.Generic;
 using System.Text.Json;

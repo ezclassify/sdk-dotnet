@@ -33,21 +33,25 @@ public class RequestSchemaConformanceTests
 
     // Every optional Assertion field is populated so each operation that takes
     // assertions validates the full field set against the contract.
-    private static readonly Assertion Level = new(
-        CategoryId: "level",
-        ConceptId: "HIGH",
-        Confidence: Confidence.Certain,
-        Source: "parse",
-        ReplacedConceptId: "LEGACY_HIGH",
-        SourceRule: "rule-7",
-        Value: "H");
+    private static readonly Assertion Level = new()
+    {
+        CategoryId = "level",
+        ConceptId = "HIGH",
+        Confidence = Confidence.Certain,
+        Source = "parse",
+        ReplacedConceptId = "LEGACY_HIGH",
+        SourceRule = "rule-7",
+        Value = "H",
+    };
 
-    private static readonly GuideDeterminationInput Determinations = new(
-        new[]
+    private static readonly GuideDeterminationInput Determinations = new()
+    {
+        Findings = new[]
         {
-            new GuideFindingDetermination("finding-1", "sha256:abc", GuideFindingDecision.Accepted, "Confirmed by analyst"),
+            new GuideFindingDetermination { FindingId = "finding-1", DocumentDigest = "sha256:abc", Decision = GuideFindingDecision.Accepted, Reason = "Confirmed by analyst" },
         },
-        Array.Empty<ManualGuideSelectionInput>());
+        ManualSelections = Array.Empty<ManualGuideSelectionInput>(),
+    };
 
     private const string PartOf = """{ "role": "part", "partOf": { "rendered": "H//A" } }""";
 
@@ -100,7 +104,7 @@ public class RequestSchemaConformanceTests
                 "default-label", outputFormat: "banner")),
             ["guide.scan"] = ("guide/scan", c => c.Guide!.ScanAsync("secret text", guideId: "g1")),
             ["guide.evaluate"] = ("guide/evaluate", c => c.Guide!.EvaluateAsync("g1", new[] { "r1" })),
-            ["guide.evaluateMany"] = ("guide/evaluate", c => c.Guide!.EvaluateManyAsync(new[] { new GuideRuleSelection("g1", "r1") })),
+            ["guide.evaluateMany"] = ("guide/evaluate", c => c.Guide!.EvaluateManyAsync(new[] { new GuideRuleSelection { GuideId = "g1", RuleId = "r1" } })),
             ["guide.view"] = ("guide/view", c => c.Guide!.ViewAsync(guideId: "g1")),
             ["access.check"] = ("access/check", c => c.Access!.CheckAsync(
                 new[] { Level }, """{ "clearance": "high" }""", contextJson: """{ "orgs": ["org-1"] }""")),

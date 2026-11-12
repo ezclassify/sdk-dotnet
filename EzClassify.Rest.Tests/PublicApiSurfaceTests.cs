@@ -245,7 +245,8 @@ public class PublicApiSurfaceTests
                 ? $"this[{RenderParams(p.GetIndexParameters())}]"
                 : p.Name;
             var anyAccessor = accessors[0].m;
-            lines.Add((2, $"property {mostVisible}{MethodMods(anyAccessor, t)} {RenderType(p.PropertyType)} "
+            var required = IsRequiredMember(p) ? " required" : "";
+            lines.Add((2, $"property {mostVisible}{MethodMods(anyAccessor, t)}{required} {RenderType(p.PropertyType)} "
                 + $"{name} {{ {string.Join(" ", rendered)} }}"));
         }
 
@@ -282,7 +283,7 @@ public class PublicApiSurfaceTests
     private static string Visibility(FieldInfo f) => f.IsPublic ? "public" : "protected";
 
     // Record synthesis (Clone, PrintMembers, EqualityContract, equality members)
-    // derives entirely from the positional property list, which the dump already
+    // derives entirely from the property list, which the dump already
     // captures. Skipping it keeps the golden focused on hand-authored surface.
     private static bool IsCompilerNoise(MethodBase m) =>
         m.Name.Contains('<')
@@ -297,6 +298,11 @@ public class PublicApiSurfaceTests
         else if (m.IsVirtual && !m.IsFinal) mods += " virtual";
         return mods;
     }
+
+    // Matched by name: the netstandard2.0 build carries its own copy of the
+    // attribute, and the net8.0 build uses the BCL's.
+    private static bool IsRequiredMember(PropertyInfo p) =>
+        p.CustomAttributes.Any(a => a.AttributeType.FullName == "System.Runtime.CompilerServices.RequiredMemberAttribute");
 
     private static bool IsInitOnly(MethodInfo setter) =>
         setter.ReturnParameter.GetRequiredCustomModifiers()

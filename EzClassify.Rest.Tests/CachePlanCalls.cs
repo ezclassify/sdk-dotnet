@@ -20,8 +20,8 @@ internal static class CachePlanCalls
 {
     private const string Clearance = """{"clearance":"OPEN"}""";
     private const string Releasable = "OPEN\nThis document is releasable.";
-    private static readonly Assertion Open = new("level", "OPEN", Confidence.Certain, "explicit");
-    private static readonly Assertion Sensitive = new("level", "SENSITIVE", Confidence.Certain, "explicit");
+    private static readonly Assertion Open = new() { CategoryId = "level", ConceptId = "OPEN", Confidence = Confidence.Certain, Source = "explicit" };
+    private static readonly Assertion Sensitive = new() { CategoryId = "level", ConceptId = "SENSITIVE", Confidence = Confidence.Certain, Source = "explicit" };
 
     private delegate Task<object> Call(EzClassifyClient client, CancellationToken token, bool reorder, string? context);
 

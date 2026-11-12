@@ -97,7 +97,7 @@ The bound client caches repeated scheme `Process`, `Validate`, `Explain`, `Sugge
 
 Every field of a request is part of its cache key, so two `ProcessAsync` calls that name different `outputs` or `suggestFor` are two entries. The operation is part of the key too: `ExplainAsync` and `ProcessAsync` never share an entry, and neither do `Access.CheckAsync` and `Access.CheckByMarkingAsync`. Identical concurrent calls share one request. Canceling one caller's `CancellationToken` settles only that caller; the request itself is canceled when its last caller has gone, and a cancellation after the answer arrived evicts nothing. A failed call is not cached, and neither is a 200 that is missing a member the contract requires: the next call retries. Results are read-only, so changing the collections in one caller's result cannot change what another caller, or a later cached read, receives.
 
-Each client holds up to 500 results. A concrete Context version keeps results until eviction. An omitted version or `latest` bounds their lifetime instead: five minutes generally, two minutes for scan, and one hour for concept descriptions, access rules and the crosswalk inventory. A 401, the 404 with exactly `{"error":"not_found"}` that a deployment running authentication sends an unauthenticated caller, or a new resolved version on a `latest` binding clears the cache. A 404 that names a missing resource leaves it alone. Call `ctx.ClearCache()` for a fresh read, or pass `new ContextCacheOptions(Enabled: false)` when you connect to disable caching for that client.
+Each client holds up to 500 results. A concrete Context version keeps results until eviction. An omitted version or `latest` bounds their lifetime instead: five minutes generally, two minutes for scan, and one hour for concept descriptions, access rules and the crosswalk inventory. A 401, the 404 with exactly `{"error":"not_found"}` that a deployment running authentication sends an unauthenticated caller, or a new resolved version on a `latest` binding clears the cache. A 404 that names a missing resource leaves it alone. Call `ctx.ClearCache()` for a fresh read, or pass `new ContextCacheOptions { Enabled = false }` when you connect to disable caching for that client.
 
 `await ctx.DescribeContextAsync()` returns what the Context is made of: the composed scheme, every scheme it holds with its selector and roles, the guides, the access policy, and the crosswalks, each with the version the Context declares and the concrete version that answered. Record these when you need to say which artifacts a decision was made against. The description is read on first use and held for the life of the client, so `ClearCache()` does not drop it; on a `latest` binding it is read again after the composition moves.
 
@@ -207,7 +207,10 @@ A composer sends what was typed together with the facts already picked, names th
 
 ```csharp
 var typed = "FINANCIAL INFORMATION";
-var pickedSoFar = new[] { new Assertion("level", "CONFIDENTIAL", Confidence.Certain, "user") };
+var pickedSoFar = new[]
+{
+    new Assertion { CategoryId = "level", ConceptId = "CONFIDENTIAL", Confidence = Confidence.Certain, Source = "user" },
+};
 
 var keystroke = (await ctx.Scheme.ProcessAsync(
     typed,
@@ -220,6 +223,8 @@ var options = keystroke.SuggestionsFor!["level"].Suggestions;
 ```
 
 `Renders` holds only the outputs you name, and `SuggestionsFor` is null unless you name categories. Outputs are spelled the way the scheme declares them: a format id here, a `surface/view` address for a scheme that declares surfaces. `SuggestForCategoriesAsync` answers the same map on its own, for a picker that needs options without processing the marking.
+
+Inputs and results are immutable records with init-only properties. Build one with an object initializer, as `Assertion` is built above: the compiler insists on the members marked `required`, and the optional ones start null. A member a later release adds is optional, so code that builds these records keeps compiling. Building one takes C# 11 or later; reading one works from any version.
 
 An error about text the engine could not read may carry `DidYouMean`, the ids of the concepts the text was likely meant as, for a program to act on. The message says the same in words. It is a hint, not a fix: only `ProposedFixes` are proven.
 

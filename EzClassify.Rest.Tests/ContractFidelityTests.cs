@@ -13,8 +13,8 @@ namespace EzClassify.Tests;
 /// OpenAPI document declares for it.
 /// </summary>
 /// <remarks>
-/// Many of these records are hand-written in the gen.mjs templates and read by
-/// hand parsers, so regenerating from a new spec cannot add a field to them and
+/// Many of these records are hand-written and read by hand parsers, so
+/// regenerating from a new spec cannot add a field to them and
 /// no other gate notices when the contract grows. This test fails when a
 /// record lacks a property its contract shape declares, carries one the
 /// contract does not, or disagrees with the contract about whether a scalar
@@ -175,6 +175,39 @@ public class ContractFidelityTests
         }
 
         Assert.True(problems.Count == 0, "Record property types drifted from the vendored contract:\n  " + string.Join("\n  ", problems));
+    }
+
+    /// <summary>
+    /// A member the contract requires is a <c>required</c> property, so code
+    /// that builds the record cannot leave it out, and a member the contract
+    /// leaves optional is not. A list the parser reads as empty when absent may
+    /// still be required here, by the repository's convention for lists.
+    /// </summary>
+    [Fact]
+    public void EveryContractRecordRequiresExactlyTheMembersItsSchemaRequires()
+    {
+        var schemas = LoadSchemas();
+        var problems = new List<string>();
+
+        foreach (var record in ContractRecords().Where(record => !record.IsAbstract))
+        {
+            var source = ContractSource.TryGetValue(record.Name, out var mapped) ? mapped : record.Name;
+            if (Resolve(schemas, source) is not { } schema) continue;
+            var required = Required(schemas, schema);
+            foreach (var wire in Properties(schemas, schema))
+            {
+                var property = record.GetProperty(Pascal(wire), BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+                if (property is null || Requiredness.ContainsKey((record.Name, wire))) continue;
+                var requiredMember = IsRequiredMember(property);
+                if (required.Contains(wire) && !requiredMember)
+                    problems.Add($"{record.Name}.{property.Name} is not required, but the contract requires `{wire}` on {source}.");
+                else if (!required.Contains(wire) && requiredMember
+                    && !(IsCollection(property.PropertyType) && !IsNullable(property)))
+                    problems.Add($"{record.Name}.{property.Name} is required, but the contract leaves `{wire}` optional on {source}.");
+            }
+        }
+
+        Assert.True(problems.Count == 0, "Record requiredness drifted from the vendored contract:\n  " + string.Join("\n  ", problems));
     }
 
     [Fact]
@@ -680,6 +713,9 @@ public class ContractFidelityTests
     private static bool IsNullable(PropertyInfo property) =>
         Nullable.GetUnderlyingType(property.PropertyType) is not null
         || (!property.PropertyType.IsValueType && Nullability.Create(property).ReadState == NullabilityState.Nullable);
+
+    private static bool IsRequiredMember(PropertyInfo property) =>
+        property.IsDefined(typeof(System.Runtime.CompilerServices.RequiredMemberAttribute), inherit: false);
 
     private static bool IsCollection(Type type) =>
         type != typeof(string) && typeof(System.Collections.IEnumerable).IsAssignableFrom(type);

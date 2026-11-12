@@ -6,15 +6,27 @@ using System.Text.Json;
 namespace EzClassify;
 
 /// <summary>A reference to one assertion in a rendered state.</summary>
-/// <param name="ConceptId">The concept asserted.</param>
-/// <param name="CategoryId">The category it was asserted in.</param>
-/// <param name="Value">Its value, for a concept that carries free text.</param>
-public record AssertionRef(string ConceptId, string CategoryId, string? Value = null);
+public record AssertionRef
+{
+    /// <summary>The concept asserted.</summary>
+    public required string ConceptId { get; init; }
+
+    /// <summary>The category it was asserted in.</summary>
+    public required string CategoryId { get; init; }
+
+    /// <summary>Its value, for a concept that carries free text.</summary>
+    public string? Value { get; init; }
+}
 
 /// <summary>Two assertions that claim the same render field.</summary>
-/// <param name="Field">The field, by <c>name</c> or category id.</param>
-/// <param name="Assertions">The assertions in conflict.</param>
-public record RenderFieldConflict(string Field, IReadOnlyList<AssertionRef> Assertions);
+public record RenderFieldConflict
+{
+    /// <summary>The field, by <c>name</c> or category id.</summary>
+    public required string Field { get; init; }
+
+    /// <summary>The assertions in conflict.</summary>
+    public required IReadOnlyList<AssertionRef> Assertions { get; init; }
+}
 
 /// <summary>
 /// Something a render could not write: one fact, as an
@@ -33,209 +45,383 @@ public abstract record UnrepresentableValue
 }
 
 /// <summary>A fact the selected format has no way to write.</summary>
-/// <param name="ConceptId">The concept that cannot be written.</param>
-/// <param name="Reason">Why the format cannot write it.</param>
-/// <param name="Detail">Human-readable detail, for a message rather than a branch.</param>
-public sealed record UnrepresentableFact(
-    string ConceptId,
-    UnrepresentableFactReason Reason,
-    string? Detail = null) : UnrepresentableValue;
+public sealed record UnrepresentableFact : UnrepresentableValue
+{
+    /// <summary>The concept that cannot be written.</summary>
+    public required string ConceptId { get; init; }
+
+    /// <summary>Why the format cannot write it.</summary>
+    public required UnrepresentableFactReason Reason { get; init; }
+
+    /// <summary>Human-readable detail, for a message rather than a branch.</summary>
+    public override string? Detail { get; init; }
+}
 
 /// <summary>
 /// An output refused whole, before any of its facts was written. Only a scheme
 /// that declares surfaces refuses one, because only its views choose a format
 /// by condition.
 /// </summary>
-/// <param name="Output">The output refused, by its <c>surface/view</c> address.</param>
-/// <param name="Reason">Why it was refused.</param>
-/// <param name="Detail">Human-readable detail, for a message rather than a branch.</param>
-public sealed record UnrepresentableOutput(
-    string Output,
-    UnrepresentableOutputReason Reason,
-    string? Detail = null) : UnrepresentableValue;
+public sealed record UnrepresentableOutput : UnrepresentableValue
+{
+    /// <summary>The output refused, by its <c>surface/view</c> address.</summary>
+    public required string Output { get; init; }
+
+    /// <summary>Why it was refused.</summary>
+    public required UnrepresentableOutputReason Reason { get; init; }
+
+    /// <summary>Human-readable detail, for a message rather than a branch.</summary>
+    public override string? Detail { get; init; }
+}
 
 /// <summary>Complete preservation accounting for one render.</summary>
-/// <param name="Emitted">Facts this render wrote.</param>
-/// <param name="Omitted">Facts this render did not write.</param>
-/// <param name="Collapsed">Groups of facts that collapsed into one written equivalent.</param>
-/// <param name="Conflicts">Fields that two assertions both claim.</param>
-/// <param name="Unrepresentable">Facts that cannot be written in this format at all, and outputs refused whole.</param>
-public record RenderAssessment(
-    IReadOnlyList<AssertionRef> Emitted,
-    IReadOnlyList<AssertionRef> Omitted,
-    IReadOnlyList<IReadOnlyList<AssertionRef>> Collapsed,
-    IReadOnlyList<RenderFieldConflict> Conflicts,
-    IReadOnlyList<UnrepresentableValue> Unrepresentable);
+public record RenderAssessment
+{
+    /// <summary>Facts this render wrote.</summary>
+    public required IReadOnlyList<AssertionRef> Emitted { get; init; }
+
+    /// <summary>Facts this render did not write.</summary>
+    public required IReadOnlyList<AssertionRef> Omitted { get; init; }
+
+    /// <summary>Groups of facts that collapsed into one written equivalent.</summary>
+    public required IReadOnlyList<IReadOnlyList<AssertionRef>> Collapsed { get; init; }
+
+    /// <summary>Fields that two assertions both claim.</summary>
+    public required IReadOnlyList<RenderFieldConflict> Conflicts { get; init; }
+
+    /// <summary>Facts that cannot be written in this format at all, and outputs refused whole.</summary>
+    public required IReadOnlyList<UnrepresentableValue> Unrepresentable { get; init; }
+}
 
 /// <summary>A named render and its preservation assessment.</summary>
-/// <param name="Rendered">The rendered marking.</param>
-/// <param name="Assessment">What this render did to the state it was given.</param>
-public record RenderResult(string Rendered, RenderAssessment Assessment);
+public record RenderResult
+{
+    /// <summary>The rendered marking.</summary>
+    public required string Rendered { get; init; }
+
+    /// <summary>What this render did to the state it was given.</summary>
+    public required RenderAssessment Assessment { get; init; }
+}
 
 /// <summary>Rendered marking payload and its preservation assessment.</summary>
-/// <param name="Result">The rendered marking string.</param>
-/// <param name="Assessment">What this render did to the state it was given: what was written, what was left out, what collapsed, what this format cannot write. Bound to this render, not to the format in the abstract.</param>
-public record RenderResponse(string Result, RenderAssessment Assessment);
+public record RenderResponse
+{
+    /// <summary>The rendered marking string.</summary>
+    public required string Result { get; init; }
+
+    /// <summary>What this render did to the state it was given: what was written, what was left out, what collapsed, what this format cannot write. Bound to this render, not to the format in the abstract.</summary>
+    public required RenderAssessment Assessment { get; init; }
+}
 
 /// <summary>Resolved Context envelope returned by scheme processing, the author's call.</summary>
-/// <param name="Resolution">Single resolved composition used throughout the operation.</param>
-/// <param name="Result">Typed operation result.</param>
-/// <param name="ResponseProjection">Projection metadata, present only for document operations.</param>
-public record ContextSchemeProcessResult(ContextResolution Resolution, ProcessResult Result, DocumentResponseProjection? ResponseProjection = null);
+public record ContextSchemeProcessResult
+{
+    /// <summary>Single resolved composition used throughout the operation.</summary>
+    public required ContextResolution Resolution { get; init; }
+
+    /// <summary>Typed operation result.</summary>
+    public required ProcessResult Result { get; init; }
+
+    /// <summary>Projection metadata, present only for document operations.</summary>
+    public DocumentResponseProjection? ResponseProjection { get; init; }
+}
 
 /// <summary>Resolved Context envelope returned by scheme validation, the reader's call, and by label preset expansion.</summary>
-/// <param name="Resolution">Single resolved composition used throughout the operation.</param>
-/// <param name="Result">Typed operation result.</param>
-/// <param name="ResponseProjection">Projection metadata, present only for document operations.</param>
-public record ContextSchemeValidateResult(ContextResolution Resolution, ValidateResult Result, DocumentResponseProjection? ResponseProjection = null);
+public record ContextSchemeValidateResult
+{
+    /// <summary>Single resolved composition used throughout the operation.</summary>
+    public required ContextResolution Resolution { get; init; }
+
+    /// <summary>Typed operation result.</summary>
+    public required ValidateResult Result { get; init; }
+
+    /// <summary>Projection metadata, present only for document operations.</summary>
+    public DocumentResponseProjection? ResponseProjection { get; init; }
+}
 
 /// <summary>Resolved Context envelope returned by a scheme explanation: the trace of how the engine settled one marking.</summary>
-/// <param name="Resolution">Single resolved composition used throughout the operation.</param>
-/// <param name="Result">Typed operation result.</param>
-/// <param name="ResponseProjection">Projection metadata, present only for document operations.</param>
-public record ContextSchemeExplainResult(ContextResolution Resolution, ExplanationTrace Result, DocumentResponseProjection? ResponseProjection = null);
+public record ContextSchemeExplainResult
+{
+    /// <summary>Single resolved composition used throughout the operation.</summary>
+    public required ContextResolution Resolution { get; init; }
+
+    /// <summary>Typed operation result.</summary>
+    public required ExplanationTrace Result { get; init; }
+
+    /// <summary>Projection metadata, present only for document operations.</summary>
+    public DocumentResponseProjection? ResponseProjection { get; init; }
+}
 
 /// <summary>Resolved Context envelope returned by scheme suggestions.</summary>
-/// <param name="Resolution">Single resolved composition used throughout the operation.</param>
-/// <param name="Result">Typed operation result.</param>
-/// <param name="ResponseProjection">Projection metadata, present only for document operations.</param>
-public record ContextSchemeSuggestResult(ContextResolution Resolution, SuggestResult Result, DocumentResponseProjection? ResponseProjection = null);
+public record ContextSchemeSuggestResult
+{
+    /// <summary>Single resolved composition used throughout the operation.</summary>
+    public required ContextResolution Resolution { get; init; }
+
+    /// <summary>Typed operation result.</summary>
+    public required SuggestResult Result { get; init; }
+
+    /// <summary>Projection metadata, present only for document operations.</summary>
+    public DocumentResponseProjection? ResponseProjection { get; init; }
+}
 
 /// <summary>
 /// Resolved Context envelope returned by per-category scheme suggestions: one
 /// <see cref="SuggestResult"/> per requested category id, the same map a process
 /// call returns in <see cref="ProcessResult.SuggestionsFor"/>.
 /// </summary>
-/// <param name="Resolution">Single resolved composition used throughout the operation.</param>
-/// <param name="Result">Typed operation result.</param>
-/// <param name="ResponseProjection">Projection metadata, present only for document operations.</param>
-public record ContextSchemeSuggestForCategoriesResult(ContextResolution Resolution, IReadOnlyDictionary<string, SuggestResult> Result, DocumentResponseProjection? ResponseProjection = null);
+public record ContextSchemeSuggestForCategoriesResult
+{
+    /// <summary>Single resolved composition used throughout the operation.</summary>
+    public required ContextResolution Resolution { get; init; }
+
+    /// <summary>Typed operation result.</summary>
+    public required IReadOnlyDictionary<string, SuggestResult> Result { get; init; }
+
+    /// <summary>Projection metadata, present only for document operations.</summary>
+    public DocumentResponseProjection? ResponseProjection { get; init; }
+}
 
 /// <summary>Resolved Context envelope returned by scheme aggregation.</summary>
-/// <param name="Resolution">Single resolved composition used throughout the operation.</param>
-/// <param name="Result">Typed operation result.</param>
-/// <param name="ResponseProjection">Projection metadata, present only for document operations.</param>
-public record ContextSchemeAggregateResult(ContextResolution Resolution, AggregateResult Result, DocumentResponseProjection? ResponseProjection = null);
+public record ContextSchemeAggregateResult
+{
+    /// <summary>Single resolved composition used throughout the operation.</summary>
+    public required ContextResolution Resolution { get; init; }
+
+    /// <summary>Typed operation result.</summary>
+    public required AggregateResult Result { get; init; }
+
+    /// <summary>Projection metadata, present only for document operations.</summary>
+    public DocumentResponseProjection? ResponseProjection { get; init; }
+}
 
 /// <summary>What a scan answers: the markings it found, the wrapped marks it could
 /// not read, and how far it got. An empty list is what a clean document and an
 /// abandoned scan both look like, so the limit report travels with the results
 /// rather than being inferred.</summary>
-/// <param name="Results">The markings the scan found, in document order.</param>
-/// <param name="Unread">The wrapped marks the scan found but could not read, in document order.</param>
-/// <param name="Limits">How far the scan got, and what stopped it.</param>
-public record ScanResponseBody(IReadOnlyList<ScanMatch> Results, IReadOnlyList<UnreadMark> Unread, ScanLimits Limits);
+public record ScanResponseBody
+{
+    /// <summary>The markings the scan found, in document order.</summary>
+    public required IReadOnlyList<ScanMatch> Results { get; init; }
+
+    /// <summary>The wrapped marks the scan found but could not read, in document order.</summary>
+    public required IReadOnlyList<UnreadMark> Unread { get; init; }
+
+    /// <summary>How far the scan got, and what stopped it.</summary>
+    public required ScanLimits Limits { get; init; }
+}
 
 /// <summary>Resolved Context envelope returned by scheme scans.</summary>
-/// <param name="Resolution">Single resolved composition used throughout the operation.</param>
-/// <param name="Result">Typed operation result.</param>
-/// <param name="ResponseProjection">Projection metadata, present only for document operations.</param>
-public record ContextSchemeScanResult(ContextResolution Resolution, ScanResponseBody Result, DocumentResponseProjection? ResponseProjection = null);
+public record ContextSchemeScanResult
+{
+    /// <summary>Single resolved composition used throughout the operation.</summary>
+    public required ContextResolution Resolution { get; init; }
+
+    /// <summary>Typed operation result.</summary>
+    public required ScanResponseBody Result { get; init; }
+
+    /// <summary>Projection metadata, present only for document operations.</summary>
+    public DocumentResponseProjection? ResponseProjection { get; init; }
+}
 
 /// <summary>Resolved Context envelope returned by scheme rendering.</summary>
-/// <param name="Resolution">Single resolved composition used throughout the operation.</param>
-/// <param name="Result">Typed operation result.</param>
-/// <param name="ResponseProjection">Projection metadata, present only for document operations.</param>
-public record ContextSchemeRenderResult(ContextResolution Resolution, RenderResponse Result, DocumentResponseProjection? ResponseProjection = null);
+public record ContextSchemeRenderResult
+{
+    /// <summary>Single resolved composition used throughout the operation.</summary>
+    public required ContextResolution Resolution { get; init; }
+
+    /// <summary>Typed operation result.</summary>
+    public required RenderResponse Result { get; init; }
+
+    /// <summary>Projection metadata, present only for document operations.</summary>
+    public DocumentResponseProjection? ResponseProjection { get; init; }
+}
 
 /// <summary>Resolved Context envelope returned by scheme coverage checks.</summary>
-/// <param name="Resolution">Single resolved composition used throughout the operation.</param>
-/// <param name="Result">Typed operation result.</param>
-/// <param name="ResponseProjection">Projection metadata, present only for document operations.</param>
-public record ContextSchemeCoverageResult(ContextResolution Resolution, CoverageReport Result, DocumentResponseProjection? ResponseProjection = null);
+public record ContextSchemeCoverageResult
+{
+    /// <summary>Single resolved composition used throughout the operation.</summary>
+    public required ContextResolution Resolution { get; init; }
+
+    /// <summary>Typed operation result.</summary>
+    public required CoverageReport Result { get; init; }
+
+    /// <summary>Projection metadata, present only for document operations.</summary>
+    public DocumentResponseProjection? ResponseProjection { get; init; }
+}
 
 /// <summary>Resolved Context envelope returned by concept descriptions.</summary>
-/// <param name="Resolution">Single resolved composition used throughout the operation.</param>
-/// <param name="Result">Typed operation result.</param>
-/// <param name="ResponseProjection">Projection metadata, present only for document operations.</param>
-public record ContextSchemeConceptDescriptionResult(ContextResolution Resolution, ConceptDescription Result, DocumentResponseProjection? ResponseProjection = null);
+public record ContextSchemeConceptDescriptionResult
+{
+    /// <summary>Single resolved composition used throughout the operation.</summary>
+    public required ContextResolution Resolution { get; init; }
+
+    /// <summary>Typed operation result.</summary>
+    public required ConceptDescription Result { get; init; }
+
+    /// <summary>Projection metadata, present only for document operations.</summary>
+    public DocumentResponseProjection? ResponseProjection { get; init; }
+}
 
 /// <summary>Resolved Context envelope returned by scheme diffs.</summary>
-/// <param name="Resolution">Single resolved composition used throughout the operation.</param>
-/// <param name="Result">Typed operation result.</param>
-/// <param name="ResponseProjection">Projection metadata, present only for document operations.</param>
-public record ContextSchemeDiffResult(ContextResolution Resolution, DiffResult Result, DocumentResponseProjection? ResponseProjection = null);
+public record ContextSchemeDiffResult
+{
+    /// <summary>Single resolved composition used throughout the operation.</summary>
+    public required ContextResolution Resolution { get; init; }
+
+    /// <summary>Typed operation result.</summary>
+    public required DiffResult Result { get; init; }
+
+    /// <summary>Projection metadata, present only for document operations.</summary>
+    public DocumentResponseProjection? ResponseProjection { get; init; }
+}
 
 /// <summary>Resolved Context envelope returned by scheme notice collection.</summary>
-/// <param name="Resolution">Single resolved composition used throughout the operation.</param>
-/// <param name="Result">Typed operation result.</param>
-/// <param name="ResponseProjection">Projection metadata, present only for document operations.</param>
-public record ContextSchemeNoticesResult(ContextResolution Resolution, IReadOnlyList<Notice> Result, DocumentResponseProjection? ResponseProjection = null);
+public record ContextSchemeNoticesResult
+{
+    /// <summary>Single resolved composition used throughout the operation.</summary>
+    public required ContextResolution Resolution { get; init; }
+
+    /// <summary>Typed operation result.</summary>
+    public required IReadOnlyList<Notice> Result { get; init; }
+
+    /// <summary>Projection metadata, present only for document operations.</summary>
+    public DocumentResponseProjection? ResponseProjection { get; init; }
+}
 
 /// <summary>Resolved Context envelope returned by scheme structural views.</summary>
-/// <param name="Resolution">Single resolved composition used throughout the operation.</param>
-/// <param name="Result">Typed operation result.</param>
-/// <param name="ResponseProjection">Projection metadata, present only for document operations.</param>
-public record ContextSchemeViewResult(ContextResolution Resolution, SchemeView Result, DocumentResponseProjection? ResponseProjection = null);
+public record ContextSchemeViewResult
+{
+    /// <summary>Single resolved composition used throughout the operation.</summary>
+    public required ContextResolution Resolution { get; init; }
+
+    /// <summary>Typed operation result.</summary>
+    public required SchemeView Result { get; init; }
+
+    /// <summary>Projection metadata, present only for document operations.</summary>
+    public DocumentResponseProjection? ResponseProjection { get; init; }
+}
 
 /// <summary>Resolved Context envelope returned by guide scans.</summary>
-/// <param name="Resolution">Single resolved composition used throughout the operation.</param>
-/// <param name="Result">Typed operation result.</param>
-/// <param name="ResponseProjection">Projection metadata, present only for document operations.</param>
-public record ContextGuideScanResult(ContextResolution Resolution, IReadOnlyList<GuideScanResult> Result, DocumentResponseProjection? ResponseProjection = null);
+public record ContextGuideScanResult
+{
+    /// <summary>Single resolved composition used throughout the operation.</summary>
+    public required ContextResolution Resolution { get; init; }
+
+    /// <summary>Typed operation result.</summary>
+    public required IReadOnlyList<GuideScanResult> Result { get; init; }
+
+    /// <summary>Projection metadata, present only for document operations.</summary>
+    public DocumentResponseProjection? ResponseProjection { get; init; }
+}
 
 /// <summary>Resolved Context envelope returned by guide evaluation.</summary>
-/// <param name="Resolution">Single resolved composition used throughout the operation.</param>
-/// <param name="Result">Typed operation result.</param>
-/// <param name="ResponseProjection">Projection metadata, present only for document operations.</param>
-public record ContextGuideEvaluationResult(ContextResolution Resolution, EvaluationResult Result, DocumentResponseProjection? ResponseProjection = null);
+public record ContextGuideEvaluationResult
+{
+    /// <summary>Single resolved composition used throughout the operation.</summary>
+    public required ContextResolution Resolution { get; init; }
+
+    /// <summary>Typed operation result.</summary>
+    public required EvaluationResult Result { get; init; }
+
+    /// <summary>Projection metadata, present only for document operations.</summary>
+    public DocumentResponseProjection? ResponseProjection { get; init; }
+}
 
 /// <summary>Resolved Context envelope returned by guide structural views.</summary>
-/// <param name="Resolution">Single resolved composition used throughout the operation.</param>
-/// <param name="Result">Typed operation result.</param>
-/// <param name="ResponseProjection">Projection metadata, present only for document operations.</param>
-public record ContextGuideViewResult(ContextResolution Resolution, GuideView Result, DocumentResponseProjection? ResponseProjection = null);
+public record ContextGuideViewResult
+{
+    /// <summary>Single resolved composition used throughout the operation.</summary>
+    public required ContextResolution Resolution { get; init; }
+
+    /// <summary>Typed operation result.</summary>
+    public required GuideView Result { get; init; }
+
+    /// <summary>Projection metadata, present only for document operations.</summary>
+    public DocumentResponseProjection? ResponseProjection { get; init; }
+}
 
 /// <summary>Resolved Context envelope returned by trusted-target access checks.</summary>
-/// <param name="Resolution">Single resolved composition used throughout the operation.</param>
-/// <param name="Result">Typed operation result.</param>
-/// <param name="ResponseProjection">Projection metadata, present only for document operations.</param>
-public record ContextAccessDecisionResult(ContextResolution Resolution, AccessDecision Result, DocumentResponseProjection? ResponseProjection = null);
+public record ContextAccessDecisionResult
+{
+    /// <summary>Single resolved composition used throughout the operation.</summary>
+    public required ContextResolution Resolution { get; init; }
+
+    /// <summary>Typed operation result.</summary>
+    public required AccessDecision Result { get; init; }
+
+    /// <summary>Projection metadata, present only for document operations.</summary>
+    public DocumentResponseProjection? ResponseProjection { get; init; }
+}
 
 /// <summary>Resolved Context envelope returned by access requirement descriptions.</summary>
-/// <param name="Resolution">Single resolved composition used throughout the operation.</param>
-/// <param name="Result">Typed operation result.</param>
-/// <param name="ResponseProjection">Projection metadata, present only for document operations.</param>
-public record ContextAccessRequirementsResult(ContextResolution Resolution, AccessRequirementsDescription Result, DocumentResponseProjection? ResponseProjection = null);
+public record ContextAccessRequirementsResult
+{
+    /// <summary>Single resolved composition used throughout the operation.</summary>
+    public required ContextResolution Resolution { get; init; }
+
+    /// <summary>Typed operation result.</summary>
+    public required AccessRequirementsDescription Result { get; init; }
+
+    /// <summary>Projection metadata, present only for document operations.</summary>
+    public DocumentResponseProjection? ResponseProjection { get; init; }
+}
 
 /// <summary>
 /// Resolved Context envelope returned by directional crosswalk translation.
 /// The translation result is preserved as contract-owned JSON because its
 /// completed and forbidden branches are a discriminated union.
 /// </summary>
-/// <param name="Resolution">Single resolved composition used throughout the operation.</param>
-/// <param name="Result">Typed operation result.</param>
-/// <param name="ResponseProjection">Projection metadata, present only for document operations.</param>
-public record ContextCrosswalkTranslationResult(ContextResolution Resolution, JsonElement Result, DocumentResponseProjection? ResponseProjection = null);
+public record ContextCrosswalkTranslationResult
+{
+    /// <summary>Single resolved composition used throughout the operation.</summary>
+    public required ContextResolution Resolution { get; init; }
+
+    /// <summary>Typed operation result.</summary>
+    public required JsonElement Result { get; init; }
+
+    /// <summary>Projection metadata, present only for document operations.</summary>
+    public DocumentResponseProjection? ResponseProjection { get; init; }
+}
 
 /// <summary>
 /// One artifact taking part in a resolved Context: the id and version the
 /// Context declared, plus the concrete version those resolved to.
 /// </summary>
-/// <param name="Id">Component id from the Context declaration.</param>
-/// <param name="Version">Version literal the Context declares: a concrete semver or <c>latest</c>.</param>
-/// <param name="ResolvedVersion">Concrete version after <c>latest</c> resolution.</param>
-/// <param name="Layers">Layers stacked beneath this component, in composition order. Empty when it has none.</param>
-public record ContextComponentRef(
-    string Id,
-    string Version,
-    string ResolvedVersion,
-    IReadOnlyList<ContextComponentRef> Layers);
+public record ContextComponentRef
+{
+    /// <summary>Component id from the Context declaration.</summary>
+    public required string Id { get; init; }
+
+    /// <summary>Version literal the Context declares: a concrete semver or <c>latest</c>.</summary>
+    public required string Version { get; init; }
+
+    /// <summary>Concrete version after <c>latest</c> resolution.</summary>
+    public required string ResolvedVersion { get; init; }
+
+    /// <summary>Layers stacked beneath this component, in composition order. Empty when it has none.</summary>
+    public required IReadOnlyList<ContextComponentRef> Layers { get; init; }
+}
 
 /// <summary>
 /// One scheme a Context holds, and the selector that addresses it. Read it as a
 /// sentence: this Context holds a scheme you select with <c>Selector</c>, it is
 /// <c>Id</c> at <c>Version</c>, and it plays these <c>Roles</c>.
 /// </summary>
-/// <param name="Selector">Context-local key that selects this scheme. It is what <c>?scheme=</c> takes on the scheme resources, and it need not equal <c>Id</c>.</param>
-/// <param name="Id">Scheme id, from the scheme document itself.</param>
-/// <param name="Version">Scheme version, from the scheme document itself.</param>
-/// <param name="Roles">What this scheme is to the Context. Never empty.</param>
-public record ContextSchemeDescriptor(
-    string Selector,
-    string Id,
-    string Version,
-    IReadOnlyList<ContextSchemeRole> Roles);
+public record ContextSchemeDescriptor
+{
+    /// <summary>Context-local key that selects this scheme. It is what <c>?scheme=</c> takes on the scheme resources, and it need not equal <c>Id</c>.</summary>
+    public required string Selector { get; init; }
+
+    /// <summary>Scheme id, from the scheme document itself.</summary>
+    public required string Id { get; init; }
+
+    /// <summary>Scheme version, from the scheme document itself.</summary>
+    public required string Version { get; init; }
+
+    /// <summary>What this scheme is to the Context. Never empty.</summary>
+    public required IReadOnlyList<ContextSchemeRole> Roles { get; init; }
+}
 
 /// <summary>
 /// What a Context is made of, as the server resolved it: the composed scheme,
@@ -244,20 +430,29 @@ public record ContextSchemeDescriptor(
 /// integrator records these component versions to say which artifacts a
 /// decision was made against.
 /// </summary>
-/// <param name="Id">Context id.</param>
-/// <param name="Version">Concrete Context version after <c>latest</c> resolution.</param>
-/// <param name="Scheme">The composed scheme, the base of the layer stack. Its <c>Layers</c> are the Context's layers in composition order.</param>
-/// <param name="Schemes">Every scheme the Context holds, primary first, each with the selector that addresses it.</param>
-/// <param name="Guides">Guide components in precedence order. Empty when the Context declares none.</param>
-/// <param name="Crosswalks">Crosswalk components in declaration order, each with the layers it stacks and the concrete version that answered. Empty when the Context declares none.</param>
-/// <param name="Access">Access policy component, or null when the Context declares none.</param>
-/// <param name="Description">Human-readable description copied from the Context declaration, or null.</param>
-public record ContextDescription(
-    string Id,
-    string Version,
-    ContextComponentRef Scheme,
-    IReadOnlyList<ContextSchemeDescriptor> Schemes,
-    IReadOnlyList<ContextComponentRef> Guides,
-    IReadOnlyList<ContextComponentRef> Crosswalks,
-    ContextComponentRef? Access = null,
-    string? Description = null);
+public record ContextDescription
+{
+    /// <summary>Context id.</summary>
+    public required string Id { get; init; }
+
+    /// <summary>Concrete Context version after <c>latest</c> resolution.</summary>
+    public required string Version { get; init; }
+
+    /// <summary>The composed scheme, the base of the layer stack. Its <c>Layers</c> are the Context's layers in composition order.</summary>
+    public required ContextComponentRef Scheme { get; init; }
+
+    /// <summary>Every scheme the Context holds, primary first, each with the selector that addresses it.</summary>
+    public required IReadOnlyList<ContextSchemeDescriptor> Schemes { get; init; }
+
+    /// <summary>Guide components in precedence order. Empty when the Context declares none.</summary>
+    public required IReadOnlyList<ContextComponentRef> Guides { get; init; }
+
+    /// <summary>Crosswalk components in declaration order, each with the layers it stacks and the concrete version that answered. Empty when the Context declares none.</summary>
+    public required IReadOnlyList<ContextComponentRef> Crosswalks { get; init; }
+
+    /// <summary>Access policy component, or null when the Context declares none.</summary>
+    public ContextComponentRef? Access { get; init; }
+
+    /// <summary>Human-readable description copied from the Context declaration, or null.</summary>
+    public string? Description { get; init; }
+}

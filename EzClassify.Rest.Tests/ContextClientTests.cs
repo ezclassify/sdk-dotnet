@@ -195,7 +195,7 @@ public class ContextClientTests
             ["/scheme/process"] = (HttpStatusCode.OK, ProcessJson),
         };
         var (client, handler) = await CtxClientFactory.ConnectAsync(
-            routes, cacheOptions: new ContextCacheOptions(Enabled: false));
+            routes, cacheOptions: new ContextCacheOptions { Enabled = false });
         using (client)
         {
             await client.Scheme!.ProcessAsync("H");
@@ -359,7 +359,7 @@ public class ContextClientTests
         var (client, handler) = await CtxClientFactory.ConnectAsync(routes);
         using (client)
         {
-            var chosen = new Assertion("level", "level-high", Confidence.Certain, "stated");
+            var chosen = new Assertion { CategoryId = "level", ConceptId = "level-high", Confidence = Confidence.Certain, Source = "stated" };
             await client.Scheme!.ProcessAsync("high//staff", assertions: new[] { chosen });
             Assert.Equal(
                 """{"input":"high//staff","assertions":[{"conceptId":"level-high","categoryId":"level","confidence":"certain","source":"stated"}]}""",
@@ -541,7 +541,7 @@ public class ContextClientTests
         var (client, handler) = await CtxClientFactory.ConnectAsync(routes);
         using (client)
         {
-            var stated = new Assertion("level", "level-high", Confidence.Certain, "stated");
+            var stated = new Assertion { CategoryId = "level", ConceptId = "level-high", Confidence = Confidence.Certain, Source = "stated" };
             await client.Scheme!.ValidateAsync(new[] { stated }, surface: "marking", outputFormat: "marking/long",
                 parts: new[] { "(H)" }, contextJson: """{"role":"whole"}""");
 
@@ -659,7 +659,7 @@ public class ContextClientTests
         {
             var assertions = new[]
             {
-                new Assertion(CategoryId: "level", ConceptId: "HIGH", Confidence: Confidence.Certain, Source: "parse"),
+                new Assertion { CategoryId = "level", ConceptId = "HIGH", Confidence = Confidence.Certain, Source = "parse" },
             };
             var result = await client.Scheme!.SuggestForCategoriesAsync(
                 assertions, new[] { "level", "audience" }, outputFormat: "banner", surface: "whole");
@@ -743,7 +743,7 @@ public class ContextClientTests
         var (client, handler) = await CtxClientFactory.ConnectAsync(routes);
         using (client)
         {
-            var chosen = new Assertion("level", "level-high", Confidence.Certain, "stated");
+            var chosen = new Assertion { CategoryId = "level", ConceptId = "level-high", Confidence = Confidence.Certain, Source = "stated" };
             var trace = (await client.Scheme!.ExplainAsync("HIGH", outputFormat: "marking/long", surface: "marking",
                 inputFormat: "long", assertions: new[] { chosen }, contextJson: """{"role":"whole"}""", parts: new[] { "(H)" })).Result;
 
@@ -820,7 +820,7 @@ public class ContextClientTests
         var (client, handler) = await CtxClientFactory.ConnectAsync(routes);
         using (client)
         {
-            var assertions = new[] { new Assertion(CategoryId: "level", ConceptId: "LEVEL_HIGH", Confidence: Confidence.Certain, Source: "parse") };
+            var assertions = new[] { new Assertion { CategoryId = "level", ConceptId = "LEVEL_HIGH", Confidence = Confidence.Certain, Source = "parse" } };
             var rendered = await client.Scheme!.RenderAsync(assertions, "banner", RenderPreservation.Full);
             Assert.Equal("LEVEL-HIGH", rendered.Result.Result);
             Assert.Equal("A&B", rendered.Result.Assessment.Emitted[0].Value);
@@ -852,7 +852,7 @@ public class ContextClientTests
         var (client, _) = await CtxClientFactory.ConnectAsync(routes);
         using (client)
         {
-            var assertion = new Assertion("authority", "AUTH-X", Confidence.Certain, "parse", Value: "A&B");
+            var assertion = new Assertion { CategoryId = "authority", ConceptId = "AUTH-X", Confidence = Confidence.Certain, Source = "parse", Value = "A&B" };
             var ex = await Assert.ThrowsAsync<EzClassifyClientException>(() =>
                 client.Scheme!.RenderAsync(new[] { assertion }, preservation: RenderPreservation.Full));
             Assert.Equal(400, ex.StatusCode);
@@ -941,7 +941,7 @@ public class ContextClientTests
         var (client, handler) = await CtxClientFactory.ConnectAsync(routes);
         using (client)
         {
-            var assertions = new[] { new Assertion(CategoryId: "ctrl", ConceptId: "RD", Confidence: Confidence.Certain, Source: "parse") };
+            var assertions = new[] { new Assertion { CategoryId = "ctrl", ConceptId = "RD", Confidence = Confidence.Certain, Source = "parse" } };
             var notices = await client.Scheme!.NoticesAsync(assertions);
             Assert.Single(notices.Result);
             Assert.Equal("handling", notices.Result[0].Type);
@@ -1842,8 +1842,8 @@ public class ContextClientTests
         {
             var result = await client.Guide!.EvaluateManyAsync(new[]
             {
-                new GuideRuleSelection("g1", "r2"),
-                new GuideRuleSelection("g2", "r2"),
+                new GuideRuleSelection { GuideId = "g1", RuleId = "r2" },
+                new GuideRuleSelection { GuideId = "g2", RuleId = "r2" },
             });
             Assert.Equal("H", result.Result.AggregatedMarking);
             var (_, path, body) = handler.Requests[^1];
@@ -1862,7 +1862,7 @@ public class ContextClientTests
         {
             var sent = handler.Requests.Count;
             await Assert.ThrowsAsync<ArgumentException>(() =>
-                client.Guide!.EvaluateManyAsync(new[] { new GuideRuleSelection(" ", "r2") }));
+                client.Guide!.EvaluateManyAsync(new[] { new GuideRuleSelection { GuideId = " ", RuleId = "r2" } }));
             Assert.Equal(sent, handler.Requests.Count);
         }
     }
@@ -1920,7 +1920,7 @@ public class ContextClientTests
         var (client, handler) = await CtxClientFactory.ConnectAsync(routes);
         using (client)
         {
-            var assertions = new[] { new Assertion(CategoryId: "level", ConceptId: "LEVEL_HIGH", Confidence: Confidence.Certain, Source: "parse") };
+            var assertions = new[] { new Assertion { CategoryId = "level", ConceptId = "LEVEL_HIGH", Confidence = Confidence.Certain, Source = "parse" } };
             var decision = await client.Access!.CheckAsync(assertions, """{"membership":"HIGH"}""");
             Assert.True(decision.Result.Granted);
             Assert.Single(decision.Result.Rules);
@@ -1992,7 +1992,7 @@ public class ContextClientTests
         {
             var assertions = new[]
             {
-                new Assertion(CategoryId: "level", ConceptId: "HIGH", Confidence: Confidence.Certain, Source: "parse"),
+                new Assertion { CategoryId = "level", ConceptId = "HIGH", Confidence = Confidence.Certain, Source = "parse" },
             };
 
             await client.Access!.DescribeRequirementsAsync(assertions);
@@ -2094,7 +2094,7 @@ public class ContextClientTests
 
             var source = new[]
             {
-                new Assertion(CategoryId: "level", ConceptId: "HIGH", Confidence: Confidence.Certain, Source: "parse"),
+                new Assertion { CategoryId = "level", ConceptId = "HIGH", Confidence = Confidence.Certain, Source = "parse" },
             };
             await client.Crosswalk.TranslateAsync("x", source);
             Assert.Contains("\"assertions\"", handler.Requests[^1].Body);
@@ -2421,7 +2421,7 @@ public class ContextClientJsonArgumentGuardTests
         using var client = await ConnectAsync();
         var assertions = new[]
         {
-            new Assertion(CategoryId: "level", ConceptId: "LEVEL_HIGH", Confidence: Confidence.Certain, Source: "parse"),
+            new Assertion { CategoryId = "level", ConceptId = "LEVEL_HIGH", Confidence = Confidence.Certain, Source = "parse" },
         };
 
         var error = await Assert.ThrowsAsync<ArgumentException>(
@@ -2445,7 +2445,7 @@ public class ContextClientJsonArgumentGuardTests
         {
             var assertions = new[]
             {
-                new Assertion(CategoryId: "level", ConceptId: "LEVEL_HIGH", Confidence: Confidence.Certain, Source: "parse"),
+                new Assertion { CategoryId = "level", ConceptId = "LEVEL_HIGH", Confidence = Confidence.Certain, Source = "parse" },
             };
 
             await client.Access!.DescribeRequirementsAsync("", assertions);

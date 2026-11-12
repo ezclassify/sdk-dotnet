@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net8.0</TargetFrameworks>
-    <LangVersion>10.0</LangVersion>
+    <LangVersion>11.0</LangVersion>
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>EzClassify.Rest.Client</AssemblyName>
     <RootNamespace>EzClassify</RootNamespace>
@@ -27,5 +27,6 @@
   <ItemGroup>
     <Compile Include="..\Compat\IsExternalInit.cs" Link="Compat\IsExternalInit.cs"></Compile>
     <Compile Include="..\Compat\HttpContentCompat.cs" Link="Compat\HttpContentCompat.cs"></Compile>
+    <Compile Include="..\Compat\RequiredMembers.cs" Link="Compat\RequiredMembers.cs"></Compile>
   </ItemGroup>
 </Project>

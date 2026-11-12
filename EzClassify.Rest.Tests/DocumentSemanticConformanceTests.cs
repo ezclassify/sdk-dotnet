@@ -373,44 +373,58 @@ public class DocumentSemanticConformanceTests
         var findings = raw["findings"]!.AsArray().Select(item =>
         {
             var finding = item!.AsObject();
-            return new GuideFindingDetermination(
-                finding["findingId"]!.GetValue<string>(), finding["documentDigest"]!.GetValue<string>(),
-                GuideFindingDecision.Parse(finding["decision"]!.GetValue<string>()), finding["reason"]!.GetValue<string>(),
-                finding["proposalOrigin"] is JsonValue origin ? DecisionProposalOrigin.Parse(origin.GetValue<string>()) : null);
+            return new GuideFindingDetermination
+            {
+                FindingId = finding["findingId"]!.GetValue<string>(),
+                DocumentDigest = finding["documentDigest"]!.GetValue<string>(),
+                Decision = GuideFindingDecision.Parse(finding["decision"]!.GetValue<string>()),
+                Reason = finding["reason"]!.GetValue<string>(),
+                ProposalOrigin = finding["proposalOrigin"] is JsonValue origin ? DecisionProposalOrigin.Parse(origin.GetValue<string>()) : null,
+            };
         }).ToList();
         var manual = raw["manualSelections"]!.AsArray().Select(item =>
         {
             var selection = item!.AsObject();
-            return new ManualGuideSelectionInput(
-                selection["documentDigest"]!.GetValue<string>(), DecodeRule(selection["rule"]!.AsObject()),
-                DecodeEvidence(selection["evidence"]!.AsArray()), selection["reason"]!.GetValue<string>(),
-                selection["proposalOrigin"] is JsonValue origin ? DecisionProposalOrigin.Parse(origin.GetValue<string>()) : null);
+            return new ManualGuideSelectionInput
+            {
+                DocumentDigest = selection["documentDigest"]!.GetValue<string>(),
+                Rule = DecodeRule(selection["rule"]!.AsObject()),
+                Evidence = DecodeEvidence(selection["evidence"]!.AsArray()),
+                Reason = selection["reason"]!.GetValue<string>(),
+                ProposalOrigin = selection["proposalOrigin"] is JsonValue origin ? DecisionProposalOrigin.Parse(origin.GetValue<string>()) : null,
+            };
         }).ToList();
-        return new GuideDeterminationInput(findings, manual);
+        return new GuideDeterminationInput { Findings = findings, ManualSelections = manual };
     }
 
     private static List<Assertion> DecodeAssertions(JsonArray? raw) => raw?.Select(item =>
     {
         var assertion = item!.AsObject();
-        return new Assertion(
-            assertion["categoryId"]!.GetValue<string>(), assertion["conceptId"]!.GetValue<string>(),
-            assertion["confidence"] is JsonValue confidence ? Confidence.Parse(confidence.GetValue<string>()) : Confidence.Certain,
-            assertion["source"] is JsonValue source ? source.GetValue<string>() : "semantic-conformance",
-            Value: OptionalString(assertion, "value"));
+        return new Assertion
+        {
+            CategoryId = assertion["categoryId"]!.GetValue<string>(),
+            ConceptId = assertion["conceptId"]!.GetValue<string>(),
+            Confidence = assertion["confidence"] is JsonValue confidence ? Confidence.Parse(confidence.GetValue<string>()) : Confidence.Certain,
+            Source = assertion["source"] is JsonValue source ? source.GetValue<string>() : "semantic-conformance",
+            Value = OptionalString(assertion, "value"),
+        };
     }).ToList() ?? new List<Assertion>();
 
     private static RuleReference DecodeRule(JsonObject raw)
     {
         var artifact = raw["artifact"]!.AsObject();
-        return new RuleReference(
-            new ArtifactReference(ArtifactKind.Parse(artifact["kind"]!.GetValue<string>()), artifact["id"]!.GetValue<string>(), artifact["version"]!.GetValue<string>(), OptionalString(artifact, "digest")),
-            raw["ruleId"]!.GetValue<string>(), raw["ruleDigest"]!.GetValue<string>());
+        return new RuleReference
+        {
+            Artifact = new ArtifactReference { Kind = ArtifactKind.Parse(artifact["kind"]!.GetValue<string>()), Id = artifact["id"]!.GetValue<string>(), Version = artifact["version"]!.GetValue<string>(), Digest = OptionalString(artifact, "digest") },
+            RuleId = raw["ruleId"]!.GetValue<string>(),
+            RuleDigest = raw["ruleDigest"]!.GetValue<string>(),
+        };
     }
 
     private static List<ContentEvidenceSpan> DecodeEvidence(JsonArray raw) => raw.Select(item =>
     {
         var evidence = item!.AsObject();
-        return new ContentEvidenceSpan(evidence["start"]!.GetValue<int>(), evidence["end"]!.GetValue<int>(), evidence["offsetEncoding"]!.GetValue<string>(), DecodeRule(evidence["rule"]!.AsObject()), OptionalString(evidence, "matched"));
+        return new ContentEvidenceSpan { Start = evidence["start"]!.GetValue<int>(), End = evidence["end"]!.GetValue<int>(), OffsetEncoding = evidence["offsetEncoding"]!.GetValue<string>(), Rule = DecodeRule(evidence["rule"]!.AsObject()), Matched = OptionalString(evidence, "matched") };
     }).ToList();
 
     private static string RecipeText(JsonObject recipe)

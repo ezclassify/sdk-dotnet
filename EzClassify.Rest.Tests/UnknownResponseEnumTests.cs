@@ -138,9 +138,11 @@ public class UnknownResponseEnumTests
         var (client, handler) = await Connect("/document/audit", "{}");
         using (client)
         {
-            var determinations = new GuideDeterminationInput(
-                new[] { new GuideFindingDetermination("f1", "sha256:doc", new GuideFindingDecision("deferred"), "r", new DecisionProposalOrigin("imported-by-agent")) },
-                Array.Empty<ManualGuideSelectionInput>());
+            var determinations = new GuideDeterminationInput
+            {
+                Findings = new[] { new GuideFindingDetermination { FindingId = "f1", DocumentDigest = "sha256:doc", Decision = new GuideFindingDecision("deferred"), Reason = "r", ProposalOrigin = new DecisionProposalOrigin("imported-by-agent") } },
+                ManualSelections = Array.Empty<ManualGuideSelectionInput>(),
+            };
 
             try
             {
@@ -169,7 +171,7 @@ public class UnknownResponseEnumTests
             try
             {
                 await client.Scheme!.RenderAsync(
-                    new[] { new Assertion("level", "L_H", Confidence.Inferred, "parse") });
+                    new[] { new Assertion { CategoryId = "level", ConceptId = "L_H", Confidence = Confidence.Inferred, Source = "parse" } });
             }
             catch (Exception e) when (e is not ArgumentException and not InvalidOperationException)
             {
@@ -192,7 +194,7 @@ public class UnknownResponseEnumTests
             var before = handler.Requests.Count;
 
             await Assert.ThrowsAsync<InvalidOperationException>(
-                () => client.Scheme!.RenderAsync(new[] { new Assertion("level", "L_H", default, "parse") }));
+                () => client.Scheme!.RenderAsync(new[] { new Assertion { CategoryId = "level", ConceptId = "L_H", Confidence = default, Source = "parse" } }));
             Assert.Equal(before, handler.Requests.Count);
         }
     }

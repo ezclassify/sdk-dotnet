@@ -41,8 +41,8 @@ public class WireCorpusReplayTests
     private static readonly RestClientCredentials Bearer = new("fixture-refused-bearer", "fixture-context-carrier");
     private static readonly RestClientCredentials Anonymous = RestClientCredentials.None;
 
-    private static readonly Assertion Open = new("level", "OPEN", Confidence.Certain, "explicit");
-    private static readonly Assertion Sensitive = new("level", "SENSITIVE", Confidence.Certain, "explicit");
+    private static readonly Assertion Open = new() { CategoryId = "level", ConceptId = "OPEN", Confidence = Confidence.Certain, Source = "explicit" };
+    private static readonly Assertion Sensitive = new() { CategoryId = "level", ConceptId = "SENSITIVE", Confidence = Confidence.Certain, Source = "explicit" };
 
     /// <summary>
     /// One replay: the Context to bind (null for the root client), the cases it
@@ -398,7 +398,7 @@ public class WireCorpusReplayTests
         ["ctx-guide-evaluate.ok"] = Ctx("ez-full", "ctx-guide-evaluate.ok",
             async c => await c.Guide!.EvaluateAsync("ez-test", new[] { "rule-sensitive" })),
         ["ctx-guide-evaluate.selections"] = Ctx("ez-full", "ctx-guide-evaluate.selections",
-            async c => await c.Guide!.EvaluateManyAsync(new[] { new GuideRuleSelection("ez-test", "rule-sensitive") })),
+            async c => await c.Guide!.EvaluateManyAsync(new[] { new GuideRuleSelection { GuideId = "ez-test", RuleId = "rule-sensitive" } })),
         ["ctx-guide-view.by-id"] = Ctx("ez-full", "ctx-guide-view.by-id",
             async c => await c.Guide!.ViewAsync("ez-test")),
         ["ctx-guide-view.ok"] = Ctx("ez-full", "ctx-guide-view.ok",

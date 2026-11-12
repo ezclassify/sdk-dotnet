@@ -65,7 +65,7 @@ internal sealed class CachePlanRunner : IAsyncDisposable
         // sends the version segment, and the carrier lets the server settle it.
         string? version = binding == "pinned" ? PinnedVersion : null;
         var context = block["context"]?.GetValue<string>() ?? "ez-full";
-        var options = new ContextCacheOptions(Enabled: true);
+        var options = new ContextCacheOptions { Enabled = true };
 
         var transport = new CachePlanTransport(corpus, version ?? "latest");
         var http = new HttpClient(transport) { BaseAddress = new Uri("http://plan.invalid/") };
@@ -245,7 +245,7 @@ internal sealed class CachePlanRunner : IAsyncDisposable
         using var http = new HttpClient(transport) { BaseAddress = new Uri("http://plan.invalid/") };
         var context = _plan["client"]!["context"]?.GetValue<string>() ?? "ez-full";
         using var client = await EzClassifyClient.ConnectAsync(
-            http, context, PinnedVersion, Carrier, new ContextCacheOptions(Enabled: false));
+            http, context, PinnedVersion, Carrier, new ContextCacheOptions { Enabled = false });
         var fresh = await CachePlanCalls.InvokeAsync(client, _corpus, outcome.Operation, outcome.Case, reorder: false, CancellationToken.None);
         AssertOk(fresh, "fresh decode");
         return CachePlanMutator.Snapshot(fresh.Value!);

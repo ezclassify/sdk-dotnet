@@ -3,7 +3,7 @@
 #if NETSTANDARD2_0
 namespace System.Runtime.CompilerServices
 {
-    // C# 9 positional records require IsExternalInit, which ships in .NET 5+
+    // Init-only properties require IsExternalInit, which ships in .NET 5+
     // but not in netstandard2.0.
     internal static class IsExternalInit { }
 }

@@ -112,7 +112,7 @@ public class SuggestInputContractTests
         var (client, handler) = await CtxClientFactory.ConnectAsync(new() { ["/scheme/suggest"] = (HttpStatusCode.BadRequest, """{"error":"invalid_input","code":"INVALID_INPUT","detail":"fixture-refusal"}""") });
         using (client)
         {
-            var fact = new Assertion("date", "CALENDAR", Confidence.Certain, source, SourceRule: "rule-1", Value: "20351231");
+            var fact = new Assertion { CategoryId = "date", ConceptId = "CALENDAR", Confidence = Confidence.Certain, Source = source, SourceRule = "rule-1", Value = "20351231" };
             var error = await Assert.ThrowsAsync<EzClassifyClientException>(() => SuggestFacts(Assert.IsType<ContextSchemeOps>(client.Scheme), new[] { fact }));
             Assert.Equal(400, error.StatusCode);
             Assert.Equal("INVALID_INPUT", error.Code);

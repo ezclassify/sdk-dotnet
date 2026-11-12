@@ -9,18 +9,24 @@ using System.Threading.Tasks;
 namespace EzClassify;
 
 /// <summary>Response from <see cref="EzClassifyClient.PingAsync"/>.</summary>
-/// <param name="EngineVersion">Engine version currently running on the rest-api.</param>
-/// <param name="EngineSha">Git commit SHA of the deployed rest-api build (empty string when unavailable).</param>
-/// <param name="GitTag">Git tag of the deployed rest-api build (empty string when unavailable).</param>
-public sealed record PingResult(
-    string EngineVersion,
-    string EngineSha,
-    string GitTag
-);
+public sealed record PingResult
+{
+    /// <summary>Engine version currently running on the rest-api.</summary>
+    public required string EngineVersion { get; init; }
+
+    /// <summary>Git commit SHA of the deployed rest-api build (empty string when unavailable).</summary>
+    public required string EngineSha { get; init; }
+
+    /// <summary>Git tag of the deployed rest-api build (empty string when unavailable).</summary>
+    public required string GitTag { get; init; }
+}
 
 /// <summary>Controls response caching on one connected Context client; supplied when connecting and fixed for the client's lifetime.</summary>
-/// <param name="Enabled">Whether repeated read operations share validated responses.</param>
-public sealed record ContextCacheOptions(bool Enabled = true);
+public sealed record ContextCacheOptions
+{
+    /// <summary>Whether repeated read operations share validated responses.</summary>
+    public bool Enabled { get; init; } = true;
+}
 
 /// <summary>
 /// HTTP client for a running EzClassify REST API server.
@@ -595,8 +601,12 @@ public sealed class EzClassifyClient : IDisposable
         using var doc = JsonDocument.Parse(responseBody);
         var root = doc.RootElement;
         ResponseCheck.Require("HealthResponse", root);
-        var result = new PingResult(
-            HealthString(root, "engineVersion"), HealthString(root, "engineSha"), HealthString(root, "gitTag"));
+        var result = new PingResult
+        {
+            EngineVersion = HealthString(root, "engineVersion"),
+            EngineSha = HealthString(root, "engineSha"),
+            GitTag = HealthString(root, "gitTag"),
+        };
 
         if (Interlocked.CompareExchange(ref _versionWarnEmitted, 1, 0) == 0)
         {
