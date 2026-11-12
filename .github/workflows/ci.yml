@@ -83,7 +83,7 @@ jobs:
             echo "  value: $EXPECTED_GEN_SHA256"
             exit 1
           fi
-          ACTUAL=$(sha256sum EzClassify.Rest.Contract/scripts/gen.mjs | awk '{print $1}')
+          ACTUAL=$(sha256sum scripts/gen.mjs | awk '{print $1}')
           if [ "$EXPECTED_GEN_SHA256" != "$ACTUAL" ]; then
             echo "ERROR: gen.mjs hash mismatch. The script may have been modified without updating MANIFEST"
             echo "  MANIFEST: $EXPECTED_GEN_SHA256"

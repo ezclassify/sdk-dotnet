@@ -558,9 +558,14 @@ public class ContractFidelityTests
             .ToList();
     }
 
+    // Records the client declares for its own options and results, which have no
+    // contract component.
+    private static readonly HashSet<Type> ClientOwnedRecords = new() { typeof(PingResult), typeof(ContextCacheOptions) };
+
     private static IEnumerable<Type> ContractRecords() =>
         typeof(CoverageReport).Assembly.GetExportedTypes()
             .Where(type => type.Namespace == "EzClassify" && type.GetMethod("<Clone>$") is not null)
+            .Where(type => !ClientOwnedRecords.Contains(type))
             .OrderBy(type => type.Name, StringComparer.Ordinal);
 
     private static YamlMappingNode LoadSchemas()

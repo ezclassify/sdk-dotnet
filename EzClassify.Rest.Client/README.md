@@ -1,8 +1,8 @@
 # EzClassify.Rest.Client
 
 HTTP client for the EzClassify REST API, using `System.Net.Http` and
-`System.Text.Json`. It depends on `EzClassify.Rest.Contract` for wire models
-and uses no third-party HTTP stack.
+`System.Text.Json`. The one package holds the client, the wire models and the
+response parsers, and uses no third-party HTTP stack.
 
 ## Install
 

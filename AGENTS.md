@@ -12,8 +12,7 @@ public wire surface. It is the repository's executable ownership contract.
 
 | Path | Purpose |
 |------|---------|
-| [`EzClassify.Rest.Contract/`](EzClassify.Rest.Contract/) | Wire models generated from the local [`vendor/spec/`](vendor/spec/) contract mirror, plus response parsers |
-| [`EzClassify.Rest.Client/`](EzClassify.Rest.Client/) | HTTP client (`EzClassifyClient`) for the REST API |
+| [`EzClassify.Rest.Client/`](EzClassify.Rest.Client/) | HTTP client (`EzClassifyClient`) for the REST API. `Wire/` holds the wire models, generated from the local [`vendor/spec/`](vendor/spec/) contract mirror, and the response parsers |
 | [`EzClassify.Rest.Tests/`](EzClassify.Rest.Tests/) | xUnit test suite; run via `make test` |
 | [`examples/server-tour/`](examples/server-tour/) | Runnable demo showing `EzClassifyClient` against a live REST API |
 

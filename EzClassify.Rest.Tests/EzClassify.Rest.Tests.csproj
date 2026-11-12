@@ -18,7 +18,6 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\EzClassify.Rest.Contract\EzClassify.Rest.Contract.csproj" />
     <ProjectReference Include="..\EzClassify.Rest.Client\EzClassify.Rest.Client.csproj" />
   </ItemGroup>
 </Project>

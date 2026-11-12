@@ -1,5 +1,3 @@
-// Code generated from the canonical OpenAPI contract (3af39c1fd74837f93a6f141bc8f6a3b35786d05ca402f63075b4cdb5830ba430) by gen.mjs@58c491f0d061e5e6150ea43b5e4b92174763bb39d79ee4056e4ac8355f3d5363. DO NOT EDIT.
-// Re-run via: make regen
 #nullable enable
 
 using System.Collections.Generic;

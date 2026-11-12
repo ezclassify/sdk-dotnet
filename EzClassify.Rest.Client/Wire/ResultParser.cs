@@ -11,7 +11,7 @@ namespace EzClassify;
 /// <see cref="JsonException.Path"/>, such as <c>$.assessment.emitted</c>. A member
 /// the contract marks optional may be absent or null.
 /// </remarks>
-public static class ResultParser
+internal static class ResultParser
 {
     /// <summary>Parse an assertion object from a JSON element.</summary>
     public static Assertion ParseAssertion(JsonElement a)

@@ -4,8 +4,8 @@
 # `make regen` reads from here and rewrites the committed Models.g.cs; CI reruns
 # the generator and diffs the tree, so a stale or hand-edited Models.g.cs fails CI.
 VENDOR_SCHEMAS := vendor/spec/json-schemas
-GENERATED_MODELS := EzClassify.Rest.Contract/Models.g.cs
-GEN_SCRIPT := EzClassify.Rest.Contract/scripts/gen.mjs
+GENERATED_MODELS := EzClassify.Rest.Client/Wire/Models.g.cs
+GEN_SCRIPT := scripts/gen.mjs
 DOTNET := dotnet
 
 .PHONY: docs

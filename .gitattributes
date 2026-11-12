@@ -20,4 +20,4 @@
 *.Dockerfile text
 
 # Generated files
-EzClassify.Rest.Contract/Models.g.cs linguist-generated=true
+EzClassify.Rest.Client/Wire/*.g.cs linguist-generated=true

@@ -7,7 +7,7 @@
     <RootNamespace>EzClassify</RootNamespace>
     <PackageId>EzClassify.Rest.Client</PackageId>
     <Version>1.0.0-dev.30</Version>
-    <Description>EzClassify .NET SDK. HTTP client for the EzClassify REST API. Uses System.Net.Http and System.Text.Json; no third-party HTTP dependencies.</Description>
+    <Description>EzClassify .NET SDK. HTTP client, wire models and response parsers for the EzClassify REST API. Uses System.Net.Http and System.Text.Json; no third-party HTTP dependencies.</Description>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
   <ItemGroup>
@@ -15,10 +15,15 @@
          HttpClient disposal when the connect probe throws) that the public
          surface cannot observe. -->
     <InternalsVisibleTo Include="EzClassify.Rest.Tests"></InternalsVisibleTo>
-    <ProjectReference Include="..\EzClassify.Rest.Contract\EzClassify.Rest.Contract.csproj"></ProjectReference>
+    <PackageReference Include="System.Text.Json"></PackageReference>
     <None Include="README.md" Pack="true" PackagePath="\"></None>
     <None Include="..\LICENSE" Pack="true" PackagePath="\"></None>
   </ItemGroup>
+  <!-- Wire/Models.g.cs and Wire/ResponseShapes.g.cs are generated from the
+       vendored contract by scripts/gen.mjs. Regenerate them explicitly with
+       `make regen` after a spec change; CI verifies them without mutating the
+       tree. The build itself never runs the generator, so `dotnet build`
+       works without Node on the machine. -->
   <ItemGroup>
     <Compile Include="..\Compat\IsExternalInit.cs" Link="Compat\IsExternalInit.cs"></Compile>
     <Compile Include="..\Compat\HttpContentCompat.cs" Link="Compat\HttpContentCompat.cs"></Compile>

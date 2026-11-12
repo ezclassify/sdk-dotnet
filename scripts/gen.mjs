@@ -2,14 +2,15 @@
 /**
  * Generates the complete public wire-model surface from the vendored
  * @ezclassify contract. JSON Schemas drive the engine values; the
- * canonical OpenAPI contract gates the document, Context-envelope, wire-enum,
- * and low-level operation templates emitted alongside them.
+ * canonical OpenAPI contract drives the response shape table emitted
+ * alongside them.
  *
  * Usage:
  *   node scripts/gen.mjs <schemas-dir> <openapi-file> <output-file> [--check]
  *
- * Produces the schema-driven Models.g.cs records and four template-driven
- * .g.cs files containing Context/document records and extensible wire enums.
+ * Produces the schema-driven Models.g.cs records and ResponseShapes.g.cs, the
+ * table of required members the response parsers check. The Context and
+ * document records and the extensible wire enums are hand-written beside them.
  * Complex sub-types the client does not deep-parse (guide-rule match trees,
  * engine snapshots, and the like) are mapped to `System.Text.Json.JsonElement`,
  * the idiomatic .NET type for opaque wire JSON carried through untouched, and
@@ -94,9 +95,8 @@ const GENERATED = new Set([
 
 /**
  * Types this script does not emit from a JSON Schema but may reference by name
- * when a generated record $refs one of them. They are declared in the
- * templates under scripts/templates, which this script emits alongside the
- * schema-driven records. The generator cannot express them proportionally (the
+ * when a generated record $refs one of them. They are hand-written in the Wire
+ * directory beside the generated records. The generator cannot express them proportionally (the
  * typed FixAction on Fix and Change; typed ConceptRef references; the trace
  * sub-records; the fact-or-output union inside RenderAssessment), but a $ref
  * from a generated record (e.g. ProcessResult.appliedFixes -> Change) must
@@ -144,7 +144,7 @@ function resolveRef(ref) {
 // raw strings. Keyed by "ClassName.fieldName" so a field name that is a wire enum
 // on one type is unaffected on another type where the same name is opaque. The
 // types are extensible structs over the raw token, declared in the
-// WireEnums.g.cs.tmpl template; response parsers wrap whatever token arrives and
+// hand-written WireEnums.cs; response parsers wrap whatever token arrives and
 // requests send it back through ToWire().
 const ENUM_FIELDS = {
   'Assertion.confidence': 'Confidence',
@@ -577,94 +577,6 @@ function readComponentSchemas(text) {
 }
 
 /**
- * Template records that wear a different name than the contract component they
- * carry, as `Component` or `Component/property` paths. A property path ending
- * in `[]` names the items of an array property.
- */
-const TEMPLATE_COMPONENT_ALIASES = {
-  AuditPart: 'DocumentPartAssessment',
-  AuditWhole: 'DocumentWholeOccurrence',
-  ConceptRef: 'FixConceptReference',
-  CoverageReport: 'CheckCoverageResult',
-  FilterCount: 'FilterResult/total',
-  GuideView: 'GuideViewResponse',
-  GuideViewCategory: 'GuideViewResponse/categories[]',
-  SchemeContextFormats: 'SchemeSummary/contextFormats',
-  SchemeView: 'SchemeViewResponse',
-  SchemeViewCategory: 'SchemeViewResponse/categories[]',
-  UnmarkedSpan: 'DocumentUnmarkedSpan',
-};
-
-/** The property descriptions a component declares, its union variants' included. */
-function componentPropertyDocs(schemas, record) {
-  const [component, ...trail] = (TEMPLATE_COMPONENT_ALIASES[record] ?? record).split('/');
-  const resolve = (schema) => (schema?.$ref ? schemas[schema.$ref.split('/').at(-1)] : schema);
-  let schema = schemas[component];
-  for (const step of trail) {
-    const property = resolve(schema)?.properties?.[step.replace(/\[\]$/, '')];
-    schema = step.endsWith('[]') ? property?.items : property;
-  }
-  schema = resolve(schema);
-  if (!schema) return null;
-  const docs = new Map();
-  for (const variant of [schema, ...(schema.anyOf ?? schema.oneOf ?? []).map(resolve)]) {
-    for (const [name, property] of Object.entries(variant?.properties ?? {})) {
-      const doc = memberDocText(property?.description);
-      if (doc && !docs.has(toPascalCase(name))) docs.set(toPascalCase(name), doc);
-    }
-  }
-  return docs;
-}
-
-/** The parameter names of a positional record, from the text after its opening parenthesis. */
-function recordParameterNames(text) {
-  let depth = 0;
-  let current = '';
-  const params = [];
-  for (const char of text) {
-    if (char === '(' || char === '<' || char === '[') depth++;
-    if (char === ')' && depth === 0) break;
-    if (char === ')' || char === '>' || char === ']') depth--;
-    if (char === ',' && depth === 0) {
-      params.push(current);
-      current = '';
-    } else current += char;
-  }
-  params.push(current);
-  return params
-    .map((param) => param.replace(/\[[^\]]*\]/g, '').split('=')[0].trim().split(/\s+/).at(-1))
-    .filter(Boolean);
-}
-
-/**
- * Give every positional record in a template the contract's description of each
- * parameter it leaves undocumented, as a `<param>` in its doc comment, so the
- * template records document their members the way the generated ones do. A
- * hand-written `<param>` is kept. A record is left alone unless the contract
- * describes every parameter it lacks, because a partly documented record is a
- * CS1573 warning.
- */
-function describeTemplateRecords(template, schemas) {
-  const lines = template.split('\n');
-  for (let index = lines.length - 1; index >= 0; index--) {
-    const match = /^public (?:(?:sealed|abstract|partial) )*record (\w+)\(/.exec(lines[index]);
-    if (!match) continue;
-    const docs = componentPropertyDocs(schemas, match[1]);
-    if (!docs) continue;
-    let docStart = index;
-    while (docStart > 0 && lines[docStart - 1].startsWith('///')) docStart--;
-    const existing = new Set(
-      [...lines.slice(docStart, index).join('\n').matchAll(/<param name="(\w+)">/g)].map((m) => m[1]),
-    );
-    const rest = [lines[index].slice(match[0].length), ...lines.slice(index + 1)].join('\n');
-    const missing = recordParameterNames(rest).filter((name) => !existing.has(name));
-    if (!missing.length || !missing.every((name) => docs.has(name))) continue;
-    lines.splice(index, 0, ...missing.map((name) => `/// <param name="${name}">${docs.get(name)}</param>`));
-  }
-  return lines.join('\n');
-}
-
-/**
  * The component schemas every 2xx response body of the contract names, read
  * from the operation list: `$ref`s under a `"2xx":` response, whether the body
  * is the schema itself or the items of an array. The same document styles the
@@ -861,26 +773,19 @@ ${entries.join('\n')}
 }
 
 const componentSchemas = readComponentSchemas(openapiText);
-const RESPONSE_SHAPES_HOST = 'ContextEnvelopeModels.g.cs';
 
-const templateDir = path.join(path.dirname(fileURLToPath(import.meta.url)), 'templates');
-const generatedFiles = new Map([[outputFile, output]]);
-for (const templateName of fs.readdirSync(templateDir).filter(name => name.endsWith('.tmpl')).sort()) {
-  const templatePath = path.join(templateDir, templateName);
-  const targetName = templateName.slice(0, -'.tmpl'.length);
-  const targetPath = path.join(path.dirname(outputFile), targetName);
-  const described = describeTemplateRecords(fs.readFileSync(templatePath, 'utf8'), componentSchemas);
-  // The response shape table rides with the Context envelope records it checks.
-  const template = targetName === RESPONSE_SHAPES_HOST ? described + emitResponseShapes(componentSchemas) : described;
-  const contractSha = createHash('sha256')
-    .update(openapiText)
-    .update(template)
-    .digest('hex');
-  generatedFiles.set(
-    targetPath,
-    `// Code generated from the canonical OpenAPI contract (${contractSha}) by gen.mjs@${genSha}. DO NOT EDIT.\n// Re-run via: make regen\n${template}`,
-  );
-}
+// The response shape table is the second generated file, written beside the
+// schema-driven records.
+const shapesBody = emitResponseShapes(componentSchemas);
+const shapesHash = createHash('sha256').update(openapiText).update(shapesBody).digest('hex');
+const shapesPath = path.join(path.dirname(outputFile), 'ResponseShapes.g.cs');
+const generatedFiles = new Map([
+  [outputFile, output],
+  [
+    shapesPath,
+    `// Code generated from the canonical OpenAPI contract (${shapesHash}) by gen.mjs@${genSha}. DO NOT EDIT.\n// Re-run via: make regen\n#nullable enable\n\nusing System.Collections.Generic;\n\nnamespace EzClassify;\n${shapesBody}`,
+  ],
+]);
 
 let stale = false;
 for (const [targetPath, content] of generatedFiles) {

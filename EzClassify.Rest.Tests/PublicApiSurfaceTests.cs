@@ -13,7 +13,7 @@ namespace EzClassify.Tests;
 /// <summary>
 /// 1.0 public-surface freeze gate.
 ///
-/// Reflects over the two shipped assemblies (Contract and Client), renders every public and protected type and member in a stable
+/// Reflects over the shipped assembly (EzClassify.Rest.Client), renders every public and protected type and member in a stable
 /// sorted text form, and diffs the result against the committed golden file
 /// EzClassify.Rest.Tests/PublicApiSurface.golden.txt.
 ///
@@ -30,10 +30,9 @@ public class PublicApiSurfaceTests
     private const string GoldenRelativePath = "PublicApiSurface.golden.txt";
 
     // One representative type per shipped assembly; the reflection walk covers
-    // the whole assembly each type lives in.
+    // the whole assembly the type lives in.
     private static readonly Type[] AssemblyAnchors =
     {
-        typeof(EzClassify.ResultParser),           // EzClassify.Rest.Contract
         typeof(EzClassify.EzClassifyClient),       // EzClassify.Rest.Client
     };
 

@@ -4,123 +4,6 @@
 
 == EzClassify.Rest.Client ==
 
-class sealed EzClassify.ContextAccessOps
-  method public System.Threading.Tasks.Task<EzClassify.ContextAccessDecisionResult> CheckAsync(System.Collections.Generic.IEnumerable<EzClassify.Assertion> dataAssertions, System.String userAttributesJson, System.String contextJson = null, System.Threading.CancellationToken cancellationToken = default)
-  method public System.Threading.Tasks.Task<EzClassify.ContextAccessDecisionResult> CheckByMarkingAsync(System.String marking, System.String userAttributesJson, System.String contextJson = null, System.Threading.CancellationToken cancellationToken = default)
-  method public System.Threading.Tasks.Task<EzClassify.ContextAccessRequirementsResult> DescribeRequirementsAsync(System.Collections.Generic.IEnumerable<EzClassify.Assertion> assertions, System.Threading.CancellationToken cancellationToken = default)
-  method public System.Threading.Tasks.Task<EzClassify.ContextAccessRequirementsResult> DescribeRequirementsAsync(System.String marking, System.Collections.Generic.IEnumerable<EzClassify.Assertion> assertions, System.Threading.CancellationToken cancellationToken = default)
-  method public System.Threading.Tasks.Task<EzClassify.ContextAccessRequirementsResult> DescribeRequirementsAsync(System.String marking, System.Threading.CancellationToken cancellationToken = default)
-  method public System.Threading.Tasks.Task<EzClassify.ContextAccessRuleDescriptionResult> DescribeRuleAsync(System.String ruleId, System.Threading.CancellationToken cancellationToken = default)
-  method public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<EzClassify.AccessRuleDescription>> RulesAsync(System.Threading.CancellationToken cancellationToken = default)
-  method public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<System.String>> RuleIdsAsync(System.Threading.CancellationToken cancellationToken = default)
-  method public System.Threading.Tasks.Task<System.String> MarkingAsync(System.Threading.CancellationToken cancellationToken = default)
-
-class sealed EzClassify.ContextCacheOptions : System.IEquatable<EzClassify.ContextCacheOptions>
-  ctor public .ctor(System.Boolean Enabled = true, System.Boolean CacheAccessDecisions = false)
-  property public System.Boolean CacheAccessDecisions { get; init; }
-  property public System.Boolean Enabled { get; init; }
-
-class sealed EzClassify.ContextCrosswalkOps
-  method public System.Threading.Tasks.Task<EzClassify.ContextCrosswalkTranslationResult> TranslateAsync(System.String crosswalkId, System.Collections.Generic.IEnumerable<EzClassify.Assertion> assertions, System.Threading.CancellationToken cancellationToken = default)
-  method public System.Threading.Tasks.Task<EzClassify.ContextCrosswalkTranslationResult> TranslateAsync(System.String crosswalkId, System.String marking, System.Threading.CancellationToken cancellationToken = default)
-  method public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<System.Text.Json.JsonElement>> DescribeAsync(System.Threading.CancellationToken cancellationToken = default)
-
-class sealed EzClassify.ContextDocumentOps
-  method public System.Threading.Tasks.Task<EzClassify.ContextDocumentAuditResult> AuditAsync(System.String text, EzClassify.GuideDeterminationInput guideDeterminations, EzClassify.DocumentResponseProfile? responseProfile = null, System.Threading.CancellationToken cancellationToken = default)
-  method public System.Threading.Tasks.Task<EzClassify.ContextDocumentAuditResult> AuditAsync(System.String text, System.Threading.CancellationToken cancellationToken = default)
-
-class sealed EzClassify.ContextGuideOps
-  method public System.Threading.Tasks.Task<EzClassify.ContextGuideEvaluationResult> EvaluateAsync(System.String guideId, System.Collections.Generic.IEnumerable<System.String> selectedRuleIds, System.Threading.CancellationToken cancellationToken = default)
-  method public System.Threading.Tasks.Task<EzClassify.ContextGuideEvaluationResult> EvaluateManyAsync(System.Collections.Generic.IEnumerable<EzClassify.GuideRuleSelection> selections, System.Threading.CancellationToken cancellationToken = default)
-  method public System.Threading.Tasks.Task<EzClassify.ContextGuideFilterRulesResult> FilterRulesAsync(System.String query, System.String guideId = null, System.Threading.CancellationToken cancellationToken = default)
-  method public System.Threading.Tasks.Task<EzClassify.ContextGuideRuleDescriptionResult> DescribeRuleAsync(System.String ruleId, System.String guideId = null, System.Threading.CancellationToken cancellationToken = default)
-  method public System.Threading.Tasks.Task<EzClassify.ContextGuideScanResult> ScanAsync(System.String text, System.String guideId = null, System.Threading.CancellationToken cancellationToken = default)
-  method public System.Threading.Tasks.Task<EzClassify.ContextGuideViewResult> ViewAsync(System.String guideId = null, System.Threading.CancellationToken cancellationToken = default)
-
-class sealed EzClassify.ContextSchemeOps
-  method public System.Threading.Tasks.Task<EzClassify.ContextSchemeAggregateResult> AggregateAssertionsAsync(System.Collections.Generic.IEnumerable<System.Collections.Generic.IEnumerable<EzClassify.Assertion>> assertionSets, System.String outputFormat = null, System.String surface = null, System.String contextJson = null, System.Threading.CancellationToken cancellationToken = default)
-  method public System.Threading.Tasks.Task<EzClassify.ContextSchemeAggregateResult> AggregateAsync(System.Collections.Generic.IEnumerable<System.String> inputs, System.String outputFormat = null, System.String surface = null, System.String inputFormat = null, System.String contextJson = null, System.Threading.CancellationToken cancellationToken = default)
-  method public System.Threading.Tasks.Task<EzClassify.ContextSchemeConceptDescriptionResult> DescribeConceptAsync(System.String conceptId, System.String categoryId, System.String view = null, System.Threading.CancellationToken cancellationToken = default)
-  method public System.Threading.Tasks.Task<EzClassify.ContextSchemeCoverageResult> CheckCoverageAsync(System.Collections.Generic.IEnumerable<System.String> children, System.String parent, System.String outputFormat = null, System.String inputFormat = null, System.Threading.CancellationToken cancellationToken = default)
-  method public System.Threading.Tasks.Task<EzClassify.ContextSchemeDiffResult> DiffAsync(System.String a, System.String b, System.String inputFormat = null, System.Threading.CancellationToken cancellationToken = default)
-  method public System.Threading.Tasks.Task<EzClassify.ContextSchemeExplainResult> ExplainAsync(System.String input, System.String outputFormat = null, System.String surface = null, System.String inputFormat = null, System.Collections.Generic.IEnumerable<EzClassify.Assertion> assertions = null, System.String contextJson = null, System.Collections.Generic.IEnumerable<System.String> parts = null, System.Threading.CancellationToken cancellationToken = default)
-  method public System.Threading.Tasks.Task<EzClassify.ContextSchemeFilterConceptsResult> FilterConceptsAsync(System.String query, System.Threading.CancellationToken cancellationToken = default)
-  method public System.Threading.Tasks.Task<EzClassify.ContextSchemeNormalizeResult> NormalizeAsync(System.String input, System.String outputFormat = null, System.String inputFormat = null, System.Threading.CancellationToken cancellationToken = default)
-  method public System.Threading.Tasks.Task<EzClassify.ContextSchemeNoticesResult> NoticesAsync(System.Collections.Generic.IEnumerable<EzClassify.Assertion> assertions, System.Threading.CancellationToken cancellationToken = default)
-  method public System.Threading.Tasks.Task<EzClassify.ContextSchemeProcessResult> ProcessAsync(System.String input, System.String outputFormat = null, System.String surface = null, System.String inputFormat = null, System.Collections.Generic.IEnumerable<EzClassify.Assertion> assertions = null, System.String contextJson = null, System.Collections.Generic.IEnumerable<System.String> parts = null, System.Collections.Generic.IEnumerable<System.String> outputs = null, System.Collections.Generic.IEnumerable<System.String> suggestFor = null, System.Threading.CancellationToken cancellationToken = default)
-  method public System.Threading.Tasks.Task<EzClassify.ContextSchemeRenderResult> RenderAsync(System.Collections.Generic.IEnumerable<EzClassify.Assertion> assertions, System.String outputFormat = null, EzClassify.RenderPreservation? preservation = null, System.Threading.CancellationToken cancellationToken = default)
-  method public System.Threading.Tasks.Task<EzClassify.ContextSchemeScanResult> ScanAsync(System.String text, System.String outputFormat = null, System.String inputFormat = null, System.Threading.CancellationToken cancellationToken = default)
-  method public System.Threading.Tasks.Task<EzClassify.ContextSchemeSuggestForCategoriesResult> SuggestForCategoriesAsync(System.Collections.Generic.IEnumerable<EzClassify.Assertion> assertions, System.Collections.Generic.IEnumerable<System.String> categoryIds, System.String outputFormat = null, System.String surface = null, System.Threading.CancellationToken cancellationToken = default)
-  method public System.Threading.Tasks.Task<EzClassify.ContextSchemeSuggestResult> SuggestAsync(System.Collections.Generic.IEnumerable<EzClassify.Assertion> assertions, System.String outputFormat = null, System.String filter = null, System.String surface = null, System.Boolean? includeGated = null, System.Threading.CancellationToken cancellationToken = default)
-  method public System.Threading.Tasks.Task<EzClassify.ContextSchemeSuggestResult> SuggestAsync(System.String input, System.String outputFormat = null, System.String filter = null, System.String surface = null, System.String inputFormat = null, System.Boolean? includeGated = null, System.Threading.CancellationToken cancellationToken = default)
-  method public System.Threading.Tasks.Task<EzClassify.ContextSchemeValidateResult> ApplyPresetAsync(System.String presetId, System.String outputFormat = null, System.Threading.CancellationToken cancellationToken = default)
-  method public System.Threading.Tasks.Task<EzClassify.ContextSchemeValidateResult> ValidateAsync(System.Collections.Generic.IEnumerable<EzClassify.Assertion> assertions, System.String surface = null, System.String outputFormat = null, System.Collections.Generic.IEnumerable<System.String> parts = null, System.String contextJson = null, System.Threading.CancellationToken cancellationToken = default)
-  method public System.Threading.Tasks.Task<EzClassify.ContextSchemeValidateResult> ValidateAsync(System.String input, System.String surface = null, System.String outputFormat = null, System.String inputFormat = null, System.Collections.Generic.IEnumerable<System.String> parts = null, System.String contextJson = null, System.Threading.CancellationToken cancellationToken = default)
-  method public System.Threading.Tasks.Task<EzClassify.ContextSchemeViewResult> ViewAsync(System.Threading.CancellationToken cancellationToken = default)
-  method public System.Threading.Tasks.Task<EzClassify.SchemeGrammar> GrammarAsync(System.Threading.CancellationToken cancellationToken = default)
-  method public System.Threading.Tasks.Task<EzClassify.SchemeSummary> SummaryAsync(System.Threading.CancellationToken cancellationToken = default)
-  method public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<EzClassify.CategoryView>> CategoriesAsync(System.Threading.CancellationToken cancellationToken = default)
-  method public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<EzClassify.ConceptView>> ConceptsAsync(System.Threading.CancellationToken cancellationToken = default)
-  method public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<EzClassify.FormatView>> FormatsAsync(System.Threading.CancellationToken cancellationToken = default)
-  method public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<EzClassify.LabelPresetView>> LabelPresetsAsync(System.Threading.CancellationToken cancellationToken = default)
-  method public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<EzClassify.SchemeScope>> ScopesAsync(System.Threading.CancellationToken cancellationToken = default)
-
-class sealed EzClassify.ContextSchemes
-  method public EzClassify.ContextSchemeOps Get(System.String key)
-
-class sealed EzClassify.EzClassifyClient : System.IDisposable
-  ctor public .ctor(System.Net.Http.HttpClient httpClient)
-  ctor public .ctor(System.Net.Http.HttpClient httpClient, EzClassify.RestClientCredentials credentials)
-  ctor public .ctor(System.String baseUrl)
-  ctor public .ctor(System.String baseUrl, EzClassify.RestClientCredentials credentials)
-  method public System.Threading.Tasks.Task<EzClassify.ContextDescription> DescribeContextAsync(System.Threading.CancellationToken cancellationToken = default)
-  method public System.Threading.Tasks.Task<EzClassify.PingResult> PingAsync(System.Threading.CancellationToken cancellationToken = default)
-  method public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<System.String>> ListContextVersionsAsync(System.String contextId, System.Threading.CancellationToken cancellationToken = default)
-  method public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<System.String>> ListContextsAsync(System.Threading.CancellationToken cancellationToken = default)
-  method public System.Void ClearCache()
-  method public System.Void Dispose()
-  method public static System.Threading.Tasks.Task<EzClassify.EzClassifyClient> ConnectAsync(System.Net.Http.HttpClient httpClient, System.String contextId, System.String version = null, System.Threading.CancellationToken cancellationToken = default)
-  method public static System.Threading.Tasks.Task<EzClassify.EzClassifyClient> ConnectAsync(System.Net.Http.HttpClient httpClient, System.String contextId, System.String version, EzClassify.RestClientCredentials credentials, EzClassify.ContextCacheOptions cacheOptions, System.Threading.CancellationToken cancellationToken = default)
-  method public static System.Threading.Tasks.Task<EzClassify.EzClassifyClient> ConnectAsync(System.Net.Http.HttpClient httpClient, System.String contextId, System.String version, EzClassify.RestClientCredentials credentials, System.Threading.CancellationToken cancellationToken = default)
-  method public static System.Threading.Tasks.Task<EzClassify.EzClassifyClient> ConnectAsync(System.String baseUrl, System.String contextId, System.String version = null, System.Threading.CancellationToken cancellationToken = default)
-  method public static System.Threading.Tasks.Task<EzClassify.EzClassifyClient> ConnectAsync(System.String baseUrl, System.String contextId, System.String version, EzClassify.RestClientCredentials credentials, EzClassify.ContextCacheOptions cacheOptions, System.Threading.CancellationToken cancellationToken = default)
-  method public static System.Threading.Tasks.Task<EzClassify.EzClassifyClient> ConnectAsync(System.String baseUrl, System.String contextId, System.String version, EzClassify.RestClientCredentials credentials, System.Threading.CancellationToken cancellationToken = default)
-  property public EzClassify.ContextAccessOps Access { get; }
-  property public EzClassify.ContextCrosswalkOps Crosswalk { get; }
-  property public EzClassify.ContextDocumentOps Document { get; }
-  property public EzClassify.ContextGuideOps Guide { get; }
-  property public EzClassify.ContextSchemeOps Scheme { get; }
-  property public EzClassify.ContextSchemes Schemes { get; }
-  property public System.String EngineSpecVersion { get; }
-  property public System.String ResolvedVersion { get; }
-
-class sealed EzClassify.EzClassifyClientException : System.Exception, System.Runtime.Serialization.ISerializable
-  ctor public .ctor(System.String message)
-  ctor public .ctor(System.String message, System.Exception inner)
-  ctor public .ctor(System.String message, System.Int32? statusCode)
-  ctor public .ctor(System.String message, System.Int32? statusCode, System.Exception inner)
-  property public System.Int32? StatusCode { get; }
-  property public System.String Code { get; }
-  property public System.String Detail { get; }
-  property public System.String ResponseBody { get; }
-  property public System.TimeSpan? RetryAfter { get; }
-
-class sealed EzClassify.PingResult : System.IEquatable<EzClassify.PingResult>
-  ctor public .ctor(System.String EngineVersion, System.String EngineSha, System.String GitTag)
-  property public System.String EngineSha { get; init; }
-  property public System.String EngineVersion { get; init; }
-  property public System.String GitTag { get; init; }
-
-class sealed EzClassify.RestClientCredentials
-  ctor public .ctor(System.String accessToken, System.String contextToken)
-  ctor public .ctor(System.String accessToken, System.String contextToken, System.String applicationCredential)
-  property public System.String AccessToken { get; }
-  property public System.String ApplicationCredential { get; }
-  property public System.String ContextToken { get; }
-  property public static EzClassify.RestClientCredentials None { get; }
-
-== EzClassify.Rest.Contract ==
-
 class EzClassify.AccessComparisonResult : System.IEquatable<EzClassify.AccessComparisonResult>
   ctor public .ctor(EzClassify.AccessOperand Left, System.String Operator, EzClassify.AccessOperand Right, System.Boolean Matched, System.Collections.Generic.IReadOnlyList<System.Text.Json.JsonElement?> Missing = null)
   property public EzClassify.AccessOperand Left { get; init; }
@@ -438,6 +321,17 @@ class EzClassify.ContextAccessDecisionResult : System.IEquatable<EzClassify.Cont
   property public EzClassify.DocumentResponseProjection ResponseProjection { get; init; }
   property public System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations { get; init; }
 
+class sealed EzClassify.ContextAccessOps
+  method public System.Threading.Tasks.Task<EzClassify.ContextAccessDecisionResult> CheckAsync(System.Collections.Generic.IEnumerable<EzClassify.Assertion> dataAssertions, System.String userAttributesJson, System.String contextJson = null, System.Threading.CancellationToken cancellationToken = default)
+  method public System.Threading.Tasks.Task<EzClassify.ContextAccessDecisionResult> CheckByMarkingAsync(System.String marking, System.String userAttributesJson, System.String contextJson = null, System.Threading.CancellationToken cancellationToken = default)
+  method public System.Threading.Tasks.Task<EzClassify.ContextAccessRequirementsResult> DescribeRequirementsAsync(System.Collections.Generic.IEnumerable<EzClassify.Assertion> assertions, System.Threading.CancellationToken cancellationToken = default)
+  method public System.Threading.Tasks.Task<EzClassify.ContextAccessRequirementsResult> DescribeRequirementsAsync(System.String marking, System.Collections.Generic.IEnumerable<EzClassify.Assertion> assertions, System.Threading.CancellationToken cancellationToken = default)
+  method public System.Threading.Tasks.Task<EzClassify.ContextAccessRequirementsResult> DescribeRequirementsAsync(System.String marking, System.Threading.CancellationToken cancellationToken = default)
+  method public System.Threading.Tasks.Task<EzClassify.ContextAccessRuleDescriptionResult> DescribeRuleAsync(System.String ruleId, System.Threading.CancellationToken cancellationToken = default)
+  method public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<EzClassify.AccessRuleDescription>> RulesAsync(System.Threading.CancellationToken cancellationToken = default)
+  method public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<System.String>> RuleIdsAsync(System.Threading.CancellationToken cancellationToken = default)
+  method public System.Threading.Tasks.Task<System.String> MarkingAsync(System.Threading.CancellationToken cancellationToken = default)
+
 class EzClassify.ContextAccessRequirementsResult : System.IEquatable<EzClassify.ContextAccessRequirementsResult>
   ctor public .ctor(EzClassify.ContextResolution Resolution, EzClassify.AccessRequirementsDescription Result, System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations, EzClassify.DocumentResponseProjection ResponseProjection = null)
   property public EzClassify.AccessRequirementsDescription Result { get; init; }
@@ -452,12 +346,22 @@ class EzClassify.ContextAccessRuleDescriptionResult : System.IEquatable<EzClassi
   property public EzClassify.DocumentResponseProjection ResponseProjection { get; init; }
   property public System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations { get; init; }
 
+class sealed EzClassify.ContextCacheOptions : System.IEquatable<EzClassify.ContextCacheOptions>
+  ctor public .ctor(System.Boolean Enabled = true, System.Boolean CacheAccessDecisions = false)
+  property public System.Boolean CacheAccessDecisions { get; init; }
+  property public System.Boolean Enabled { get; init; }
+
 class EzClassify.ContextComponentRef : System.IEquatable<EzClassify.ContextComponentRef>
   ctor public .ctor(System.String Id, System.String Version, System.String ResolvedVersion, System.Collections.Generic.IReadOnlyList<EzClassify.ContextComponentRef> Layers)
   property public System.Collections.Generic.IReadOnlyList<EzClassify.ContextComponentRef> Layers { get; init; }
   property public System.String Id { get; init; }
   property public System.String ResolvedVersion { get; init; }
   property public System.String Version { get; init; }
+
+class sealed EzClassify.ContextCrosswalkOps
+  method public System.Threading.Tasks.Task<EzClassify.ContextCrosswalkTranslationResult> TranslateAsync(System.String crosswalkId, System.Collections.Generic.IEnumerable<EzClassify.Assertion> assertions, System.Threading.CancellationToken cancellationToken = default)
+  method public System.Threading.Tasks.Task<EzClassify.ContextCrosswalkTranslationResult> TranslateAsync(System.String crosswalkId, System.String marking, System.Threading.CancellationToken cancellationToken = default)
+  method public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<System.Text.Json.JsonElement>> DescribeAsync(System.Threading.CancellationToken cancellationToken = default)
 
 class EzClassify.ContextCrosswalkTranslationResult : System.IEquatable<EzClassify.ContextCrosswalkTranslationResult>
   ctor public .ctor(EzClassify.ContextResolution Resolution, System.Text.Json.JsonElement Result, System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations, EzClassify.DocumentResponseProjection ResponseProjection = null)
@@ -484,6 +388,10 @@ class EzClassify.ContextDocumentAuditResult : System.IEquatable<EzClassify.Conte
   property public EzClassify.DocumentResponseProjection ResponseProjection { get; init; }
   property public System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations { get; init; }
 
+class sealed EzClassify.ContextDocumentOps
+  method public System.Threading.Tasks.Task<EzClassify.ContextDocumentAuditResult> AuditAsync(System.String text, EzClassify.GuideDeterminationInput guideDeterminations, EzClassify.DocumentResponseProfile? responseProfile = null, System.Threading.CancellationToken cancellationToken = default)
+  method public System.Threading.Tasks.Task<EzClassify.ContextDocumentAuditResult> AuditAsync(System.String text, System.Threading.CancellationToken cancellationToken = default)
+
 class EzClassify.ContextGuideEvaluationResult : System.IEquatable<EzClassify.ContextGuideEvaluationResult>
   ctor public .ctor(EzClassify.ContextResolution Resolution, EzClassify.EvaluationResult Result, System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations, EzClassify.DocumentResponseProjection ResponseProjection = null)
   property public EzClassify.ContextResolution Resolution { get; init; }
@@ -497,6 +405,14 @@ class EzClassify.ContextGuideFilterRulesResult : System.IEquatable<EzClassify.Co
   property public EzClassify.DocumentResponseProjection ResponseProjection { get; init; }
   property public EzClassify.FilterResult Result { get; init; }
   property public System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations { get; init; }
+
+class sealed EzClassify.ContextGuideOps
+  method public System.Threading.Tasks.Task<EzClassify.ContextGuideEvaluationResult> EvaluateAsync(System.String guideId, System.Collections.Generic.IEnumerable<System.String> selectedRuleIds, System.Threading.CancellationToken cancellationToken = default)
+  method public System.Threading.Tasks.Task<EzClassify.ContextGuideEvaluationResult> EvaluateManyAsync(System.Collections.Generic.IEnumerable<EzClassify.GuideRuleSelection> selections, System.Threading.CancellationToken cancellationToken = default)
+  method public System.Threading.Tasks.Task<EzClassify.ContextGuideFilterRulesResult> FilterRulesAsync(System.String query, System.String guideId = null, System.Threading.CancellationToken cancellationToken = default)
+  method public System.Threading.Tasks.Task<EzClassify.ContextGuideRuleDescriptionResult> DescribeRuleAsync(System.String ruleId, System.String guideId = null, System.Threading.CancellationToken cancellationToken = default)
+  method public System.Threading.Tasks.Task<EzClassify.ContextGuideScanResult> ScanAsync(System.String text, System.String guideId = null, System.Threading.CancellationToken cancellationToken = default)
+  method public System.Threading.Tasks.Task<EzClassify.ContextGuideViewResult> ViewAsync(System.String guideId = null, System.Threading.CancellationToken cancellationToken = default)
 
 class EzClassify.ContextGuideRuleDescriptionResult : System.IEquatable<EzClassify.ContextGuideRuleDescriptionResult>
   ctor public .ctor(EzClassify.ContextResolution Resolution, EzClassify.RuleDescription Result, System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations, EzClassify.DocumentResponseProjection ResponseProjection = null)
@@ -526,66 +442,6 @@ class EzClassify.ContextResolution : System.IEquatable<EzClassify.ContextResolut
   property public System.String ContextId { get; init; }
   property public System.String RequestedVersion { get; init; }
   property public System.String ResolvedVersion { get; init; }
-
-class static EzClassify.ContextResultParser
-  method public static EzClassify.AccessRequirementsDescription ParseAccessRequirementsDescription(System.String json)
-  method public static EzClassify.AccessRuleActivation ParseAccessRuleActivationElement(System.Text.Json.JsonElement el)
-  method public static EzClassify.AccessRuleDescription ParseAccessRuleDescription(System.String json)
-  method public static EzClassify.AccessRuleDescription ParseAccessRuleDescriptionElement(System.Text.Json.JsonElement el)
-  method public static EzClassify.ArtifactReference ParseArtifactReferenceElement(System.Text.Json.JsonElement el)
-  method public static EzClassify.ConceptDescription ParseConceptDescription(System.String json)
-  method public static EzClassify.ContextAccessDecisionResult ParseContextAccessDecisionResult(System.String json)
-  method public static EzClassify.ContextAccessRequirementsResult ParseContextAccessRequirementsResult(System.String json)
-  method public static EzClassify.ContextAccessRuleDescriptionResult ParseContextAccessRuleDescriptionResult(System.String json)
-  method public static EzClassify.ContextCrosswalkTranslationResult ParseContextCrosswalkTranslationResult(System.String json)
-  method public static EzClassify.ContextDescription ParseContextDescription(System.String json)
-  method public static EzClassify.ContextDocumentAuditResult ParseContextDocumentAuditResult(System.String json)
-  method public static EzClassify.ContextGuideEvaluationResult ParseContextGuideEvaluationResult(System.String json)
-  method public static EzClassify.ContextGuideFilterRulesResult ParseContextGuideFilterRulesResult(System.String json)
-  method public static EzClassify.ContextGuideRuleDescriptionResult ParseContextGuideRuleDescriptionResult(System.String json)
-  method public static EzClassify.ContextGuideScanResult ParseContextGuideScanResult(System.String json)
-  method public static EzClassify.ContextGuideViewResult ParseContextGuideViewResult(System.String json)
-  method public static EzClassify.ContextSchemeAggregateResult ParseContextSchemeAggregateResult(System.String json)
-  method public static EzClassify.ContextSchemeConceptDescriptionResult ParseContextSchemeConceptDescriptionResult(System.String json)
-  method public static EzClassify.ContextSchemeCoverageResult ParseContextSchemeCoverageResult(System.String json)
-  method public static EzClassify.ContextSchemeDiffResult ParseContextSchemeDiffResult(System.String json)
-  method public static EzClassify.ContextSchemeExplainResult ParseContextSchemeExplainResult(System.String json)
-  method public static EzClassify.ContextSchemeFilterConceptsResult ParseContextSchemeFilterConceptsResult(System.String json)
-  method public static EzClassify.ContextSchemeNormalizeResult ParseContextSchemeNormalizeResult(System.String json)
-  method public static EzClassify.ContextSchemeNoticesResult ParseContextSchemeNoticesResult(System.String json)
-  method public static EzClassify.ContextSchemeProcessResult ParseContextSchemeProcessResult(System.String json)
-  method public static EzClassify.ContextSchemeRenderResult ParseContextSchemeRenderResult(System.String json)
-  method public static EzClassify.ContextSchemeScanResult ParseContextSchemeScanResult(System.String json)
-  method public static EzClassify.ContextSchemeSuggestForCategoriesResult ParseContextSchemeSuggestForCategoriesResult(System.String json)
-  method public static EzClassify.ContextSchemeSuggestResult ParseContextSchemeSuggestResult(System.String json)
-  method public static EzClassify.ContextSchemeValidateResult ParseContextSchemeValidateResult(System.String json)
-  method public static EzClassify.ContextSchemeViewResult ParseContextSchemeViewResult(System.String json)
-  method public static EzClassify.CoverageReport ParseCoverageReport(System.String json)
-  method public static EzClassify.CoverageReport ParseCoverageReportElement(System.Text.Json.JsonElement el)
-  method public static EzClassify.DocumentAuditReport ParseDocumentAuditReport(System.String json)
-  method public static EzClassify.DocumentAuditReport ParseDocumentAuditReportElement(System.Text.Json.JsonElement root)
-  method public static EzClassify.FilterResult ParseFilterResult(System.String json)
-  method public static EzClassify.GuideView ParseGuideView(System.String json)
-  method public static EzClassify.RuleDescription ParseRuleDescription(System.String json)
-  method public static EzClassify.RuleReference ParseRuleReferenceElement(System.Text.Json.JsonElement el)
-  method public static EzClassify.SchemeGrammar ParseSchemeGrammar(System.String json)
-  method public static EzClassify.SchemeSummary ParseSchemeSummary(System.String json)
-  method public static EzClassify.SchemeView ParseSchemeView(System.String json)
-  method public static EzClassify.SourceReference ParseSourceReferenceElement(System.Text.Json.JsonElement el)
-  method public static EzClassify.SuggestResult ParseSuggestResult(System.String json)
-  method public static System.Collections.Generic.IReadOnlyDictionary<System.String, EzClassify.SuggestResult> ParseSuggestResultsByCategory(System.String json)
-  method public static System.Collections.Generic.IReadOnlyList<EzClassify.AccessComparisonResult> ParseAccessComparisonResults(System.Text.Json.JsonElement el)
-  method public static System.Collections.Generic.IReadOnlyList<EzClassify.AccessRuleDescription> ParseContextAccessRules(System.String json)
-  method public static System.Collections.Generic.IReadOnlyList<EzClassify.CategoryView> ParseSchemeCategories(System.String json)
-  method public static System.Collections.Generic.IReadOnlyList<EzClassify.ConceptView> ParseSchemeConcepts(System.String json)
-  method public static System.Collections.Generic.IReadOnlyList<EzClassify.FormatView> ParseSchemeFormats(System.String json)
-  method public static System.Collections.Generic.IReadOnlyList<EzClassify.LabelPresetView> ParseSchemeLabelPresets(System.String json)
-  method public static System.Collections.Generic.IReadOnlyList<EzClassify.Notice> ParseNotices(System.String json)
-  method public static System.Collections.Generic.IReadOnlyList<EzClassify.SchemeScope> ParseSchemeScopes(System.String json)
-  method public static System.Collections.Generic.IReadOnlyList<System.Text.Json.JsonElement> ParseContextCrosswalks(System.String json)
-  method public static System.String ParseContextAccessMarking(System.String json)
-  method public static System.String ParseNormalizeResult(System.String json)
-  method public static System.String ParseRenderResult(System.String json)
 
 class EzClassify.ContextSchemeAggregateResult : System.IEquatable<EzClassify.ContextSchemeAggregateResult>
   ctor public .ctor(EzClassify.ContextResolution Resolution, EzClassify.AggregateResult Result, System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations, EzClassify.DocumentResponseProjection ResponseProjection = null)
@@ -649,6 +505,34 @@ class EzClassify.ContextSchemeNoticesResult : System.IEquatable<EzClassify.Conte
   property public EzClassify.DocumentResponseProjection ResponseProjection { get; init; }
   property public System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations { get; init; }
   property public System.Collections.Generic.IReadOnlyList<EzClassify.Notice> Result { get; init; }
+
+class sealed EzClassify.ContextSchemeOps
+  method public System.Threading.Tasks.Task<EzClassify.ContextSchemeAggregateResult> AggregateAssertionsAsync(System.Collections.Generic.IEnumerable<System.Collections.Generic.IEnumerable<EzClassify.Assertion>> assertionSets, System.String outputFormat = null, System.String surface = null, System.String contextJson = null, System.Threading.CancellationToken cancellationToken = default)
+  method public System.Threading.Tasks.Task<EzClassify.ContextSchemeAggregateResult> AggregateAsync(System.Collections.Generic.IEnumerable<System.String> inputs, System.String outputFormat = null, System.String surface = null, System.String inputFormat = null, System.String contextJson = null, System.Threading.CancellationToken cancellationToken = default)
+  method public System.Threading.Tasks.Task<EzClassify.ContextSchemeConceptDescriptionResult> DescribeConceptAsync(System.String conceptId, System.String categoryId, System.String view = null, System.Threading.CancellationToken cancellationToken = default)
+  method public System.Threading.Tasks.Task<EzClassify.ContextSchemeCoverageResult> CheckCoverageAsync(System.Collections.Generic.IEnumerable<System.String> children, System.String parent, System.String outputFormat = null, System.String inputFormat = null, System.Threading.CancellationToken cancellationToken = default)
+  method public System.Threading.Tasks.Task<EzClassify.ContextSchemeDiffResult> DiffAsync(System.String a, System.String b, System.String inputFormat = null, System.Threading.CancellationToken cancellationToken = default)
+  method public System.Threading.Tasks.Task<EzClassify.ContextSchemeExplainResult> ExplainAsync(System.String input, System.String outputFormat = null, System.String surface = null, System.String inputFormat = null, System.Collections.Generic.IEnumerable<EzClassify.Assertion> assertions = null, System.String contextJson = null, System.Collections.Generic.IEnumerable<System.String> parts = null, System.Threading.CancellationToken cancellationToken = default)
+  method public System.Threading.Tasks.Task<EzClassify.ContextSchemeFilterConceptsResult> FilterConceptsAsync(System.String query, System.Threading.CancellationToken cancellationToken = default)
+  method public System.Threading.Tasks.Task<EzClassify.ContextSchemeNormalizeResult> NormalizeAsync(System.String input, System.String outputFormat = null, System.String inputFormat = null, System.Threading.CancellationToken cancellationToken = default)
+  method public System.Threading.Tasks.Task<EzClassify.ContextSchemeNoticesResult> NoticesAsync(System.Collections.Generic.IEnumerable<EzClassify.Assertion> assertions, System.Threading.CancellationToken cancellationToken = default)
+  method public System.Threading.Tasks.Task<EzClassify.ContextSchemeProcessResult> ProcessAsync(System.String input, System.String outputFormat = null, System.String surface = null, System.String inputFormat = null, System.Collections.Generic.IEnumerable<EzClassify.Assertion> assertions = null, System.String contextJson = null, System.Collections.Generic.IEnumerable<System.String> parts = null, System.Collections.Generic.IEnumerable<System.String> outputs = null, System.Collections.Generic.IEnumerable<System.String> suggestFor = null, System.Threading.CancellationToken cancellationToken = default)
+  method public System.Threading.Tasks.Task<EzClassify.ContextSchemeRenderResult> RenderAsync(System.Collections.Generic.IEnumerable<EzClassify.Assertion> assertions, System.String outputFormat = null, EzClassify.RenderPreservation? preservation = null, System.Threading.CancellationToken cancellationToken = default)
+  method public System.Threading.Tasks.Task<EzClassify.ContextSchemeScanResult> ScanAsync(System.String text, System.String outputFormat = null, System.String inputFormat = null, System.Threading.CancellationToken cancellationToken = default)
+  method public System.Threading.Tasks.Task<EzClassify.ContextSchemeSuggestForCategoriesResult> SuggestForCategoriesAsync(System.Collections.Generic.IEnumerable<EzClassify.Assertion> assertions, System.Collections.Generic.IEnumerable<System.String> categoryIds, System.String outputFormat = null, System.String surface = null, System.Threading.CancellationToken cancellationToken = default)
+  method public System.Threading.Tasks.Task<EzClassify.ContextSchemeSuggestResult> SuggestAsync(System.Collections.Generic.IEnumerable<EzClassify.Assertion> assertions, System.String outputFormat = null, System.String filter = null, System.String surface = null, System.Boolean? includeGated = null, System.Threading.CancellationToken cancellationToken = default)
+  method public System.Threading.Tasks.Task<EzClassify.ContextSchemeSuggestResult> SuggestAsync(System.String input, System.String outputFormat = null, System.String filter = null, System.String surface = null, System.String inputFormat = null, System.Boolean? includeGated = null, System.Threading.CancellationToken cancellationToken = default)
+  method public System.Threading.Tasks.Task<EzClassify.ContextSchemeValidateResult> ApplyPresetAsync(System.String presetId, System.String outputFormat = null, System.Threading.CancellationToken cancellationToken = default)
+  method public System.Threading.Tasks.Task<EzClassify.ContextSchemeValidateResult> ValidateAsync(System.Collections.Generic.IEnumerable<EzClassify.Assertion> assertions, System.String surface = null, System.String outputFormat = null, System.Collections.Generic.IEnumerable<System.String> parts = null, System.String contextJson = null, System.Threading.CancellationToken cancellationToken = default)
+  method public System.Threading.Tasks.Task<EzClassify.ContextSchemeValidateResult> ValidateAsync(System.String input, System.String surface = null, System.String outputFormat = null, System.String inputFormat = null, System.Collections.Generic.IEnumerable<System.String> parts = null, System.String contextJson = null, System.Threading.CancellationToken cancellationToken = default)
+  method public System.Threading.Tasks.Task<EzClassify.ContextSchemeViewResult> ViewAsync(System.Threading.CancellationToken cancellationToken = default)
+  method public System.Threading.Tasks.Task<EzClassify.SchemeGrammar> GrammarAsync(System.Threading.CancellationToken cancellationToken = default)
+  method public System.Threading.Tasks.Task<EzClassify.SchemeSummary> SummaryAsync(System.Threading.CancellationToken cancellationToken = default)
+  method public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<EzClassify.CategoryView>> CategoriesAsync(System.Threading.CancellationToken cancellationToken = default)
+  method public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<EzClassify.ConceptView>> ConceptsAsync(System.Threading.CancellationToken cancellationToken = default)
+  method public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<EzClassify.FormatView>> FormatsAsync(System.Threading.CancellationToken cancellationToken = default)
+  method public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<EzClassify.LabelPresetView>> LabelPresetsAsync(System.Threading.CancellationToken cancellationToken = default)
+  method public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<EzClassify.SchemeScope>> ScopesAsync(System.Threading.CancellationToken cancellationToken = default)
 
 class EzClassify.ContextSchemeProcessResult : System.IEquatable<EzClassify.ContextSchemeProcessResult>
   ctor public .ctor(EzClassify.ContextResolution Resolution, EzClassify.ProcessResult Result, System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations, EzClassify.DocumentResponseProjection ResponseProjection = null)
@@ -715,6 +599,9 @@ class EzClassify.ContextSchemeViewResult : System.IEquatable<EzClassify.ContextS
   property public EzClassify.DocumentResponseProjection ResponseProjection { get; init; }
   property public EzClassify.SchemeView Result { get; init; }
   property public System.Collections.Generic.IReadOnlyList<EzClassify.AssessmentLimitation> OperationLimitations { get; init; }
+
+class sealed EzClassify.ContextSchemes
+  method public EzClassify.ContextSchemeOps Get(System.String key)
 
 class EzClassify.CoverageReport : System.IEquatable<EzClassify.CoverageReport>
   ctor public .ctor(System.Boolean Covered, System.Collections.Generic.IReadOnlyList<EzClassify.Assertion> Missing, System.Collections.Generic.IReadOnlyList<System.String> MissingLabels, System.Collections.Generic.IReadOnlyList<EzClassify.Assertion> Excess, System.Collections.Generic.IReadOnlyList<System.String> ExcessLabels, System.String Rendered, System.Collections.Generic.IReadOnlyList<EzClassify.ValidationError> Refusals = null)
@@ -843,6 +730,43 @@ class EzClassify.ExplanationTrace : System.IEquatable<EzClassify.ExplanationTrac
   property public System.String Input { get; init; }
   property public System.String Rendered { get; init; }
   property public System.String SchemeId { get; init; }
+
+class sealed EzClassify.EzClassifyClient : System.IDisposable
+  ctor public .ctor(System.Net.Http.HttpClient httpClient)
+  ctor public .ctor(System.Net.Http.HttpClient httpClient, EzClassify.RestClientCredentials credentials)
+  ctor public .ctor(System.String baseUrl)
+  ctor public .ctor(System.String baseUrl, EzClassify.RestClientCredentials credentials)
+  method public System.Threading.Tasks.Task<EzClassify.ContextDescription> DescribeContextAsync(System.Threading.CancellationToken cancellationToken = default)
+  method public System.Threading.Tasks.Task<EzClassify.PingResult> PingAsync(System.Threading.CancellationToken cancellationToken = default)
+  method public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<System.String>> ListContextVersionsAsync(System.String contextId, System.Threading.CancellationToken cancellationToken = default)
+  method public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<System.String>> ListContextsAsync(System.Threading.CancellationToken cancellationToken = default)
+  method public System.Void ClearCache()
+  method public System.Void Dispose()
+  method public static System.Threading.Tasks.Task<EzClassify.EzClassifyClient> ConnectAsync(System.Net.Http.HttpClient httpClient, System.String contextId, System.String version = null, System.Threading.CancellationToken cancellationToken = default)
+  method public static System.Threading.Tasks.Task<EzClassify.EzClassifyClient> ConnectAsync(System.Net.Http.HttpClient httpClient, System.String contextId, System.String version, EzClassify.RestClientCredentials credentials, EzClassify.ContextCacheOptions cacheOptions, System.Threading.CancellationToken cancellationToken = default)
+  method public static System.Threading.Tasks.Task<EzClassify.EzClassifyClient> ConnectAsync(System.Net.Http.HttpClient httpClient, System.String contextId, System.String version, EzClassify.RestClientCredentials credentials, System.Threading.CancellationToken cancellationToken = default)
+  method public static System.Threading.Tasks.Task<EzClassify.EzClassifyClient> ConnectAsync(System.String baseUrl, System.String contextId, System.String version = null, System.Threading.CancellationToken cancellationToken = default)
+  method public static System.Threading.Tasks.Task<EzClassify.EzClassifyClient> ConnectAsync(System.String baseUrl, System.String contextId, System.String version, EzClassify.RestClientCredentials credentials, EzClassify.ContextCacheOptions cacheOptions, System.Threading.CancellationToken cancellationToken = default)
+  method public static System.Threading.Tasks.Task<EzClassify.EzClassifyClient> ConnectAsync(System.String baseUrl, System.String contextId, System.String version, EzClassify.RestClientCredentials credentials, System.Threading.CancellationToken cancellationToken = default)
+  property public EzClassify.ContextAccessOps Access { get; }
+  property public EzClassify.ContextCrosswalkOps Crosswalk { get; }
+  property public EzClassify.ContextDocumentOps Document { get; }
+  property public EzClassify.ContextGuideOps Guide { get; }
+  property public EzClassify.ContextSchemeOps Scheme { get; }
+  property public EzClassify.ContextSchemes Schemes { get; }
+  property public System.String EngineSpecVersion { get; }
+  property public System.String ResolvedVersion { get; }
+
+class sealed EzClassify.EzClassifyClientException : System.Exception, System.Runtime.Serialization.ISerializable
+  ctor public .ctor(System.String message)
+  ctor public .ctor(System.String message, System.Exception inner)
+  ctor public .ctor(System.String message, System.Int32? statusCode)
+  ctor public .ctor(System.String message, System.Int32? statusCode, System.Exception inner)
+  property public System.Int32? StatusCode { get; }
+  property public System.String Code { get; }
+  property public System.String Detail { get; }
+  property public System.String ResponseBody { get; }
+  property public System.TimeSpan? RetryAfter { get; }
 
 class EzClassify.FilterCount : System.IEquatable<EzClassify.FilterCount>
   ctor public .ctor(System.Int32 Visible, System.Int32 Total)
@@ -1198,6 +1122,12 @@ class EzClassify.Notice : System.IEquatable<EzClassify.Notice>
   property public System.String Text { get; init; }
   property public System.String Type { get; init; }
 
+class sealed EzClassify.PingResult : System.IEquatable<EzClassify.PingResult>
+  ctor public .ctor(System.String EngineVersion, System.String EngineSha, System.String GitTag)
+  property public System.String EngineSha { get; init; }
+  property public System.String EngineVersion { get; init; }
+  property public System.String GitTag { get; init; }
+
 class EzClassify.ProcessResult : System.IEquatable<EzClassify.ProcessResult>
   ctor public .ctor(System.Collections.Generic.IReadOnlyList<EzClassify.Change> AppliedFixes, System.Collections.Generic.IReadOnlyList<EzClassify.Assertion> Assertions, EzClassify.RenderAssessment Assessment, System.Collections.Generic.IReadOnlyList<EzClassify.ValidationError> Errors, System.Boolean InputWasValid, System.Collections.Generic.IReadOnlyList<EzClassify.Notice> Notices, System.Collections.Generic.IReadOnlyList<EzClassify.Fix> ProposedFixes, System.String Rendered, System.Collections.Generic.IReadOnlyDictionary<System.String, EzClassify.RenderResult> Renders, System.Boolean Valid, System.Collections.Generic.IReadOnlyList<EzClassify.Warning> Warnings, System.Collections.Generic.IReadOnlyList<EzClassify.Assertion> AssertionsBeforeRepair = null, EzClassify.ConceptColor DisplayColor = null, EzClassify.RecognitionWithCorrections Recognition = null, System.Collections.Generic.IReadOnlyDictionary<System.String, EzClassify.SuggestResult> SuggestionsFor = null)
   property public EzClassify.ConceptColor DisplayColor { get; init; }
@@ -1344,32 +1274,13 @@ class EzClassify.RenderResult : System.IEquatable<EzClassify.RenderResult>
   property public EzClassify.RenderAssessment Assessment { get; init; }
   property public System.String Rendered { get; init; }
 
-class static EzClassify.ResultParser
-  method public static EzClassify.AccessDecision ParseAccessDecision(System.String json)
-  method public static EzClassify.AccessDecision ParseAccessDecisionElement(System.Text.Json.JsonElement root)
-  method public static EzClassify.AggregateResult ParseAggregateResult(System.String json)
-  method public static EzClassify.Assertion ParseAssertion(System.Text.Json.JsonElement a)
-  method public static EzClassify.Change ParseChange(System.Text.Json.JsonElement el)
-  method public static EzClassify.ConceptRef ParseConceptRef(System.Text.Json.JsonElement el)
-  method public static EzClassify.DiffResult ParseDiffResult(System.String json)
-  method public static EzClassify.EvaluationResult ParseEvaluationResult(System.String json)
-  method public static EzClassify.EvaluationResult ParseEvaluationResultElement(System.Text.Json.JsonElement root)
-  method public static EzClassify.ExplanationTrace ParseExplanationTrace(System.Text.Json.JsonElement el)
-  method public static EzClassify.Fix ParseFix(System.Text.Json.JsonElement el)
-  method public static EzClassify.GuideBreakdownEntry ParseGuideBreakdownEntry(System.Text.Json.JsonElement el)
-  method public static EzClassify.GuideRule ParseGuideRule(System.Text.Json.JsonElement el)
-  method public static EzClassify.ProcessResult ParseProcessResult(System.String json)
-  method public static EzClassify.TraceEntry ParseTraceEntry(System.Text.Json.JsonElement el)
-  method public static EzClassify.TraceInference ParseTraceInference(System.Text.Json.JsonElement el)
-  method public static EzClassify.TraceRepair ParseTraceRepair(System.Text.Json.JsonElement el)
-  method public static EzClassify.TraceValidationIssue ParseTraceValidationIssue(System.Text.Json.JsonElement el)
-  method public static EzClassify.ValidateResult ParseValidateResult(System.String json)
-  method public static EzClassify.ValidationError ParseValidationError(System.Text.Json.JsonElement e)
-  method public static EzClassify.Warning ParseWarning(System.Text.Json.JsonElement w)
-  method public static System.Collections.Generic.IReadOnlyList<EzClassify.EvaluationResult> ParseEvaluationResults(System.String json)
-  method public static System.Collections.Generic.IReadOnlyList<EzClassify.GuideScanResult> ParseGuideScanResults(System.String json)
-  method public static System.Collections.Generic.IReadOnlyList<EzClassify.ScanMatch> ParseScanMatches(System.String json)
-  method public static System.Collections.Generic.IReadOnlyList<EzClassify.Suggestion> ParseSuggestions(System.String json)
+class sealed EzClassify.RestClientCredentials
+  ctor public .ctor(System.String accessToken, System.String contextToken)
+  ctor public .ctor(System.String accessToken, System.String contextToken, System.String applicationCredential)
+  property public System.String AccessToken { get; }
+  property public System.String ApplicationCredential { get; }
+  property public System.String ContextToken { get; }
+  property public static EzClassify.RestClientCredentials None { get; }
 
 class EzClassify.RuleDescription : System.IEquatable<EzClassify.RuleDescription>
   ctor public .ctor(EzClassify.RuleReference Rule, EzClassify.ArtifactReference Guide, System.String Name, System.String OutcomeText, System.Boolean IsComputed, System.Collections.Generic.IReadOnlyList<EzClassify.RuleReference> DependsOn, System.Collections.Generic.IReadOnlyList<EzClassify.RuleReference> Overrides, System.Collections.Generic.IReadOnlyList<System.String> Lines, System.String Description = null, System.String WhenText = null)
