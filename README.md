@@ -23,19 +23,19 @@ The package targets `netstandard2.0` and also ships a `net8.0` build. CI builds 
 
 ## Quick start
 
-Start the Cedar Valley replay server. It serves recorded responses for the Cedar Valley teaching Context, so you can prove your integration works before you have a runtime. Node.js 22 or 24 is needed only for this server, not for the client.
+Start the free developer runtime. It is one container that serves the built-in Contexts, such as `capco-demo` and `cedar-valley`, over real HTTP, with no license, credentials or account.
 
 ```sh
-npx @ezclassify/conformance-server --scenario cedar-valley --port 4010
+docker run --rm -p 3000:8080 ghcr.io/ezclassify/developer-runtime
 ```
 
-Then connect with the normal client. The Context is `cedar-valley`, version `1.0.0`, and the server asks for no credentials by default.
+Then connect with the normal client. The Context is `cedar-valley`, version `1.0.0`, and the runtime asks for no credentials.
 
 ```csharp
 using EzClassify;
 
 using var ctx = await EzClassifyClient.ConnectAsync(
-    "http://127.0.0.1:4010", "cedar-valley", "1.0.0");
+    "http://localhost:3000", "cedar-valley", "1.0.0");
 
 var result = (await ctx.Scheme!.ProcessAsync("INTERNAL")).Result;
 Console.WriteLine($"{result.Rendered} valid={result.Valid}");
@@ -49,14 +49,11 @@ INTERNAL valid=True
 granted=False
 ```
 
-The server replays a finite set of recordings, so use inputs from its
-[Cedar Valley catalog](https://github.com/ezclassify/contracts/tree/main/packages/conformance-server#testing-an-application-integration):
-markings such as `PUBLIC`, `INTERNAL`, and `CONFIDENTIAL`, plus the recorded access, guide, and
-aggregate requests. Anything unrecorded returns a 501 diagnostic rather than a computed answer.
+`cedar-valley` is a fictional school district policy for teaching, so use synthetic markings with it. `GET /v1/ctx` on the runtime lists every built-in Context.
 
 ### Swap to your runtime
 
-Change the base URL and supply the credentials your runtime administrator issued: `EZC_ACCESS_TOKEN` (caller identity) and `EZC_CONTEXT_TOKEN` (signed Context credential). The calls stay the same. Use the Context id your runtime publishes, and omit the version to let the server choose: the token's default, or the newest published.
+Four values change: the base URL, the Context, your application id and the caller token. The calls stay the same. Your runtime administrator issues the credentials: `EZC_ACCESS_TOKEN` (caller identity) and `EZC_CONTEXT_TOKEN` (signed Context credential). Use the Context id your runtime publishes, and omit the version to let the server choose: the token's default, or the newest published.
 
 ```csharp
 using EzClassify;
@@ -66,7 +63,8 @@ var credentials = new RestClientCredentials(
     Environment.GetEnvironmentVariable("EZC_ACCESS_TOKEN")
         ?? throw new InvalidOperationException("Set EZC_ACCESS_TOKEN."),
     Environment.GetEnvironmentVariable("EZC_CONTEXT_TOKEN")
-        ?? throw new InvalidOperationException("Set EZC_CONTEXT_TOKEN."));
+        ?? throw new InvalidOperationException("Set EZC_CONTEXT_TOKEN."),
+    applicationId: "your-application-id");
 var baseUrl = Environment.GetEnvironmentVariable("EZC_API_URL")
     ?? throw new InvalidOperationException("Set EZC_API_URL.");
 
@@ -83,7 +81,7 @@ Console.WriteLine($"{result.Rendered} {result.Valid}");
 Console.WriteLine($"resolved: {ctx.ResolvedVersion}");
 ```
 
-To name your application in the runtime's usage counts, pass the id it is registered under as the third argument:
+The `applicationId` above names your application in the runtime's usage counts; it is the id the application is registered under, passed as the third argument:
 
 ```csharp
 var credentials = new RestClientCredentials(accessToken, contextToken, applicationId: "case-intake-portal");
@@ -165,12 +163,12 @@ Every call on the view sends the key as `?scheme=`, including the label presets 
 
 ## Reading a marking and writing one
 
-Two operations answer about one marking, and they are split by who is asking. The first two examples below run against the Cedar Valley replay server from the [quick start](#quick-start), and their output is what it answers. The third shows a composer's request, which the replay server has no recording for; run it against a live runtime.
+Two operations answer about one marking, and they are split by who is asking. The first two examples below run against the developer runtime from the [quick start](#quick-start), and their output is what it answers. The third shows a composer's request.
 
 `ValidateAsync` is the reader's call. Code that displays a marking, gates on it, stores it, or hands its facts to an access check calls it, with the text or with the facts a document states:
 
 ```csharp
-using var ctx = await EzClassifyClient.ConnectAsync("http://127.0.0.1:4010", "cedar-valley", "1.0.0");
+using var ctx = await EzClassifyClient.ConnectAsync("http://localhost:3000", "cedar-valley", "1.0.0");
 
 var read = (await ctx.Scheme!.ValidateAsync("INTERNAL")).Result;
 Console.WriteLine($"{read.Rendered} valid={read.Valid} asWritten={read.InputWasValid}");
@@ -242,13 +240,11 @@ SDK `major.minor` tracks the rest-api `major.minor`; patch versions may drift. `
 
 ## Demo
 
-[`examples/server-tour`](examples/server-tour/README.md) walks the main client calls and runs as written against the Cedar Valley replay server from the [quick start](#quick-start). It requires the .NET 10 SDK. Its README shows the expected output and how to point it at your runtime.
+[`examples/server-tour`](examples/server-tour/README.md) walks the main client calls and runs against the developer runtime from the [quick start](#quick-start) once `EZC_API_URL` is set to `http://localhost:3000`. It requires the .NET 10 SDK. Its README shows the expected output and how to point it at your runtime.
 
 ## Integration testing
 
-The [quick start](#quick-start) server also serves what your application needs to test connectivity, response handling, and access-decision logging. See the
-[replay server guide](https://github.com/ezclassify/contracts/tree/main/packages/conformance-server#testing-an-application-integration)
-for the full request catalog, CORS options for browser UIs, and credential testing with `--auth simulated`.
+The [quick start](#quick-start) runtime also evaluates what your application needs to test connectivity, response handling, and access-decision logging.
 
 A denied access decision is a successful response with `granted: false`; handle transport or authentication failures separately. The access example below logs the outcome and rule explanations without copying subject attributes or credentials. In your backend, derive attributes from trusted identity data and add your application's correlation ID and resource reference. Apply your log retention and redaction policy to returned explanations too.
 
@@ -258,7 +254,7 @@ using EzClassify;
 try
 {
     using var ctx = await EzClassifyClient.ConnectAsync(
-        "http://127.0.0.1:4010", "cedar-valley", "1.0.0");
+        "http://localhost:3000", "cedar-valley", "1.0.0");
     var decision = (await ctx.Access!.CheckByMarkingAsync("CONFIDENTIAL", "{}")).Result;
     Console.WriteLine($"granted={decision.Granted}");
     foreach (var rule in decision.Rules)
@@ -270,13 +266,7 @@ catch (EzClassifyClientException error)
 }
 ```
 
-Restart with `--scenario transient-error`, `rate-limit`, `unavailable`,
-`slow-response`, `disconnected`, `malformed-json`, or `malformed-envelope` to
-exercise failures on the recorded process request. Clear the client response
-cache or create a new client between runs so an earlier answer does not hide
-the scenario. The guide lists authentication, validation, empty-result, and
-complex access cases. These recordings test your integration, not the
-correctness of a production authorization policy.
+To rehearse transport failures such as a 429, a dropped connection or a malformed body, run the Apache-2.0 [conformance server](https://github.com/ezclassify/contracts/tree/main/packages/conformance-server#testing-an-application-integration) (Node.js 22 or 24). It replays recorded failures on demand, which the developer runtime does not produce. Clear the client response cache or create a new client between runs so an earlier answer does not hide the scenario.
 
 ## Reporting issues
 
