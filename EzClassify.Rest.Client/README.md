@@ -12,27 +12,33 @@ dotnet add package EzClassify.Rest.Client
 
 ## Quick start
 
-Start the Cedar Valley replay server, which serves recorded responses so you can prove your integration works before you have a runtime. Node.js 22 or 24 is needed only for this server.
+Start the free developer runtime. It is one container that serves the built-in Contexts, such as `capco-demo` and `cedar-valley`, over real HTTP, with no license, credentials or account.
 
 ```sh
-npx @ezclassify/conformance-server --scenario cedar-valley --port 4010
+docker run --rm -p 3000:8080 ghcr.io/ezclassify/developer-runtime
 ```
+
+Then connect with the normal client. The Context is `cedar-valley`, version `1.0.0`, and the runtime asks for no credentials.
 
 ```csharp
 using EzClassify;
 
 using var ctx = await EzClassifyClient.ConnectAsync(
-    "http://127.0.0.1:4010", "cedar-valley", "1.0.0");
+    "http://localhost:3000", "cedar-valley", "1.0.0");
 
 var result = (await ctx.Scheme!.ProcessAsync("INTERNAL")).Result;
 Console.WriteLine($"{result.Rendered} valid={result.Valid}");
+
+var decision = (await ctx.Access!.CheckByMarkingAsync("CONFIDENTIAL", "{}")).Result;
+Console.WriteLine($"granted={decision.Granted}");
 ```
 
 ```text
 INTERNAL valid=True
+granted=False
 ```
 
-The server replays a finite set of recorded requests, such as the markings `PUBLIC`, `INTERNAL`, and `CONFIDENTIAL`. Anything unrecorded returns a 501 diagnostic.
+`cedar-valley` is a fictional school district policy for teaching, so use synthetic markings with it. `GET /v1/ctx` on the runtime lists every built-in Context.
 
 ## Swap to your runtime
 

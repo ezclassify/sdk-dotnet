@@ -31,9 +31,9 @@ The [`examples/server-tour/`](examples/server-tour/) project is included in the 
 ## Running the Demo
 
 ```sh
-# Start the Cedar Valley replay server (Node 22/24), then run the tour against it.
-npx @ezclassify/conformance-server --scenario cedar-valley --port 4010
-# Defaults: http://127.0.0.1:4010, Context "cedar-valley", version 1.0.0.
-# Override with EZC_API_URL, EZC_CONTEXT_ID, EZC_CONTEXT_VERSION for a real runtime.
-cd examples/server-tour && dotnet run
+# Start the free developer runtime, then run the tour against it.
+docker run --rm -p 3000:8080 ghcr.io/ezclassify/developer-runtime
+# Context "cedar-valley", version 1.0.0, no credentials.
+# EZC_CONTEXT_ID and EZC_CONTEXT_VERSION point the tour at another Context.
+cd examples/server-tour && EZC_API_URL=http://localhost:3000 dotnet run
 ```
