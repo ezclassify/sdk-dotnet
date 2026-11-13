@@ -35,6 +35,10 @@ public class LiveServerSmokeTests
     private static string ProcessExpected =>
         Environment.GetEnvironmentVariable("EZC_SMOKE_EXPECTED") ?? "CONFIDENTIAL";
 
+    // Outputs process is asked to write into `renders`, which holds only the ones named.
+    private static string[] ProcessOutputs =>
+        (Environment.GetEnvironmentVariable("EZC_SMOKE_OUTPUTS") ?? "default,short").Split(',');
+
     private readonly ITestOutputHelper _output;
 
     public LiveServerSmokeTests(ITestOutputHelper output) => _output = output;
@@ -71,12 +75,15 @@ public class LiveServerSmokeTests
         // then process and access calls use only Context routes.
         using var ctx = await EzClassifyClient.ConnectAsync(url, ContextId, null, credentials);
         Assert.False(string.IsNullOrEmpty(ctx.ResolvedVersion));
-        var result = await ctx.Scheme!.ProcessAsync(ProcessInput);
+        var result = await ctx.Scheme!.ProcessAsync(ProcessInput, outputs: ProcessOutputs);
         Assert.True(result.Result.Valid);
         Assert.Equal(ProcessExpected, result.Result.Rendered);
-        var recognition = Assert.IsType<RecognitionResult>(result.Result.Recognition);
+        // process answers with the form that carries corrections.
+        var recognition = Assert.IsType<RecognitionWithCorrections>(result.Result.Recognition);
         Assert.Equal(RecognitionStatus.Complete, recognition.Status);
-        Assert.True(result.Result.Renders.Count >= 2);
+        Assert.Equal(
+            ProcessOutputs.OrderBy(name => name),
+            result.Result.Renders.Keys.OrderBy(name => name));
         Assert.All(result.Result.Renders.Values, render => Assert.NotNull(render.Assessment));
         var refusal = await Assert.ThrowsAsync<EzClassifyClientException>(() =>
             ctx.Scheme.RenderAsync(
