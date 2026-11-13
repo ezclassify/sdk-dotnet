@@ -49,7 +49,7 @@ public class ConformanceTests : IDisposable
     // is a pinned golden: when the vendored bundle deliberately adds or removes
     // plan cases, update it in the same commit. Without the pin, a missing
     // recording or unreadable fixture would silently shrink the suite.
-    private const int ExpectedCaseCount = 143;
+    private const int ExpectedCaseCount = 147;
 
     private readonly string _fixtureDir;
     private readonly string _plansDir;
