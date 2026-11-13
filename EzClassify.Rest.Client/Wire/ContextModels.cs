@@ -1189,14 +1189,12 @@ public sealed record SchemeSummary
     /// <param name="id">Scheme identifier from the scheme metadata.</param>
     /// <param name="version">Scheme semantic version.</param>
     /// <param name="name">Display name from the scheme metadata.</param>
-    /// <param name="description">Free-text description from the scheme metadata.</param>
     /// <param name="referenceSurfaceLabel">Display label for this scheme's own reference component, the Handbook: the scheme's override or the generic "Handbook" / "Handbooks" when it declares none. Always populated.</param>
-    public SchemeSummary(string id, string version, string name, string description, ReferenceSurfaceLabel referenceSurfaceLabel)
+    public SchemeSummary(string id, string version, string name, ReferenceSurfaceLabel referenceSurfaceLabel)
     {
         Id = id ?? throw new ArgumentNullException(nameof(id));
         Version = version ?? throw new ArgumentNullException(nameof(version));
         Name = name ?? throw new ArgumentNullException(nameof(name));
-        Description = description ?? throw new ArgumentNullException(nameof(description));
         ReferenceSurfaceLabel = referenceSurfaceLabel ?? throw new ArgumentNullException(nameof(referenceSurfaceLabel));
     }
 
@@ -1209,8 +1207,8 @@ public sealed record SchemeSummary
     /// <summary>Display name from the scheme metadata.</summary>
     public string Name { get; }
 
-    /// <summary>Free-text description from the scheme metadata.</summary>
-    public string Description { get; }
+    /// <summary>Free-text description from the scheme metadata. Null when the scheme has none.</summary>
+    public string? Description { get; set; }
 
     /// <summary>Whether the scheme uses role-aware processing. Omitted when unset.</summary>
     public bool? RoleAware { get; set; }

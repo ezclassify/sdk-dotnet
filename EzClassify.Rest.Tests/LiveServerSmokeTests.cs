@@ -9,7 +9,8 @@ namespace EzClassify.Tests;
 
 /// <summary>
 /// Live-server smoke test: boots nothing itself, but when EZC_SMOKE_URL points at
-/// a running @ezclassify/rest-api this drives one real round-trip through the
+/// a running EzClassify REST runtime (the ghcr.io/ezclassify/rest-api image with its
+/// license and bundles mounted, or the ezclassify-rest-api binary) this drives one real round-trip through the
 /// published <see cref="EzClassifyClient"/> wire path (a GET /v1/health ping and
 /// a Context-bound process request) and asserts the SDK speaks the server's actual
 /// prefix and version.

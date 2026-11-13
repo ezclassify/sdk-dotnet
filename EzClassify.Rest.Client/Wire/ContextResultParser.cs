@@ -630,9 +630,9 @@ internal static class ContextResultParser
             id: JsonRead.RequiredString(root, "id"),
             version: JsonRead.RequiredString(root, "version"),
             name: JsonRead.RequiredString(root, "name"),
-            description: JsonRead.RequiredString(root, "description"),
             referenceSurfaceLabel: ParseReferenceSurfaceLabelElement(JsonRead.RequiredProperty(root, "referenceSurfaceLabel")))
         {
+            Description = JsonRead.OptionalString(root, "description"),
             RoleAware = OptionalBool(root, "roleAware"),
             EmbeddedMarking = OptionalElement(root, "embeddedMarking"),
             DefaultRenderFormat = JsonRead.OptionalString(root, "defaultRenderFormat"),

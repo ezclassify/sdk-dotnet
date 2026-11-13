@@ -1236,7 +1236,7 @@ class sealed EzClassify.SchemeScope : System.IEquatable<EzClassify.SchemeScope>
   property public System.String Label { get; }
 
 class sealed EzClassify.SchemeSummary : System.IEquatable<EzClassify.SchemeSummary>
-  ctor public .ctor(System.String id, System.String version, System.String name, System.String description, EzClassify.ReferenceSurfaceLabel referenceSurfaceLabel)
+  ctor public .ctor(System.String id, System.String version, System.String name, EzClassify.ReferenceSurfaceLabel referenceSurfaceLabel)
   property public EzClassify.ReferenceSurfaceLabel ReferenceSurfaceLabel { get; }
   property public EzClassify.SchemeContextFormats ContextFormats { get; set; }
   property public System.Boolean? RoleAware { get; set; }
@@ -1248,7 +1248,7 @@ class sealed EzClassify.SchemeSummary : System.IEquatable<EzClassify.SchemeSumma
   property public System.String DefaultScope { get; set; }
   property public System.String DefaultWholeRenderFormat { get; set; }
   property public System.String Definition { get; set; }
-  property public System.String Description { get; }
+  property public System.String Description { get; set; }
   property public System.String Guidance { get; set; }
   property public System.String Id { get; }
   property public System.String Marking { get; set; }

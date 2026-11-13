@@ -1,4 +1,4 @@
-// Code generated from the canonical OpenAPI contract (e5ebdcc1e4296044fb6e51a8ca80d26652bdebba3728aa99631a61a4b900669f) by gen.mjs@75f2fcb0c19a039775bfff57328b8295df0840efe327ff36e7f5a6965b31b13c. DO NOT EDIT.
+// Code generated from the canonical OpenAPI contract (1a8632054eeabcf461f999e14ac3dfa36c153310ceb88a6d6ea9d46d73d85e86) by gen.mjs@75f2fcb0c19a039775bfff57328b8295df0840efe327ff36e7f5a6965b31b13c. DO NOT EDIT.
 // Re-run via: make regen
 #nullable enable
 
@@ -163,7 +163,7 @@ internal static class ResponseShapes
         ["ScanResult"] = ShapeNode.Obj(required: "marking start end result type wrapped role", members: new[] { ("result", ShapeNode.Ref("ValidateResult")) }),
         ["SchemeScope"] = ShapeNode.Obj(required: "id label"),
         ["SchemeScopesResponse"] = ShapeNode.Arr(ShapeNode.Ref("SchemeScope")),
-        ["SchemeSummary"] = ShapeNode.Obj(required: "id version name description referenceSurfaceLabel", members: new[] { ("colorRules", ShapeNode.Arr(ShapeNode.Ref("MarkingColorRule"))), ("vocabulary", ShapeNode.Ref("Vocabulary")), ("referenceSurfaceLabel", ShapeNode.Ref("ReferenceSurfaceLabel")), ("contextFormats", ShapeNode.Obj(required: "whole part", members: new[] { ("whole", ShapeNode.Arr(null)), ("part", ShapeNode.Arr(null)) })), ("embeddedMarking", ShapeNode.Arr(ShapeNode.Ref("EmbeddedMarkingStyle"))) }),
+        ["SchemeSummary"] = ShapeNode.Obj(required: "id version name referenceSurfaceLabel", members: new[] { ("colorRules", ShapeNode.Arr(ShapeNode.Ref("MarkingColorRule"))), ("vocabulary", ShapeNode.Ref("Vocabulary")), ("referenceSurfaceLabel", ShapeNode.Ref("ReferenceSurfaceLabel")), ("contextFormats", ShapeNode.Obj(required: "whole part", members: new[] { ("whole", ShapeNode.Arr(null)), ("part", ShapeNode.Arr(null)) })), ("embeddedMarking", ShapeNode.Arr(ShapeNode.Ref("EmbeddedMarkingStyle"))) }),
         ["SchemeViewResponse"] = ShapeNode.Obj(required: "id name description categories uncategorized", members: new[] { ("categories", ShapeNode.Arr(ShapeNode.Obj(required: "id label items", members: new[] { ("items", ShapeNode.Arr(ShapeNode.Ref("ConceptView"))) }))), ("uncategorized", ShapeNode.Arr(ShapeNode.Ref("ConceptView"))), ("vocabulary", ShapeNode.Ref("Vocabulary")) }),
         ["SuggestResult"] = ShapeNode.Obj(required: "suggestions warnings", members: new[] { ("suggestions", ShapeNode.Arr(ShapeNode.Ref("Suggestion"))), ("warnings", ShapeNode.Arr(ShapeNode.Ref("Warning"))) }),
         ["SuggestResultsByCategory"] = ShapeNode.Map(ShapeNode.Ref("SuggestResult")),

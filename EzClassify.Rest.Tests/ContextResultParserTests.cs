@@ -131,6 +131,24 @@ public class ContextResultParserTests
     }
 
     [Fact]
+    public void ParseSchemeSummary_ReadsASchemeWithoutADescription()
+    {
+        // A scheme document may have no description; the runtime omits the
+        // member rather than answering with blank prose.
+        var bare = ContextResultParser.ParseSchemeSummary("""
+            {"id":"acme","version":"1.0.0","name":"Acme",
+             "referenceSurfaceLabel":{"singular":"Handbook","plural":"Handbooks"}}
+            """);
+        var described = ContextResultParser.ParseSchemeSummary("""
+            {"id":"acme","version":"1.0.0","name":"Acme","description":"d",
+             "referenceSurfaceLabel":{"singular":"Handbook","plural":"Handbooks"}}
+            """);
+
+        Assert.Null(bare.Description);
+        Assert.Equal("d", described.Description);
+    }
+
+    [Fact]
     public void ParseSchemeSummary_ReadsTheSchemeDocumentsOwnWholeMarking()
     {
         // A scheme document may carry its own whole marking; the summary
