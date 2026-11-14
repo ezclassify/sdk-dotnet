@@ -311,23 +311,20 @@ public class RequestSchemaConformanceTests
     }
 
     // Negative controls. A gate that cannot fail proves nothing, so pin the two
-    // failure modes it exists for: a removed field, and a missing required one.
+    // failure modes it exists for: an undeclared field, and a missing required one.
 
     [Theory]
-    [InlineData("scheme/process", """{ "input": "H", "format": "banner" }""", "format")]
-    [InlineData("scheme/process", """{ "input": "H", "scope": "portion" }""", "scope")]
-    [InlineData("scheme/process", """{ "input": "H", "tolerant": true }""", "tolerant")]
-    [InlineData("scheme/process", """{ "input": "H", "normalization": "loose" }""", "normalization")]
+    [InlineData("scheme/process", """{ "input": "H", "note": "kept" }""", "note")]
     [InlineData("scheme/explain", """{ "input": "H", "outputs": ["marking/short"] }""", "outputs")]
     [InlineData("scheme/explain", """{ "input": "H", "suggestFor": ["audience"] }""", "suggestFor")]
-    [InlineData("scheme/validate", """{ "input": "H", "scope": "portion" }""", "scope")]
-    [InlineData("scheme/suggest", """{ "input": "H", "format": "banner" }""", "format")]
-    [InlineData("scheme/aggregate", """{ "inputs": ["H"], "format": "banner", "scope": "portion" }""", "format")]
-    [InlineData("scheme/diff", """{ "a": "H", "b": "L", "format": "banner" }""", "format")]
-    [InlineData("scheme/scan", """{ "text": "H", "stripHtml": true }""", "stripHtml")]
-    [InlineData("scheme/render", """{ "assertions": [], "format": "banner" }""", "format")]
-    [InlineData("scheme/apply-preset", """{ "presetId": "p", "format": "banner" }""", "format")]
-    public void Validator_RejectsRemovedFields(string route, string body, string field)
+    [InlineData("scheme/validate", """{ "input": "H", "note": "kept" }""", "note")]
+    [InlineData("scheme/suggest", """{ "input": "H", "note": "kept" }""", "note")]
+    [InlineData("scheme/aggregate", """{ "inputs": ["H"], "note": "kept" }""", "note")]
+    [InlineData("scheme/diff", """{ "a": "H", "b": "L", "note": "kept" }""", "note")]
+    [InlineData("scheme/scan", """{ "text": "H", "note": "kept" }""", "note")]
+    [InlineData("scheme/render", """{ "assertions": [], "note": "kept" }""", "note")]
+    [InlineData("scheme/apply-preset", """{ "presetId": "p", "note": "kept" }""", "note")]
+    public void Validator_RejectsAnUndeclaredField(string route, string body, string field)
     {
         var errors = Spec.Value.Validate("post", RoutePrefix + route, JsonNode.Parse(body));
         Assert.Contains(errors, e => e.Contains($"'{field}'", StringComparison.Ordinal));
@@ -369,7 +366,7 @@ public class RequestSchemaConformanceTests
     }
 
     [Fact]
-    public void Validator_AcceptsTheRenamedFields()
+    public void Validator_AcceptsACurrentBody()
     {
         var errors = Spec.Value.Validate("post", "/v1/ctx/{ctxId}/{version}/scheme/process",
             JsonNode.Parse("""{ "input": "H", "inputFormat": "portion", "outputFormat": "banner", "surface": "portion" }"""));
