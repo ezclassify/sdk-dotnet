@@ -34,8 +34,9 @@ jobs:
 
       # Spec and generator integrity. The vendored OpenAPI and gen.mjs are
       # checked against the hashes MANIFEST.json records before anything is
-      # installed. The expected values reach the shell through the environment
-      # because a pull request can edit the MANIFEST.
+      # installed. The expected values are read inside the shell rather than
+      # through a workflow expression, because a pull request can edit the
+      # MANIFEST and an expression would paste its text into this script.
       - name: Verify spec and generator hashes
         run: |
           set -euo pipefail
