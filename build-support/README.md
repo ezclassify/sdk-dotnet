@@ -15,5 +15,5 @@ Run the repository's normal `make regen`, `make build`, `make test` and
 boundary gates inside the verified image. Mount only this checkout and private
 caches. Supply a private home, `DOTNET_CLI_HOME` and `NUGET_PACKAGES`; do not
 mount host NuGet configuration or a host home directory. Image tooling is not
-part of any published NuGet package. The repository's dependency notices and
-SBOM gates still apply to the actual SDK closure.
+part of any published NuGet package. The repository's dependency notices gate
+still applies to the actual SDK closure.

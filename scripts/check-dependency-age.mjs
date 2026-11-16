@@ -11,8 +11,8 @@
  * `obj/project.assets.json`, which `dotnet restore` writes: every package and
  * version restore chose, transitive ones included. Run the gate after restore
  * and before build, so a package's build targets never run before it is
- * cleared. The pinned .NET tools in `.config/dotnet-tools.json` and
- * `docs/.config/dotnet-tools.json` are checked as well.
+ * cleared. The pinned .NET tools in `docs/.config/dotnet-tools.json` are
+ * checked as well.
  *
  * - A `package` entry is checked against the publish time nuget.org records for
  *   that exact version (the registration leaf's `published`).
@@ -90,10 +90,7 @@ const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
 const SOLUTION = 'EzClassify.sln';
 
-const DEFAULT_TOOL_MANIFESTS = [
-    '.config/dotnet-tools.json',
-    'docs/.config/dotnet-tools.json',
-];
+const DEFAULT_TOOL_MANIFESTS = ['docs/.config/dotnet-tools.json'];
 
 const USAGE =
     'Usage: check-dependency-age.mjs [--days=N] [--assets=PATH,PATH,...] [--tool-manifest=PATH,PATH,...] [--registration=URL]';

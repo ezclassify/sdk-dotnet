@@ -15,8 +15,7 @@ docs: build
 
 # There is deliberately no local re-vendor target. vendor/ is bot-owned: the
 # bundle is mirrored out of ezclassify/contracts by the spec bot and lands as
-# ezclassify-spec-bot. vendor-readonly.yml rejects a vendor/spec/ commit from
-# any other identity, and DocumentSemanticConformanceTests requires the manifest
+# ezclassify-spec-bot. DocumentSemanticConformanceTests requires the manifest
 # to carry real hex digests plus a sourcePackages block, so a hand re-vendor
 # cannot be committed green. To advance the spec, update contracts and let the
 # spec bot propagate it, then run `make regen`.
@@ -67,7 +66,7 @@ clean:
 	find . -type d \( -name bin -o -name obj \) -exec rm -rf {} + 2>/dev/null || true
 
 # distclean: clean plus everything derivable from a fresh clone: local CI
-# outputs (SBOM). Models.g.cs is committed, so it survives distclean.
+# outputs (the API surface proposal). Models.g.cs is committed, so it survives distclean.
 distclean: clean
 	rm -rf artifacts
 

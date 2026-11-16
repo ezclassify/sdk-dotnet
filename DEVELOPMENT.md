@@ -32,7 +32,7 @@ same commands for parity with the other SDKs.
 | Regenerate generated models | `make regen` | Rewrites the committed `*.g.cs` models after a spec-update PR. Wrapper-only changes don't touch [`vendor/`](vendor/). |
 | Format | `dotnet format` | Ships with the SDK; CI runs `dotnet format --verify-no-changes`. |
 | Package the NuGet | `dotnet pack -c Release` | Produces the `.nupkg` under each project's `bin/Release/`. |
-| Clean | `make clean` | `make distclean` also removes local SBOM output under `artifacts/`. |
+| Clean | `make clean` | `make distclean` also removes the local API surface proposal under `artifacts/`. |
 
 ## API reference
 
@@ -49,7 +49,7 @@ documentation generation requires no live REST deployment.
   `EzClassify.Rest.Client/Wire` are generated from the OpenAPI spec under
   [`vendor/spec/`](vendor/spec/). That mirror is owned by [ezclassify/contracts](https://github.com/ezclassify/contracts) and written into
   this repo by the EzClassify spec bot;
-  `vendor-readonly.yml` rejects a vendor commit from anyone else.
+  the vendored paths are not hand-edited.
   Don't hand-edit the generated `Models.g.cs`; regenerate it with `make regen`
   (needs Node.js). CI regenerates and diffs it so drift cannot land.
   Wrapper-only changes don't touch [`vendor/`](vendor/). Spec changes belong upstream in
