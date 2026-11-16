@@ -41,8 +41,8 @@ public class WireCorpusReplayTests
     private static readonly RestClientCredentials Bearer = new("fixture-refused-bearer", "fixture-context-carrier");
     private static readonly RestClientCredentials Anonymous = RestClientCredentials.None;
 
-    private static readonly Assertion Open = new("level", "OPEN", Confidence.Certain, "explicit");
-    private static readonly Assertion Sensitive = new("level", "SENSITIVE", Confidence.Certain, "explicit");
+    private static readonly Assertion Open = new(categoryId: "level", conceptId: "OPEN", confidence: Confidence.Certain, source: "explicit");
+    private static readonly Assertion Sensitive = new(categoryId: "level", conceptId: "SENSITIVE", confidence: Confidence.Certain, source: "explicit");
 
     /// <summary>
     /// One replay: the Context to bind (null for the root client), the cases it
@@ -158,6 +158,14 @@ public class WireCorpusReplayTests
                     description.Schemes[0].Roles);
                 Assert.Equal(new[] { ContextSchemeRole.CrosswalkTarget }, description.Schemes[1].Roles);
             })),
+        ["ctx-describe.marked"] = Described("ez-marked", "ctx-describe.marked",
+            async c => await c.DescribeContextAsync(),
+            Check<ContextDescription>((description, body) =>
+            {
+                Assert.Equal(body["id"]!.GetValue<string>(), description.Id);
+                Assert.Equal(body["guides"]![0]!["id"]!.GetValue<string>(), Assert.Single(description.Guides).Id);
+                Assert.Equal(body["access"]!["id"]!.GetValue<string>(), description.Access!.Id);
+            })),
 
         // -- documents --------------------------------------------------------
         ["ctx-document-audit.ok"] = Ctx("ez-full", "ctx-document-audit.ok",
@@ -165,8 +173,6 @@ public class WireCorpusReplayTests
             Check<ContextDocumentAuditResult>((audit, body) => SameCount(audit.Result.Parts, body["result"]!["parts"]!))),
         ["ctx-document-audit.empty-text"] = Ctx("ez-full", "ctx-document-audit.empty-text",
             async c => await c.Document!.AuditAsync("")),
-        ["ctx-document-assess-access.ok"] = Ctx("ez-full", "ctx-document-assess-access.ok",
-            async c => await c.Document!.AssessAccessAsync(Releasable, Clearance, contextJson: RecordedContext("ctx-document-assess-access.ok"), responseProfile: DocumentResponseProfile.Standard)),
 
         // -- scheme resources -------------------------------------------------
         ["ctx-scheme-summary.ok"] = Ctx("ez-presets", "ctx-scheme-summary.ok",
@@ -186,8 +192,6 @@ public class WireCorpusReplayTests
             async c => await c.Scheme!.FormatsAsync(),
             Check<IReadOnlyList<FormatView>>((formats, body) =>
                 Assert.Equal(body.AsArray().Select(f => f!["id"]!.GetValue<string>()), formats.Select(f => f.Id)))),
-        ["ctx-scheme-grammar.ok"] = Ctx("ez-presets", "ctx-scheme-grammar.ok",
-            async c => await c.Scheme!.GrammarAsync()),
         ["ctx-scheme-scopes.ok"] = Ctx("ez-presets", "ctx-scheme-scopes.ok",
             async c => await c.Scheme!.ScopesAsync(),
             Check<IReadOnlyList<SchemeScope>>((scopes, body) =>
@@ -228,8 +232,6 @@ public class WireCorpusReplayTests
             async c => await c.Scheme!.FormatsAsync(),
             Check<IReadOnlyList<FormatView>>((formats, body) =>
                 Assert.Equal(body.AsArray().Select(f => f!["id"]!.GetValue<string>()), formats.Select(f => f.Id)))),
-        ["ctx-scheme-grammar.full"] = Ctx("ez-full", "ctx-scheme-grammar.full",
-            async c => await c.Scheme!.GrammarAsync()),
         ["ctx-scheme-scopes.full"] = Ctx("ez-full", "ctx-scheme-scopes.full",
             async c => await c.Scheme!.ScopesAsync(),
             Check<IReadOnlyList<SchemeScope>>((scopes, body) =>
@@ -312,8 +314,28 @@ public class WireCorpusReplayTests
                 Assert.Equal(body["result"]!["rendered"]!.GetValue<string>(), r.Result.Rendered);
                 Assert.Equal(body["result"]!["assertions"]![0]!["conceptId"]!.GetValue<string>(), Assert.Single(r.Result.Assertions).ConceptId);
             })),
-        ["ctx-scheme-normalize.ok"] = Ctx("ez-full", "ctx-scheme-normalize.ok",
-            async c => await c.Scheme!.NormalizeAsync("open")),
+
+        // -- marking in a scheme the Context holds beside its primary ---------
+        ["ctx-scheme-process.selected-scheme"] = Ctx("ez-crosswalk", "ctx-scheme-process.selected-scheme",
+            async c => await c.Schemes!.Get("ez-gated").ProcessAsync("SENSITIVE / EXPORT"),
+            Check<ContextSchemeProcessResult>((r, body) =>
+                SameMarking(body["result"]!, r.Result.Valid, r.Result.InputWasValid, r.Result.Rendered, r.Result.Assertions.Count))),
+        ["ctx-scheme-validate.selected-scheme"] = Ctx("ez-crosswalk", "ctx-scheme-validate.selected-scheme",
+            async c => await c.Schemes!.Get("ez-gated").ValidateAsync("SENSITIVE / EXPORT"),
+            Check<ContextSchemeValidateResult>((r, body) =>
+                SameMarking(body["result"]!, r.Result.Valid, r.Result.InputWasValid, r.Result.Rendered, r.Result.Assertions.Count))),
+        ["ctx-scheme-aggregate.selected-scheme"] = Ctx("ez-crosswalk", "ctx-scheme-aggregate.selected-scheme",
+            async c => await c.Schemes!.Get("ez-gated").AggregateAsync(new[] { "OPEN / EXPORT", "SENSITIVE" }),
+            Check<ContextSchemeAggregateResult>((r, body) =>
+            {
+                Assert.Equal(body["result"]!["valid"]!.GetValue<bool>(), r.Result.Valid);
+                Assert.Equal(body["result"]!["rendered"]!.GetValue<string>(), r.Result.Rendered);
+                Assert.Equal(
+                    body["result"]!["assertions"]!.AsArray().Select(a => a!["conceptId"]!.GetValue<string>()),
+                    r.Result.Assertions.Select(a => a.ConceptId));
+            })),
+        ["ctx-scheme-process.unknown-scheme"] = Ctx("ez-crosswalk", "ctx-scheme-process.unknown-scheme",
+            async c => await c.Schemes!.Get("no-such-scheme").ProcessAsync("OPEN")),
         ["ctx-scheme-render.ok"] = Ctx("ez-full", "ctx-scheme-render.ok",
             async c => await c.Scheme!.RenderAsync(new[] { Open })),
         ["ctx-scheme-render.empty"] = Ctx("ez-full", "ctx-scheme-render.empty",
@@ -325,12 +347,12 @@ public class WireCorpusReplayTests
             Check<ContextSchemeViewResult>((view, body) => Assert.Equal(
                 body["result"]!["categories"]![0]!["items"]!.AsArray().Select(item => item!["id"]!.GetValue<string>()),
                 view.Result.Categories[0].Items.Select(item => item.Id)))),
+        ["ctx-scheme-view.marked"] = Ctx("ez-marked", "ctx-scheme-view.marked",
+            async c => await c.Scheme!.ViewAsync(),
+            Check<ContextSchemeViewResult>((view, body) =>
+                Assert.Equal(body["result"]!["marking"]!.GetValue<string>(), view.Result.Marking))),
         ["ctx-scheme-notices.ok"] = Ctx("ez-full", "ctx-scheme-notices.ok",
             async c => await c.Scheme!.NoticesAsync(new[] { Open })),
-        ["ctx-scheme-filter-concepts.ok"] = Ctx("ez-full", "ctx-scheme-filter-concepts.ok",
-            async c => await c.Scheme!.FilterConceptsAsync("open")),
-        ["ctx-scheme-filter-concepts.no-match"] = Ctx("ez-full", "ctx-scheme-filter-concepts.no-match",
-            async c => await c.Scheme!.FilterConceptsAsync("zzznomatch")),
         ["ctx-scheme-suggest.ok"] = Ctx("ez-full", "ctx-scheme-suggest.ok",
             async c => await c.Scheme!.SuggestAsync(""),
             Check<ContextSchemeSuggestResult>((r, body) =>
@@ -360,12 +382,13 @@ public class WireCorpusReplayTests
         ["ctx-access-check.two-attributes"] = Ctx("ez-full", "ctx-access-check.two-attributes",
             async c => await c.Access!.CheckByMarkingAsync("OPEN", """{"clearance":"OPEN","organization":"records"}""", RecordedContext("ctx-access-check.two-attributes")),
             Check<ContextAccessDecisionResult>((r, body) => Assert.Equal(body["result"]!["granted"]!.GetValue<bool>(), r.Result.Granted))),
-        ["ctx-access-describe-rule.ok"] = Ctx("ez-full", "ctx-access-describe-rule.ok",
-            async c => await c.Access!.DescribeRuleAsync("level-rule")),
         ["ctx-access-describe-requirements.ok"] = Ctx("ez-full", "ctx-access-describe-requirements.ok",
             async c => await c.Access!.DescribeRequirementsAsync("OPEN")),
         ["ctx-access-rules.ok"] = Ctx("ez-full", "ctx-access-rules.ok",
             async c => await c.Access!.RulesAsync()),
+        ["ctx-access-rules.marked"] = Ctx("ez-marked", "ctx-access-rules.marked",
+            async c => await c.Access!.MarkingAsync(),
+            Check<string?>((marking, body) => Assert.Equal(body["marking"]!.GetValue<string>(), marking))),
         ["ctx-access-rules.no-policy"] = Ctx("ez-minimal", "ctx-access-rules.no-policy",
             async c => await c.Access!.RulesAsync()),
 
@@ -374,12 +397,8 @@ public class WireCorpusReplayTests
             async c => await c.Guide!.ScanAsync("This paragraph is confidential.")),
         ["ctx-guide-evaluate.ok"] = Ctx("ez-full", "ctx-guide-evaluate.ok",
             async c => await c.Guide!.EvaluateAsync("ez-test", new[] { "rule-sensitive" })),
-        ["ctx-guide-evaluate.all-guides"] = Ctx("ez-full", "ctx-guide-evaluate.all-guides",
-            async c => await c.Guide!.EvaluateManyAsync(new[] { "rule-sensitive" })),
-        ["ctx-guide-describe-rule.ok"] = Ctx("ez-full", "ctx-guide-describe-rule.ok",
-            async c => await c.Guide!.DescribeRuleAsync("rule-sensitive")),
-        ["ctx-guide-describe-rule.unknown-guide"] = Ctx("ez-full", "ctx-guide-describe-rule.unknown-guide",
-            async c => await c.Guide!.DescribeRuleAsync("rule-sensitive", "no-such-guide")),
+        ["ctx-guide-evaluate.selections"] = Ctx("ez-full", "ctx-guide-evaluate.selections",
+            async c => await c.Guide!.EvaluateManyAsync(new[] { new GuideRuleSelection(guideId: "ez-test", ruleId: "rule-sensitive") })),
         ["ctx-guide-view.by-id"] = Ctx("ez-full", "ctx-guide-view.by-id",
             async c => await c.Guide!.ViewAsync("ez-test")),
         ["ctx-guide-view.ok"] = Ctx("ez-full", "ctx-guide-view.ok",
@@ -390,12 +409,29 @@ public class WireCorpusReplayTests
                 var rule = Assert.Single(view.Result.Uncategorized);
                 Assert.Equal((recorded["id"]!.GetValue<string>(), recorded["outcomeText"]!.GetValue<string>()), (rule.Id, rule.OutcomeText));
             })),
-        ["ctx-guide-filter-rules.ok"] = Ctx("ez-full", "ctx-guide-filter-rules.ok",
-            async c => await c.Guide!.FilterRulesAsync("sensitive")),
+        ["ctx-guide-view.marked"] = Ctx("ez-marked", "ctx-guide-view.marked",
+            async c => await c.Guide!.ViewAsync(),
+            Check<ContextGuideViewResult>((view, body) =>
+                Assert.Equal(body["result"]!["marking"]!.GetValue<string>(), view.Result.Marking))),
 
         // -- crosswalks ---------------------------------------------------------
         ["ctx-crosswalk-translate.marking"] = Ctx("ez-full", "ctx-crosswalk-translate.marking",
             async c => await c.Crosswalk!.TranslateAsync("ez-test-to-ez-gated", "OPEN")),
+        ["ctx-crosswalk-describe.ok"] = Ctx("ez-crosswalk", "ctx-crosswalk-describe.ok",
+            async c => await c.Crosswalk!.DescribeAsync()),
+        ["ctx-crosswalk-describe.marked"] = Ctx("ez-marked", "ctx-crosswalk-describe.marked",
+            async c => await c.Crosswalk!.DescribeAsync(),
+            Check<IReadOnlyList<JsonElement>>((crosswalks, body) =>
+                Assert.Equal(body["crosswalks"]![0]!["marking"]!.GetValue<string>(), Assert.Single(crosswalks).GetProperty("marking").GetString()))),
+        ["ctx-crosswalk-translate.not-selected"] = Ctx("ez-marked", "ctx-crosswalk-translate.not-selected",
+            async c => await c.Crosswalk!.TranslateAsync("ez-gated-to-ez-test", "SENSITIVE / EXPORT"),
+            Check<ContextCrosswalkTranslationResult>((r, body) =>
+            {
+                var lost = Assert.Single(r.Result.GetProperty("outcomes").EnumerateArray(), o => o.GetProperty("disposition").GetString() == "not-selected");
+                Assert.Equal("handling:open-export", lost.GetProperty("mappingId").GetString());
+                Assert.Empty(lost.GetProperty("targets").EnumerateArray());
+                Assert.DoesNotContain(r.Result.GetProperty("outcomes").EnumerateArray(), o => o.GetProperty("disposition").GetString() == "omit");
+            })),
         ["ctx-crosswalk-translate.translated"] = Ctx("ez-crosswalk", "ctx-crosswalk-translate.translated",
             async c => await c.Crosswalk!.TranslateAsync("ez-test-to-ez-gated", "OPEN"),
             Check<ContextCrosswalkTranslationResult>((r, body) =>
@@ -453,20 +489,9 @@ public class WireCorpusReplayTests
         ["ctx-scheme-suggest.both-sources"] = Raw("ctx-scheme-suggest.both-sources", UnformableRequest),
         ["ctx-scheme-suggest.no-source"] = Raw("ctx-scheme-suggest.no-source", UnformableRequest),
         ["ctx-scheme-suggest.input-format-with-facts"] = Raw("ctx-scheme-suggest.input-format-with-facts", UnformableRequest),
-        ["ctx-scheme-process.undeclared-request-field-fix"] = Raw("ctx-scheme-process.undeclared-request-field-fix", UnformableRequest),
-        ["ctx-scheme-process.undeclared-request-field-preserveDeprecated"] = Raw("ctx-scheme-process.undeclared-request-field-preserveDeprecated", UnformableRequest),
-        ["ctx-scheme-process.undeclared-request-field-normalization"] = Raw("ctx-scheme-process.undeclared-request-field-normalization", UnformableRequest),
-        ["ctx-scheme-process.undeclared-request-field-skipRepair"] = Raw("ctx-scheme-process.undeclared-request-field-skipRepair", UnformableRequest),
-        ["ctx-scheme-process.undeclared-request-field-skipInference"] = Raw("ctx-scheme-process.undeclared-request-field-skipInference", UnformableRequest),
-        ["ctx-scheme-process.undeclared-request-field-tolerant"] = Raw("ctx-scheme-process.undeclared-request-field-tolerant", UnformableRequest),
-        ["ctx-scheme-process.undeclared-request-field-validateOnly"] = Raw("ctx-scheme-process.undeclared-request-field-validateOnly", UnformableRequest),
-        ["ctx-scheme-process.undeclared-request-field-scope"] = Raw("ctx-scheme-process.undeclared-request-field-scope", UnformableRequest),
-        ["ctx-scheme-process.undeclared-request-field-format"] = Raw("ctx-scheme-process.undeclared-request-field-format", UnformableRequest),
-        ["ctx-scheme-process.undeclared-request-field-repairStrategy"] = Raw("ctx-scheme-process.undeclared-request-field-repairStrategy", UnformableRequest),
         ["ctx-scheme-process.undeclared-request-field-unknownField"] = Raw("ctx-scheme-process.undeclared-request-field-unknownField", UnformableRequest),
         ["ctx-scheme-validate.undeclared-field"] = Raw("ctx-scheme-validate.undeclared-field", UnformableRequest),
         ["ctx-scheme-explain.undeclared-field"] = Raw("ctx-scheme-explain.undeclared-field", UnformableRequest),
-        ["ctx-scheme-normalize.undeclared-field"] = Raw("ctx-scheme-normalize.undeclared-field", UnformableRequest),
         ["ctx-scheme-aggregate.undeclared-field"] = Raw("ctx-scheme-aggregate.undeclared-field", UnformableRequest),
         ["ctx-scheme-suggest.undeclared-field"] = Raw("ctx-scheme-suggest.undeclared-field", UnformableRequest),
         ["ctx-scheme-suggest-for-categories.undeclared-field"] = Raw("ctx-scheme-suggest-for-categories.undeclared-field", UnformableRequest),

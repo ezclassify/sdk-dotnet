@@ -13,7 +13,7 @@ namespace EzClassify.Tests;
 
 public class ContextResponseCacheTests
 {
-    private const string ProcessResponse = """{"resolution":{"contextId":"c","resolvedVersion":"1.0.0","artifacts":[],"sources":[]},"operationLimitations":[],"result":{"valid":true,"rendered":"H","inputWasValid":true,"renders":{},"assessment":{"emitted":[],"omitted":[],"collapsed":[],"conflicts":[],"unrepresentable":[]},"assertions":[],"errors":[],"warnings":[],"appliedFixes":[],"proposedFixes":[],"notices":[]}}""";
+    private const string ProcessResponse = """{"resolution":{"contextId":"c","resolvedVersion":"1.0.0","artifacts":[]},"result":{"valid":true,"rendered":"H","inputWasValid":true,"renders":{},"assessment":{"emitted":[],"omitted":[],"collapsed":[],"conflicts":[],"unrepresentable":[]},"assertions":[],"errors":[],"warnings":[],"appliedFixes":[],"proposedFixes":[],"notices":[]}}""";
 
     private sealed class SequenceHandler : HttpMessageHandler
     {
@@ -128,7 +128,7 @@ public class ContextResponseCacheTests
         Assert.Equal("2.0.0", client.ResolvedVersion);
     }
 
-    private const string Envelope = """{"resolution":{"contextId":"c","resolvedVersion":"1.0.0","artifacts":[],"sources":[]},"operationLimitations":[],"result":""";
+    private const string Envelope = """{"resolution":{"contextId":"c","resolvedVersion":"1.0.0","artifacts":[]},"result":""";
 
     private const string Assessment = """{"emitted":[],"omitted":[],"collapsed":[],"conflicts":[],"unrepresentable":[]}""";
 
@@ -154,7 +154,7 @@ public class ContextResponseCacheTests
         return (http, calls);
     }
 
-    private static readonly Assertion Stated = new("level", "HIGH", Confidence.Certain, "stated");
+    private static readonly Assertion Stated = new(categoryId: "level", conceptId: "HIGH", confidence: Confidence.Certain, source: "stated");
 
     /// <summary>
     /// One variation per request field of the three marking calls. Each changes

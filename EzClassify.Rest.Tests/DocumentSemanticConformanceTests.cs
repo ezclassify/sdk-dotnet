@@ -83,13 +83,19 @@ public class DocumentSemanticConformanceTests
         Assert.Equal(cases.Count, coverage.Count);
         Assert.Equal("recorded-operation-output", ReadObject(Path.Combine(semanticRoot, "fixtures", "recordings.json"))["status"]!.GetValue<string>());
 
+        // Case numbers are stable identities: a retired case leaves a gap
+        // rather than renumbering the rest. They still ascend, and each
+        // request id is the number's own.
         var semanticIds = new HashSet<string>(StringComparer.Ordinal);
+        var previous = 0;
         for (var index = 0; index < cases.Count; index++)
         {
             var contractCase = cases[index]!.AsObject();
             var requestId = contractCase["requestId"]!.GetValue<string>();
-            Assert.Equal(index + 1, contractCase["number"]!.GetValue<int>());
-            Assert.Equal($"case-{index + 1:D2}", requestId);
+            var number = contractCase["number"]!.GetValue<int>();
+            Assert.True(number > previous, $"case {number} does not follow case {previous}");
+            Assert.Equal($"case-{number:D2}", requestId);
+            previous = number;
             Assert.True(contractCase["required"]!.GetValue<bool>());
             Assert.Equal("recorded", contractCase["implementation"]!.GetValue<string>());
             Assert.True(semanticIds.Add(contractCase["semanticId"]!.GetValue<string>()));
@@ -152,7 +158,6 @@ public class DocumentSemanticConformanceTests
         var operationPath = operation switch
         {
             "auditDocument" => context.Path + "/document/audit",
-            "assessDocumentAccess" => context.Path + "/document/assess-access",
             "documentAccessRequirements" => context.Path + "/access/describe-requirements",
             // The .NET SDK has no CLI, but this case records a document-audit
             // envelope. Replaying it through AuditAsync still proves the shared
@@ -172,9 +177,6 @@ public class DocumentSemanticConformanceTests
             {
                 "auditDocument" => await client.Document!.AuditAsync(
                     RecipeText(recipe), DecodeGuideDeterminations(recipe), RecipeProfile(recipe)),
-                "assessDocumentAccess" => await client.Document!.AssessAccessAsync(
-                    RecipeText(recipe), Json(recipe, "userAttributes", "{}"), Json(recipe, "context", "{}"),
-                    DecodeGuideDeterminations(recipe), RecipeProfile(recipe)),
                 "documentAccessRequirements" => await ReplayRequirementsAsync(client.Access!, recipe),
                 "cliDocument" => await client.Document!.AuditAsync(
                     RecipeText(recipe), DecodeGuideDeterminations(recipe), RecipeProfile(recipe)),
@@ -246,7 +248,6 @@ public class DocumentSemanticConformanceTests
         var operationKeys = operation switch
         {
             "auditDocument" or "cliDocument" => new[] { "text", "guideDeterminations", "responseProfile" },
-            "assessDocumentAccess" => new[] { "text", "userAttributes", "context", "guideDeterminations", "responseProfile" },
             "documentAccessRequirements" => new[] { "marking", "assertions" },
             _ => Array.Empty<string>(),
         };
@@ -373,45 +374,55 @@ public class DocumentSemanticConformanceTests
         {
             var finding = item!.AsObject();
             return new GuideFindingDetermination(
-                finding["findingId"]!.GetValue<string>(), finding["documentDigest"]!.GetValue<string>(),
-                GuideFindingDecision.Parse(finding["decision"]!.GetValue<string>()), finding["reason"]!.GetValue<string>(),
-                finding["proposalOrigin"] is JsonValue origin ? DecisionProposalOrigin.Parse(origin.GetValue<string>()) : null);
+                findingId: finding["findingId"]!.GetValue<string>(),
+                documentDigest: finding["documentDigest"]!.GetValue<string>(),
+                decision: GuideFindingDecision.Parse(finding["decision"]!.GetValue<string>()),
+                reason: finding["reason"]!.GetValue<string>())
+            {
+                ProposalOrigin = finding["proposalOrigin"] is JsonValue origin ? DecisionProposalOrigin.Parse(origin.GetValue<string>()) : null,
+            };
         }).ToList();
         var manual = raw["manualSelections"]!.AsArray().Select(item =>
         {
             var selection = item!.AsObject();
             return new ManualGuideSelectionInput(
-                selection["documentDigest"]!.GetValue<string>(), DecodeRule(selection["rule"]!.AsObject()),
-                DecodeEvidence(selection["evidence"]!.AsArray()), selection["reason"]!.GetValue<string>(),
-                selection["proposalOrigin"] is JsonValue origin ? DecisionProposalOrigin.Parse(origin.GetValue<string>()) : null);
+                documentDigest: selection["documentDigest"]!.GetValue<string>(),
+                rule: DecodeRule(selection["rule"]!.AsObject()),
+                evidence: DecodeEvidence(selection["evidence"]!.AsArray()),
+                reason: selection["reason"]!.GetValue<string>())
+            {
+                ProposalOrigin = selection["proposalOrigin"] is JsonValue origin ? DecisionProposalOrigin.Parse(origin.GetValue<string>()) : null,
+            };
         }).ToList();
-        return new GuideDeterminationInput(findings, manual);
+        return new GuideDeterminationInput(findings: findings, manualSelections: manual);
     }
 
     private static List<Assertion> DecodeAssertions(JsonArray? raw) => raw?.Select(item =>
     {
         var assertion = item!.AsObject();
         return new Assertion(
-            assertion["categoryId"]!.GetValue<string>(), assertion["conceptId"]!.GetValue<string>(),
-            assertion["confidence"] is JsonValue confidence ? Confidence.Parse(confidence.GetValue<string>()) : Confidence.Certain,
-            assertion["source"] is JsonValue source ? source.GetValue<string>() : "semantic-conformance",
-            Value: OptionalString(assertion, "value"));
+            categoryId: assertion["categoryId"]!.GetValue<string>(),
+            conceptId: assertion["conceptId"]!.GetValue<string>(),
+            confidence: assertion["confidence"] is JsonValue confidence ? Confidence.Parse(confidence.GetValue<string>()) : Confidence.Certain,
+            source: assertion["source"] is JsonValue source ? source.GetValue<string>() : "semantic-conformance")
+        {
+            Value = OptionalString(assertion, "value"),
+        };
     }).ToList() ?? new List<Assertion>();
 
     private static RuleReference DecodeRule(JsonObject raw)
     {
         var artifact = raw["artifact"]!.AsObject();
-        var source = raw["source"] as JsonObject;
         return new RuleReference(
-            new ArtifactReference(ArtifactKind.Parse(artifact["kind"]!.GetValue<string>()), artifact["id"]!.GetValue<string>(), artifact["version"]!.GetValue<string>(), OptionalString(artifact, "digest")),
-            raw["ruleId"]!.GetValue<string>(), raw["ruleDigest"]!.GetValue<string>(),
-            source is null ? null : new RuleSourceReference(source["providerId"]!.GetValue<string>(), SourceReproducibility.Parse(source["reproducibility"]!.GetValue<string>()), OptionalString(source, "snapshotId")));
+            artifact: new ArtifactReference(kind: ArtifactKind.Parse(artifact["kind"]!.GetValue<string>()), id: artifact["id"]!.GetValue<string>(), version: artifact["version"]!.GetValue<string>()) { Digest = OptionalString(artifact, "digest") },
+            ruleId: raw["ruleId"]!.GetValue<string>(),
+            ruleDigest: raw["ruleDigest"]!.GetValue<string>());
     }
 
     private static List<ContentEvidenceSpan> DecodeEvidence(JsonArray raw) => raw.Select(item =>
     {
         var evidence = item!.AsObject();
-        return new ContentEvidenceSpan(evidence["start"]!.GetValue<int>(), evidence["end"]!.GetValue<int>(), evidence["offsetEncoding"]!.GetValue<string>(), DecodeRule(evidence["rule"]!.AsObject()), OptionalString(evidence, "matched"));
+        return new ContentEvidenceSpan(start: evidence["start"]!.GetValue<int>(), end: evidence["end"]!.GetValue<int>(), offsetEncoding: evidence["offsetEncoding"]!.GetValue<string>(), rule: DecodeRule(evidence["rule"]!.AsObject())) { Matched = OptionalString(evidence, "matched") };
     }).ToList();
 
     private static string RecipeText(JsonObject recipe)
@@ -548,10 +559,10 @@ public class DocumentSemanticConformanceTests
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
         while (directory is not null)
         {
-            if (File.Exists(Path.Combine(directory.FullName, "EzClassify.Rest.sln"))) return directory.FullName;
+            if (File.Exists(Path.Combine(directory.FullName, "EzClassify.sln"))) return directory.FullName;
             directory = directory.Parent;
         }
-        throw new DirectoryNotFoundException("Cannot locate EzClassify.Rest.sln");
+        throw new DirectoryNotFoundException("Cannot locate EzClassify.sln");
     }
 
     private sealed record SemanticReplay(JsonNode Request, JsonNode Output);

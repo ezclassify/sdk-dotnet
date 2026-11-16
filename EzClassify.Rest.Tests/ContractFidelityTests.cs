@@ -13,8 +13,8 @@ namespace EzClassify.Tests;
 /// OpenAPI document declares for it.
 /// </summary>
 /// <remarks>
-/// Many of these records are hand-written in the gen.mjs templates and read by
-/// hand parsers, so regenerating from a new spec cannot add a field to them and
+/// Many of these records are hand-written and read by hand parsers, so
+/// regenerating from a new spec cannot add a field to them and
 /// no other gate notices when the contract grows. This test fails when a
 /// record lacks a property its contract shape declares, carries one the
 /// contract does not, or disagrees with the contract about whether a scalar
@@ -43,7 +43,6 @@ public class ContractFidelityTests
         ["UnmarkedSpan"] = "DocumentUnmarkedSpan",
         ["AuditWhole"] = "DocumentWholeOccurrence",
         ["AuditPart"] = "DocumentPartAssessment",
-        ["FilterCount"] = "FilterResult/properties/total",
         ["SchemeContextFormats"] = "SchemeSummary/properties/contextFormats",
         // The OpenAPI component named ConceptRef is the guide-side reference
         // (id, category, value). The .NET ConceptRef is the fix reference.
@@ -70,7 +69,6 @@ public class ContractFidelityTests
     private static readonly Dictionary<(string Record, string Wire), string> Requiredness = new()
     {
         [("ContextDocumentAuditResult", "responseProjection")] = DocumentProjection,
-        [("ContextDocumentAccessAssessmentResult", "responseProjection")] = DocumentProjection,
         [("Term", "singular")] = TolerantWord,
         [("Term", "plural")] = TolerantWord,
     };
@@ -81,8 +79,6 @@ public class ContractFidelityTests
     /// </summary>
     private static readonly Dictionary<(string Record, string Wire), string> Representation = new()
     {
-        [("FilterResult", "categoryCounts")] =
-            "The per-category counts and the total share one shape, so the one FilterCount record carries both.",
     };
 
     private const string DocumentProjection =
@@ -181,6 +177,39 @@ public class ContractFidelityTests
         Assert.True(problems.Count == 0, "Record property types drifted from the vendored contract:\n  " + string.Join("\n  ", problems));
     }
 
+    /// <summary>
+    /// A member the contract requires comes through the record's constructor,
+    /// so code that builds the record cannot leave it out, and a member the
+    /// contract leaves optional does not. A list the parser reads as empty when absent may
+    /// still be required here, by the repository's convention for lists.
+    /// </summary>
+    [Fact]
+    public void EveryContractRecordRequiresExactlyTheMembersItsSchemaRequires()
+    {
+        var schemas = LoadSchemas();
+        var problems = new List<string>();
+
+        foreach (var record in ContractRecords().Where(record => !record.IsAbstract))
+        {
+            var source = ContractSource.TryGetValue(record.Name, out var mapped) ? mapped : record.Name;
+            if (Resolve(schemas, source) is not { } schema) continue;
+            var required = Required(schemas, schema);
+            foreach (var wire in Properties(schemas, schema))
+            {
+                var property = record.GetProperty(Pascal(wire), BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+                if (property is null || Requiredness.ContainsKey((record.Name, wire))) continue;
+                var requiredMember = IsRequiredMember(property);
+                if (required.Contains(wire) && !requiredMember)
+                    problems.Add($"{record.Name}.{property.Name} is not a constructor parameter, but the contract requires `{wire}` on {source}.");
+                else if (!required.Contains(wire) && requiredMember
+                    && !(IsCollection(property.PropertyType) && !IsNullable(property)))
+                    problems.Add($"{record.Name}.{property.Name} is a constructor parameter, but the contract leaves `{wire}` optional on {source}.");
+            }
+        }
+
+        Assert.True(problems.Count == 0, "Record requiredness drifted from the vendored contract:\n  " + string.Join("\n  ", problems));
+    }
+
     [Fact]
     public void TypeCheck_ReportsAStringWhereTheContractNamesARecord()
     {
@@ -234,6 +263,7 @@ public class ContractFidelityTests
         ["GuideRuleOutcome"] = "The rendered marking or concept references a guide rule contributes; the server has already applied them.",
         ["MatchNode"] = "The recursive guide-rule match DSL, carried through as authored rather than modeled node by node.",
         ["RuleWhen"] = "The recursive assertion-condition DSL, carried through as authored rather than modeled node by node.",
+        ["GuideWhen"] = "The recursive guide-rule activation DSL, carried through as authored rather than modeled node by node.",
         ["CrosswalkTranslationResult"] = "The completed-or-forbidden translation union is read as JSON in this release; typing it is a cross-SDK decision.",
     };
 
@@ -559,9 +589,14 @@ public class ContractFidelityTests
             .ToList();
     }
 
+    // Records the client declares for its own options and results, which have no
+    // contract component.
+    private static readonly HashSet<Type> ClientOwnedRecords = new() { typeof(PingResult), typeof(ContextCacheOptions) };
+
     private static IEnumerable<Type> ContractRecords() =>
         typeof(CoverageReport).Assembly.GetExportedTypes()
             .Where(type => type.Namespace == "EzClassify" && type.GetMethod("<Clone>$") is not null)
+            .Where(type => !ClientOwnedRecords.Contains(type))
             .OrderBy(type => type.Name, StringComparer.Ordinal);
 
     private static YamlMappingNode LoadSchemas()
@@ -679,6 +714,13 @@ public class ContractFidelityTests
         Nullable.GetUnderlyingType(property.PropertyType) is not null
         || (!property.PropertyType.IsValueType && Nullability.Create(property).ReadState == NullabilityState.Nullable);
 
+    // A required member is read-only and set by the record's one public
+    // constructor; WireRecordShapeTests holds every record to that pairing.
+    private static bool IsRequiredMember(PropertyInfo property) =>
+        property.SetMethod is null
+        && property.DeclaringType!.GetConstructors().Any(constructor => constructor.GetParameters()
+            .Any(parameter => string.Equals(parameter.Name, property.Name, StringComparison.OrdinalIgnoreCase)));
+
     private static bool IsCollection(Type type) =>
         type != typeof(string) && typeof(System.Collections.IEnumerable).IsAssignableFrom(type);
 
@@ -689,9 +731,9 @@ public class ContractFidelityTests
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
         while (directory is not null)
         {
-            if (File.Exists(Path.Combine(directory.FullName, "EzClassify.Rest.sln"))) return directory.FullName;
+            if (File.Exists(Path.Combine(directory.FullName, "EzClassify.sln"))) return directory.FullName;
             directory = directory.Parent;
         }
-        throw new DirectoryNotFoundException("Cannot locate EzClassify.Rest.sln");
+        throw new DirectoryNotFoundException("Cannot locate EzClassify.sln");
     }
 }

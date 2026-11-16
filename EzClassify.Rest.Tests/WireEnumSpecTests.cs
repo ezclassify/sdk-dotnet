@@ -23,8 +23,6 @@ public class WireEnumSpecTests
     private static readonly IReadOnlyDictionary<Type, string> SpecSchema = new Dictionary<Type, string>
     {
         [typeof(AccessOperandSource)] = "AccessOperandSource",
-        [typeof(AccessScenarioBasis)] = "AccessScenarioBasis",
-        [typeof(AccessScenarioStatus)] = "AccessScenarioStatus",
         [typeof(ArtifactKind)] = "ArtifactKind",
         [typeof(AuditVerdict)] = "DocumentOverallVerdict",
         [typeof(Confidence)] = "AssertionConfidence",
@@ -42,8 +40,6 @@ public class WireEnumSpecTests
         [typeof(RenderFormatMode)] = "RenderFormatMode",
         [typeof(ScanStatus)] = "ScanStatus",
         [typeof(FormatSyntaxType)] = "FormatSyntaxType",
-        [typeof(Severity)] = "ValidationSeverity",
-        [typeof(SourceReproducibility)] = "Reproducibility",
         [typeof(StructuralRole)] = "ProcessingRole",
         [typeof(UnrepresentableFactReason)] = "UnrepresentableFactReason",
         [typeof(UnrepresentableOutputReason)] = "UnrepresentableOutputReason",
@@ -112,10 +108,10 @@ public class WireEnumSpecTests
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
         while (dir != null)
         {
-            if (File.Exists(Path.Combine(dir.FullName, "EzClassify.Rest.sln")))
+            if (File.Exists(Path.Combine(dir.FullName, "EzClassify.sln")))
                 return dir.FullName;
             dir = dir.Parent;
         }
-        throw new DirectoryNotFoundException("Cannot locate EzClassify.Rest.sln");
+        throw new DirectoryNotFoundException("Cannot locate EzClassify.sln");
     }
 }

@@ -2,14 +2,15 @@
 /**
  * Generates the complete public wire-model surface from the vendored
  * @ezclassify contract. JSON Schemas drive the engine values; the
- * canonical OpenAPI contract gates the document, Context-envelope, wire-enum,
- * and low-level operation templates emitted alongside them.
+ * canonical OpenAPI contract drives the response shape table emitted
+ * alongside them.
  *
  * Usage:
  *   node scripts/gen.mjs <schemas-dir> <openapi-file> <output-file> [--check]
  *
- * Produces the schema-driven Models.g.cs records and four template-driven
- * .g.cs files containing Context/document records and extensible wire enums.
+ * Produces the schema-driven Models.g.cs records and ResponseShapes.g.cs, the
+ * table of required members the response parsers check. The Context and
+ * document records and the extensible wire enums are hand-written beside them.
  * Complex sub-types the client does not deep-parse (guide-rule match trees,
  * engine snapshots, and the like) are mapped to `System.Text.Json.JsonElement`,
  * the idiomatic .NET type for opaque wire JSON carried through untouched, and
@@ -37,8 +38,8 @@ if (!fs.existsSync(openapiFile)) {
 const openapiText = fs.readFileSync(openapiFile, 'utf8');
 const OPENAPI_COMPONENTS = [
   'ArtifactReference', 'ContextResolution', 'DocumentResponseProjection',
-  'DocumentAuditReport', 'DocumentAccessAssessment',
-  'ContextDocumentAuditResult', 'ContextDocumentAccessAssessmentResult',
+  'DocumentAuditReport',
+  'ContextDocumentAuditResult',
   'ContextSchemeProcessResult', 'ContextGuideEvaluationResult',
   'ContextAccessDecisionResult', 'AccessRequirementsDescription',
 ];
@@ -76,7 +77,7 @@ function toPascalCase(name) {
 const OPAQUE = new Set([
   'TraceEntry',
   'GuideMatchSpec', 'GuideRuleOutcome', 'RuleCondition',
-  'RuleWhen', 'RuleWhenNode',
+  'GuideWhen', 'GuideWhenNode',
 ]);
 
 /**
@@ -86,7 +87,7 @@ const OPAQUE = new Set([
 const GENERATED = new Set([
   'Assertion', 'ValidationError', 'Warning', 'Suggestion', 'SuggestResult',
   'ConceptColor', 'ValidateResult', 'ProcessResult', 'AggregateResult',
-  'DiffResult', 'ScanMatch', 'ScanLimits',
+  'DiffResult', 'ScanMatch', 'ScanLimits', 'UnreadMark',
   'GuideScanSpan', 'GuideRule', 'GuideScanResult', 'EvaluationResult',
   'AccessRuleResult', 'AccessDecision', 'ConceptModernization', 'InputSpan',
   'RecognitionCorrection', 'RecognitionResult', 'RecognitionWithCorrections',
@@ -94,9 +95,8 @@ const GENERATED = new Set([
 
 /**
  * Types this script does not emit from a JSON Schema but may reference by name
- * when a generated record $refs one of them. They are declared in the
- * templates under scripts/templates, which this script emits alongside the
- * schema-driven records. The generator cannot express them proportionally (the
+ * when a generated record $refs one of them. They are hand-written in the Wire
+ * directory beside the generated records. The generator cannot express them proportionally (the
  * typed FixAction on Fix and Change; typed ConceptRef references; the trace
  * sub-records; the fact-or-output union inside RenderAssessment), but a $ref
  * from a generated record (e.g. ProcessResult.appliedFixes -> Change) must
@@ -144,7 +144,7 @@ function resolveRef(ref) {
 // raw strings. Keyed by "ClassName.fieldName" so a field name that is a wire enum
 // on one type is unaffected on another type where the same name is opaque. The
 // types are extensible structs over the raw token, declared in the
-// WireEnums.g.cs.tmpl template; response parsers wrap whatever token arrives and
+// hand-written WireEnums.cs; response parsers wrap whatever token arrives and
 // requests send it back through ToWire().
 const ENUM_FIELDS = {
   'Assertion.confidence': 'Confidence',
@@ -271,41 +271,78 @@ function memberDocText(description) {
   return text.replace(/<\/c> ([.,:;])/g, '</c>$1').replace(/ {2,}/g, ' ').trim();
 }
 
+/** C# value types a generated member can have; every other non-nullable type is a reference. */
+const VALUE_TYPES = new Set(['bool', 'double', 'int', 'JsonElement', ...Object.values(ENUM_FIELDS)]);
+
+/** C# keywords a member name can collide with once camel-cased into a parameter. */
+const CSHARP_KEYWORDS = new Set([
+  'abstract', 'as', 'base', 'bool', 'break', 'byte', 'case', 'catch', 'char', 'checked', 'class',
+  'const', 'continue', 'decimal', 'default', 'delegate', 'do', 'double', 'else', 'enum', 'event',
+  'explicit', 'extern', 'false', 'finally', 'fixed', 'float', 'for', 'foreach', 'goto', 'if',
+  'implicit', 'in', 'int', 'interface', 'internal', 'is', 'lock', 'long', 'namespace', 'new', 'null',
+  'object', 'operator', 'out', 'override', 'params', 'private', 'protected', 'public', 'readonly',
+  'ref', 'return', 'sbyte', 'sealed', 'short', 'sizeof', 'stackalloc', 'static', 'string', 'struct',
+  'switch', 'this', 'throw', 'true', 'try', 'typeof', 'uint', 'ulong', 'unchecked', 'unsafe',
+  'ushort', 'using', 'virtual', 'void', 'volatile', 'while',
+]);
+
+/** Constructor parameter name for a PascalCase member. */
+function parameterName(csName) {
+  const name = csName.charAt(0).toLowerCase() + csName.slice(1);
+  return CSHARP_KEYWORDS.has(name) ? `@${name}` : name;
+}
+
+/**
+ * Emit one sealed record in the additive model shape. A member the contract
+ * requires comes through the one public constructor and is read-only; a
+ * reference-typed one refuses null. An optional member is a settable, nullable
+ * property that starts null. A later contract that adds an optional member adds
+ * a property and breaks no caller, and the shape builds from C# 7.3 on.
+ */
 function generateRecord(className, schema, summary) {
   const props = schema.properties || {};
   const required = new Set(schema.required || []);
 
-  const requiredFields = []; // required on the wire → no default
-  const optionalFields = []; // non-required fields → default null
+  const requiredFields = [];
+  const optionalFields = [];
 
   for (const [jsonName, propSchema] of Object.entries(props)) {
     const isReq = required.has(jsonName);
     const csName = toPascalCase(jsonName);
     const csType = mapType(propSchema, isReq, className + '.' + jsonName);
     const doc = memberDocText(propSchema?.description);
-    if (isReq) requiredFields.push({ csName, csType, hasDefault: false, doc });
-    else optionalFields.push({ csName, csType, hasDefault: true, doc });
+    if (!doc) throw new Error(`${className}.${jsonName} has no description in the contract`);
+    (isReq ? requiredFields : optionalFields).push({ csName, csType, isReq, doc });
   }
 
-  // C# record: required params first, then optional params with defaults
-  const allFields = [...requiredFields, ...optionalFields];
   const lines = [];
-  const docSummary = neutralizeDocText(summary);
-
-  lines.push(`/// <summary>${docSummary}</summary>`);
-  // A positional record's <param> text is also its property's IntelliSense.
-  for (const { csName, doc } of allFields) {
-    if (doc) lines.push(`/// <param name="${csName}">${doc}</param>`);
+  lines.push(`/// <summary>${neutralizeDocText(summary)}</summary>`);
+  lines.push(`public sealed record ${className}`);
+  lines.push('{');
+  if (requiredFields.length > 0) {
+    lines.push("    /// <summary>Creates the record from the members it requires.</summary>");
+    for (const { csName, doc } of requiredFields) {
+      lines.push(`    /// <param name="${parameterName(csName).replace('@', '')}">${doc}</param>`);
+    }
+    const parameters = requiredFields.map(({ csName, csType }) => `${csType} ${parameterName(csName)}`);
+    lines.push(`    public ${className}(${parameters.join(', ')})`);
+    lines.push('    {');
+    for (const { csName, csType } of requiredFields) {
+      const parameter = parameterName(csName);
+      const checked = csType.endsWith('?') || VALUE_TYPES.has(csType)
+        ? parameter
+        : `${parameter} ?? throw new ArgumentNullException(nameof(${parameter}))`;
+      lines.push(`        ${csName} = ${checked};`);
+    }
+    lines.push('    }');
+    lines.push('');
   }
-  lines.push(`public record ${className}(`);
-
-  allFields.forEach(({ csName, csType, hasDefault }, i) => {
-    const defaultVal = hasDefault ? ' = null' : '';
-    const comma = i < allFields.length - 1 ? ',' : '';
-    lines.push(`    ${csType} ${csName}${defaultVal}${comma}`);
+  [...requiredFields, ...optionalFields].forEach(({ csName, csType, isReq, doc }, i) => {
+    if (i > 0) lines.push('');
+    lines.push(`    /// <summary>${doc}</summary>`);
+    lines.push(`    public ${csType} ${csName} { get; ${isReq ? '' : 'set; '}}`);
   });
-
-  lines.push(');');
+  lines.push('}');
   return lines.join('\n');
 }
 
@@ -407,6 +444,11 @@ const TARGETS = [
     summary: 'How far a scan got, and what stopped it when something did.',
   },
   {
+    file: 'unread-mark.schema.json',
+    className: 'UnreadMark',
+    summary: 'A wrapped mark a scan found but could not read.',
+  },
+  {
     file: 'guide-scan-span.schema.json',
     className: 'GuideScanSpan',
     summary: 'A byte-offset span where a guide rule keyword or pattern matched in scanned text.',
@@ -472,14 +514,11 @@ const schemasSha = schemaHash.digest('hex');
 
 const genSha = createHash('sha256').update(fs.readFileSync(fileURLToPath(import.meta.url))).digest('hex');
 
-// A member's <param> text comes only from the contract, so a member the
-// contract leaves undescribed has none; CS1573 would otherwise refuse the
-// record for documenting some members and not all.
 const output = `// Code generated from json-schemas@${schemasSha} by gen.mjs@${genSha}. DO NOT EDIT.
 // Re-run via: make regen
 #nullable enable
-#pragma warning disable CS1573
 
+using System;
 using System.Collections.Generic;
 using System.Text.Json;
 
@@ -569,94 +608,6 @@ function readComponentSchemas(text) {
   }
 
   return mapping(4);
-}
-
-/**
- * Template records that wear a different name than the contract component they
- * carry, as `Component` or `Component/property` paths. A property path ending
- * in `[]` names the items of an array property.
- */
-const TEMPLATE_COMPONENT_ALIASES = {
-  AuditPart: 'DocumentPartAssessment',
-  AuditWhole: 'DocumentWholeOccurrence',
-  ConceptRef: 'FixConceptReference',
-  CoverageReport: 'CheckCoverageResult',
-  FilterCount: 'FilterResult/total',
-  GuideView: 'GuideViewResponse',
-  GuideViewCategory: 'GuideViewResponse/categories[]',
-  SchemeContextFormats: 'SchemeSummary/contextFormats',
-  SchemeView: 'SchemeViewResponse',
-  SchemeViewCategory: 'SchemeViewResponse/categories[]',
-  UnmarkedSpan: 'DocumentUnmarkedSpan',
-};
-
-/** The property descriptions a component declares, its union variants' included. */
-function componentPropertyDocs(schemas, record) {
-  const [component, ...trail] = (TEMPLATE_COMPONENT_ALIASES[record] ?? record).split('/');
-  const resolve = (schema) => (schema?.$ref ? schemas[schema.$ref.split('/').at(-1)] : schema);
-  let schema = schemas[component];
-  for (const step of trail) {
-    const property = resolve(schema)?.properties?.[step.replace(/\[\]$/, '')];
-    schema = step.endsWith('[]') ? property?.items : property;
-  }
-  schema = resolve(schema);
-  if (!schema) return null;
-  const docs = new Map();
-  for (const variant of [schema, ...(schema.anyOf ?? schema.oneOf ?? []).map(resolve)]) {
-    for (const [name, property] of Object.entries(variant?.properties ?? {})) {
-      const doc = memberDocText(property?.description);
-      if (doc && !docs.has(toPascalCase(name))) docs.set(toPascalCase(name), doc);
-    }
-  }
-  return docs;
-}
-
-/** The parameter names of a positional record, from the text after its opening parenthesis. */
-function recordParameterNames(text) {
-  let depth = 0;
-  let current = '';
-  const params = [];
-  for (const char of text) {
-    if (char === '(' || char === '<' || char === '[') depth++;
-    if (char === ')' && depth === 0) break;
-    if (char === ')' || char === '>' || char === ']') depth--;
-    if (char === ',' && depth === 0) {
-      params.push(current);
-      current = '';
-    } else current += char;
-  }
-  params.push(current);
-  return params
-    .map((param) => param.replace(/\[[^\]]*\]/g, '').split('=')[0].trim().split(/\s+/).at(-1))
-    .filter(Boolean);
-}
-
-/**
- * Give every positional record in a template the contract's description of each
- * parameter it leaves undocumented, as a `<param>` in its doc comment, so the
- * template records document their members the way the generated ones do. A
- * hand-written `<param>` is kept. A record is left alone unless the contract
- * describes every parameter it lacks, because a partly documented record is a
- * CS1573 warning.
- */
-function describeTemplateRecords(template, schemas) {
-  const lines = template.split('\n');
-  for (let index = lines.length - 1; index >= 0; index--) {
-    const match = /^public (?:(?:sealed|abstract|partial) )*record (\w+)\(/.exec(lines[index]);
-    if (!match) continue;
-    const docs = componentPropertyDocs(schemas, match[1]);
-    if (!docs) continue;
-    let docStart = index;
-    while (docStart > 0 && lines[docStart - 1].startsWith('///')) docStart--;
-    const existing = new Set(
-      [...lines.slice(docStart, index).join('\n').matchAll(/<param name="(\w+)">/g)].map((m) => m[1]),
-    );
-    const rest = [lines[index].slice(match[0].length), ...lines.slice(index + 1)].join('\n');
-    const missing = recordParameterNames(rest).filter((name) => !existing.has(name));
-    if (!missing.length || !missing.every((name) => docs.has(name))) continue;
-    lines.splice(index, 0, ...missing.map((name) => `/// <param name="${name}">${docs.get(name)}</param>`));
-  }
-  return lines.join('\n');
 }
 
 /**
@@ -856,26 +807,19 @@ ${entries.join('\n')}
 }
 
 const componentSchemas = readComponentSchemas(openapiText);
-const RESPONSE_SHAPES_HOST = 'ContextEnvelopeModels.g.cs';
 
-const templateDir = path.join(path.dirname(fileURLToPath(import.meta.url)), 'templates');
-const generatedFiles = new Map([[outputFile, output]]);
-for (const templateName of fs.readdirSync(templateDir).filter(name => name.endsWith('.tmpl')).sort()) {
-  const templatePath = path.join(templateDir, templateName);
-  const targetName = templateName.slice(0, -'.tmpl'.length);
-  const targetPath = path.join(path.dirname(outputFile), targetName);
-  const described = describeTemplateRecords(fs.readFileSync(templatePath, 'utf8'), componentSchemas);
-  // The response shape table rides with the Context envelope records it checks.
-  const template = targetName === RESPONSE_SHAPES_HOST ? described + emitResponseShapes(componentSchemas) : described;
-  const contractSha = createHash('sha256')
-    .update(openapiText)
-    .update(template)
-    .digest('hex');
-  generatedFiles.set(
-    targetPath,
-    `// Code generated from the canonical OpenAPI contract (${contractSha}) by gen.mjs@${genSha}. DO NOT EDIT.\n// Re-run via: make regen\n${template}`,
-  );
-}
+// The response shape table is the second generated file, written beside the
+// schema-driven records.
+const shapesBody = emitResponseShapes(componentSchemas);
+const shapesHash = createHash('sha256').update(openapiText).update(shapesBody).digest('hex');
+const shapesPath = path.join(path.dirname(outputFile), 'ResponseShapes.g.cs');
+const generatedFiles = new Map([
+  [outputFile, output],
+  [
+    shapesPath,
+    `// Code generated from the canonical OpenAPI contract (${shapesHash}) by gen.mjs@${genSha}. DO NOT EDIT.\n// Re-run via: make regen\n#nullable enable\n\nusing System.Collections.Generic;\n\nnamespace EzClassify;\n${shapesBody}`,
+  ],
+]);
 
 let stale = false;
 for (const [targetPath, content] of generatedFiles) {

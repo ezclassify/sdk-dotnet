@@ -34,25 +34,22 @@ public class RequestSchemaConformanceTests
     // Every optional Assertion field is populated so each operation that takes
     // assertions validates the full field set against the contract.
     private static readonly Assertion Level = new(
-        CategoryId: "level",
-        ConceptId: "HIGH",
-        Confidence: Confidence.Certain,
-        Source: "parse",
-        ExpiresAt: "2030-01-01T00:00:00Z",
-        Metadata: JsonDocument.Parse("""{ "origin": "import" }""").RootElement.Clone(),
-        Provenance: new SourceReference(
-            "idp", new Attribution("IdP", "internal", "https://example.test/license", "IdP directory"),
-            SourceReproducibility.Reproducible, SnapshotId: "snap-1", Locator: "idp://levels/high"),
-        ReplacedConceptId: "LEGACY_HIGH",
-        SourceRule: "rule-7",
-        Value: "H");
+        categoryId: "level",
+        conceptId: "HIGH",
+        confidence: Confidence.Certain,
+        source: "parse")
+    {
+        ReplacedConceptId = "LEGACY_HIGH",
+        SourceRule = "rule-7",
+        Value = "H",
+    };
 
     private static readonly GuideDeterminationInput Determinations = new(
-        new[]
+        findings: new[]
         {
-            new GuideFindingDetermination("finding-1", "sha256:abc", GuideFindingDecision.Accepted, "Confirmed by analyst"),
+            new GuideFindingDetermination(findingId: "finding-1", documentDigest: "sha256:abc", decision: GuideFindingDecision.Accepted, reason: "Confirmed by analyst"),
         },
-        Array.Empty<ManualGuideSelectionInput>());
+        manualSelections: Array.Empty<ManualGuideSelectionInput>());
 
     private const string PartOf = """{ "role": "part", "partOf": { "rendered": "H//A" } }""";
 
@@ -60,56 +57,52 @@ public class RequestSchemaConformanceTests
     /// One case per client call that sends a body, keyed by a readable name.
     /// Each supplies every optional argument the call takes, so the whole
     /// option surface reaches the wire. Overloads that build a different body
-    /// get their own case.
+    /// get their own case. Scheme calls run on a non-primary scheme view, so
+    /// the key it sends is checked against the contract with the rest.
     /// </summary>
     private static readonly IReadOnlyDictionary<string, (string Route, Func<EzClassifyClient, Task> Invoke)> Cases =
         new Dictionary<string, (string, Func<EzClassifyClient, Task>)>(StringComparer.Ordinal)
         {
-            ["scheme.process"] = ("scheme/process", c => c.Scheme!.ProcessAsync(
+            ["scheme.process"] = ("scheme/process", c => c.Schemes!.Get("source").ProcessAsync(
                 "H//A", outputFormat: "banner", surface: "portion", inputFormat: "portion",
                 assertions: new[] { Level }, contextJson: PartOf, parts: new[] { "H//B" },
                 outputs: new[] { "marking/short", "marking/long" }, suggestFor: new[] { "audience" })),
-            ["scheme.explain"] = ("scheme/explain", c => c.Scheme!.ExplainAsync(
+            ["scheme.explain"] = ("scheme/explain", c => c.Schemes!.Get("source").ExplainAsync(
                 "H//A", outputFormat: "banner", surface: "portion", inputFormat: "portion",
                 assertions: new[] { Level }, contextJson: PartOf, parts: new[] { "H//B" })),
-            ["scheme.validate"] = ("scheme/validate", c => c.Scheme!.ValidateAsync(
+            ["scheme.validate"] = ("scheme/validate", c => c.Schemes!.Get("source").ValidateAsync(
                 "H//A", surface: "portion", outputFormat: "banner", inputFormat: "portion",
                 parts: new[] { "H//B" }, contextJson: PartOf)),
             // Validate takes the marking as text or as facts, and each overload
             // builds its own body.
-            ["scheme.validate-facts"] = ("scheme/validate", c => c.Scheme!.ValidateAsync(
+            ["scheme.validate-facts"] = ("scheme/validate", c => c.Schemes!.Get("source").ValidateAsync(
                 new[] { Level }, surface: "portion", outputFormat: "banner",
                 parts: new[] { "H//B" }, contextJson: PartOf)),
-            ["scheme.suggest"] = ("scheme/suggest", c => c.Scheme!.SuggestAsync(
+            ["scheme.suggest"] = ("scheme/suggest", c => c.Schemes!.Get("source").SuggestAsync(
                 "H//", outputFormat: "banner", filter: "aud", surface: "portion", inputFormat: "portion",
                 includeGated: true)),
-            ["scheme.suggest-facts"] = ("scheme/suggest", c => c.Scheme!.SuggestAsync(
+            ["scheme.suggest-facts"] = ("scheme/suggest", c => c.Schemes!.Get("source").SuggestAsync(
                 new[] { Level }, outputFormat: "banner", filter: "aud", surface: "portion", includeGated: true)),
-            ["scheme.suggest-for-categories"] = ("scheme/suggest-for-categories", c => c.Scheme!.SuggestForCategoriesAsync(
+            ["scheme.suggest-for-categories"] = ("scheme/suggest-for-categories", c => c.Schemes!.Get("source").SuggestForCategoriesAsync(
                 new[] { Level }, new[] { "level", "audience" }, outputFormat: "banner", surface: "portion")),
-            ["scheme.aggregate"] = ("scheme/aggregate", c => c.Scheme!.AggregateAsync(
+            ["scheme.aggregate"] = ("scheme/aggregate", c => c.Schemes!.Get("source").AggregateAsync(
                 new[] { "H", "L" }, outputFormat: "banner", surface: "portion", inputFormat: "portion", contextJson: PartOf)),
-            ["scheme.aggregate-assertions"] = ("scheme/aggregate", c => c.Scheme!.AggregateAssertionsAsync(
+            ["scheme.aggregate-assertions"] = ("scheme/aggregate", c => c.Schemes!.Get("source").AggregateAssertionsAsync(
                 new[] { new[] { Level } }, outputFormat: "banner", surface: "portion", contextJson: PartOf)),
-            ["scheme.scan"] = ("scheme/scan", c => c.Scheme!.ScanAsync(
+            ["scheme.scan"] = ("scheme/scan", c => c.Schemes!.Get("source").ScanAsync(
                 "text H text", outputFormat: "banner", inputFormat: "portion")),
-            ["scheme.render"] = ("scheme/render", c => c.Scheme!.RenderAsync(
+            ["scheme.render"] = ("scheme/render", c => c.Schemes!.Get("source").RenderAsync(
                 new[] { Level }, outputFormat: "banner", preservation: RenderPreservation.Full)),
-            ["scheme.normalize"] = ("scheme/normalize", c => c.Scheme!.NormalizeAsync(
-                "h", outputFormat: "banner", inputFormat: "portion")),
-            ["scheme.check-coverage"] = ("scheme/check-coverage", c => c.Scheme!.CheckCoverageAsync(
+            ["scheme.check-coverage"] = ("scheme/check-coverage", c => c.Schemes!.Get("source").CheckCoverageAsync(
                 new[] { "L" }, "H", outputFormat: "banner", inputFormat: "portion")),
-            ["scheme.diff"] = ("scheme/diff", c => c.Scheme!.DiffAsync("H", "L", inputFormat: "portion")),
-            ["scheme.filter-concepts"] = ("scheme/filter-concepts", c => c.Scheme!.FilterConceptsAsync("hi")),
-            ["scheme.notices"] = ("scheme/notices", c => c.Scheme!.NoticesAsync(new[] { Level })),
-            ["scheme.view"] = ("scheme/view", c => c.Scheme!.ViewAsync()),
-            ["scheme.apply-preset"] = ("scheme/apply-preset", c => c.Scheme!.ApplyPresetAsync(
+            ["scheme.diff"] = ("scheme/diff", c => c.Schemes!.Get("source").DiffAsync("H", "L", inputFormat: "portion")),
+            ["scheme.notices"] = ("scheme/notices", c => c.Schemes!.Get("source").NoticesAsync(new[] { Level })),
+            ["scheme.view"] = ("scheme/view", c => c.Schemes!.Get("source").ViewAsync()),
+            ["scheme.apply-preset"] = ("scheme/apply-preset", c => c.Schemes!.Get("source").ApplyPresetAsync(
                 "default-label", outputFormat: "banner")),
             ["guide.scan"] = ("guide/scan", c => c.Guide!.ScanAsync("secret text", guideId: "g1")),
             ["guide.evaluate"] = ("guide/evaluate", c => c.Guide!.EvaluateAsync("g1", new[] { "r1" })),
-            ["guide.evaluateMany"] = ("guide/evaluate", c => c.Guide!.EvaluateManyAsync(new[] { "r1" })),
-            ["guide.filter-rules"] = ("guide/filter-rules", c => c.Guide!.FilterRulesAsync("sec", guideId: "g1")),
-            ["guide.describe-rule"] = ("guide/describe-rule", c => c.Guide!.DescribeRuleAsync("r1", guideId: "g1")),
+            ["guide.evaluateMany"] = ("guide/evaluate", c => c.Guide!.EvaluateManyAsync(new[] { new GuideRuleSelection(guideId: "g1", ruleId: "r1") })),
             ["guide.view"] = ("guide/view", c => c.Guide!.ViewAsync(guideId: "g1")),
             ["access.check"] = ("access/check", c => c.Access!.CheckAsync(
                 new[] { Level }, """{ "clearance": "high" }""", contextJson: """{ "orgs": ["org-1"] }""")),
@@ -117,14 +110,10 @@ public class RequestSchemaConformanceTests
                 "H", """{ "clearance": "high" }""", contextJson: """{ "orgs": ["org-1"] }""")),
             ["access.describe-requirements"] = ("access/describe-requirements", c => c.Access!.DescribeRequirementsAsync(
                 "H", new[] { Level })),
-            ["access.describe-rule"] = ("access/describe-rule", c => c.Access!.DescribeRuleAsync("rule-1")),
             ["crosswalk.translate-marking"] = ("crosswalk/translate", c => c.Crosswalk!.TranslateAsync("cw-1", "H")),
             ["crosswalk.translate-assertions"] = ("crosswalk/translate", c => c.Crosswalk!.TranslateAsync("cw-1", new[] { Level })),
             ["document.audit"] = ("document/audit", c => c.Document!.AuditAsync(
                 "document text", Determinations, DocumentResponseProfile.Full)),
-            ["document.assess-access"] = ("document/assess-access", c => c.Document!.AssessAccessAsync(
-                "document text", """{ "clearance": "high" }""", """{ "project": "p1" }""",
-                Determinations, DocumentResponseProfile.Full)),
         };
 
     public static IEnumerable<object[]> CaseNames() => Cases.Keys.Select(name => new object[] { name });
@@ -185,15 +174,15 @@ public class RequestSchemaConformanceTests
             ["/v1/health"] = c => c.PingAsync(),
             ["/v1/ctx"] = c => c.ListContextsAsync(),
             ["/v1/ctx/{ctxId}"] = c => c.ListContextVersionsAsync("acme-marking"),
-            [RoutePrefix + "scheme"] = c => c.Scheme!.SummaryAsync("source"),
-            [RoutePrefix + "scheme/concepts"] = c => c.Scheme!.ConceptsAsync("source"),
-            [RoutePrefix + "scheme/categories"] = c => c.Scheme!.CategoriesAsync("source"),
-            [RoutePrefix + "scheme/formats"] = c => c.Scheme!.FormatsAsync("source"),
-            [RoutePrefix + "scheme/grammar"] = c => c.Scheme!.GrammarAsync("source"),
-            [RoutePrefix + "scheme/scopes"] = c => c.Scheme!.ScopesAsync("source"),
-            [RoutePrefix + "scheme/label-presets"] = c => c.Scheme!.LabelPresetsAsync(),
-            [RoutePrefix + "scheme/describe-concept"] = c => c.Scheme!.DescribeConceptAsync("HIGH", "level", view: "short"),
+            [RoutePrefix + "scheme"] = c => c.Schemes!.Get("source").SummaryAsync(),
+            [RoutePrefix + "scheme/concepts"] = c => c.Schemes!.Get("source").ConceptsAsync(),
+            [RoutePrefix + "scheme/categories"] = c => c.Schemes!.Get("source").CategoriesAsync(),
+            [RoutePrefix + "scheme/formats"] = c => c.Schemes!.Get("source").FormatsAsync(),
+            [RoutePrefix + "scheme/scopes"] = c => c.Schemes!.Get("source").ScopesAsync(),
+            [RoutePrefix + "scheme/label-presets"] = c => c.Schemes!.Get("source").LabelPresetsAsync(),
+            [RoutePrefix + "scheme/describe-concept"] = c => c.Schemes!.Get("source").DescribeConceptAsync("HIGH", "level", view: "short"),
             [RoutePrefix + "access/rules"] = c => c.Access!.RulesAsync(),
+            [RoutePrefix + "crosswalk/describe"] = c => c.Crosswalk!.DescribeAsync(),
         };
 
     /// <summary>
@@ -322,23 +311,20 @@ public class RequestSchemaConformanceTests
     }
 
     // Negative controls. A gate that cannot fail proves nothing, so pin the two
-    // failure modes it exists for: a removed field, and a missing required one.
+    // failure modes it exists for: an undeclared field, and a missing required one.
 
     [Theory]
-    [InlineData("scheme/process", """{ "input": "H", "format": "banner" }""", "format")]
-    [InlineData("scheme/process", """{ "input": "H", "scope": "portion" }""", "scope")]
-    [InlineData("scheme/process", """{ "input": "H", "tolerant": true }""", "tolerant")]
-    [InlineData("scheme/process", """{ "input": "H", "normalization": "loose" }""", "normalization")]
+    [InlineData("scheme/process", """{ "input": "H", "note": "kept" }""", "note")]
     [InlineData("scheme/explain", """{ "input": "H", "outputs": ["marking/short"] }""", "outputs")]
     [InlineData("scheme/explain", """{ "input": "H", "suggestFor": ["audience"] }""", "suggestFor")]
-    [InlineData("scheme/validate", """{ "input": "H", "scope": "portion" }""", "scope")]
-    [InlineData("scheme/suggest", """{ "input": "H", "format": "banner" }""", "format")]
-    [InlineData("scheme/aggregate", """{ "inputs": ["H"], "format": "banner", "scope": "portion" }""", "format")]
-    [InlineData("scheme/diff", """{ "a": "H", "b": "L", "format": "banner" }""", "format")]
-    [InlineData("scheme/scan", """{ "text": "H", "stripHtml": true }""", "stripHtml")]
-    [InlineData("scheme/render", """{ "assertions": [], "format": "banner" }""", "format")]
-    [InlineData("scheme/apply-preset", """{ "presetId": "p", "format": "banner" }""", "format")]
-    public void Validator_RejectsRemovedFields(string route, string body, string field)
+    [InlineData("scheme/validate", """{ "input": "H", "note": "kept" }""", "note")]
+    [InlineData("scheme/suggest", """{ "input": "H", "note": "kept" }""", "note")]
+    [InlineData("scheme/aggregate", """{ "inputs": ["H"], "note": "kept" }""", "note")]
+    [InlineData("scheme/diff", """{ "a": "H", "b": "L", "note": "kept" }""", "note")]
+    [InlineData("scheme/scan", """{ "text": "H", "note": "kept" }""", "note")]
+    [InlineData("scheme/render", """{ "assertions": [], "note": "kept" }""", "note")]
+    [InlineData("scheme/apply-preset", """{ "presetId": "p", "note": "kept" }""", "note")]
+    public void Validator_RejectsAnUndeclaredField(string route, string body, string field)
     {
         var errors = Spec.Value.Validate("post", RoutePrefix + route, JsonNode.Parse(body));
         Assert.Contains(errors, e => e.Contains($"'{field}'", StringComparison.Ordinal));
@@ -380,7 +366,7 @@ public class RequestSchemaConformanceTests
     }
 
     [Fact]
-    public void Validator_AcceptsTheRenamedFields()
+    public void Validator_AcceptsACurrentBody()
     {
         var errors = Spec.Value.Validate("post", "/v1/ctx/{ctxId}/{version}/scheme/process",
             JsonNode.Parse("""{ "input": "H", "inputFormat": "portion", "outputFormat": "banner", "surface": "portion" }"""));
@@ -460,6 +446,7 @@ internal sealed class OpenApiRequestSchemas
         var root = (JsonObject)ToJson(yaml.Documents[0].RootNode)!;
 
         var components = (JsonObject)root["components"]!["schemas"]!;
+        var parameters = (JsonObject)root["components"]!["parameters"]!;
         var schemas = new Dictionary<Operation, JsonObject>();
         var queries = new Dictionary<Operation, HashSet<string>>();
         var statuses = new Dictionary<Operation, HashSet<string>>();
@@ -473,8 +460,9 @@ internal sealed class OpenApiRequestSchemas
                 statuses[key] = ((JsonObject)operation!["responses"]!).Select(response => response.Key).ToHashSet(StringComparer.Ordinal);
                 queries[key] = (operation?["parameters"] as JsonArray ?? new JsonArray())
                     .OfType<JsonObject>()
-                    .Select(parameter => parameter["$ref"] is null ? parameter
-                        : throw new NotSupportedException($"{path} declares a $ref parameter; teach Load to follow it."))
+                    .Select(parameter => parameter["$ref"] is JsonValue reference
+                        ? (JsonObject)parameters[reference.GetValue<string>().Split('/')[^1]]!
+                        : parameter)
                     .Where(parameter => parameter["in"]?.GetValue<string>() == "query")
                     .Select(parameter => parameter["name"]!.GetValue<string>())
                     .ToHashSet(StringComparer.Ordinal);
@@ -680,10 +668,10 @@ internal sealed class OpenApiRequestSchemas
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
         while (directory is not null)
         {
-            if (File.Exists(Path.Combine(directory.FullName, "EzClassify.Rest.sln")))
+            if (File.Exists(Path.Combine(directory.FullName, "EzClassify.sln")))
                 return directory.FullName;
             directory = directory.Parent;
         }
-        throw new DirectoryNotFoundException("Cannot locate EzClassify.Rest.sln");
+        throw new DirectoryNotFoundException("Cannot locate EzClassify.sln");
     }
 }

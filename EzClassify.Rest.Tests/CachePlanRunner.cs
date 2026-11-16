@@ -54,11 +54,9 @@ internal sealed class CachePlanRunner : IAsyncDisposable
     }
 
     /// <summary>
-    /// Build the plan's client. A plan whose client block says <c>construction: refused</c>
-    /// has no steps; building must fail with the transport untouched, and the
-    /// returned runner is null.
+    /// Build the plan's client over the recorded transport.
     /// </summary>
-    public static async Task<CachePlanRunner?> StartAsync(JsonNode plan, WireCorpus corpus, string denialCase)
+    public static async Task<CachePlanRunner> StartAsync(JsonNode plan, WireCorpus corpus, string denialCase)
     {
         var block = plan["client"]!;
         var binding = block["binding"]!.GetValue<string>();
@@ -67,21 +65,10 @@ internal sealed class CachePlanRunner : IAsyncDisposable
         // sends the version segment, and the carrier lets the server settle it.
         string? version = binding == "pinned" ? PinnedVersion : null;
         var context = block["context"]?.GetValue<string>() ?? "ez-full";
-        var options = new ContextCacheOptions(Enabled: true, CacheAccessDecisions: block["cacheAccessDecisions"]?.GetValue<bool>() ?? false);
+        var options = new ContextCacheOptions { Enabled = true };
 
         var transport = new CachePlanTransport(corpus, version ?? "latest");
         var http = new HttpClient(transport) { BaseAddress = new Uri("http://plan.invalid/") };
-        if (block["construction"]?.GetValue<string>() == "refused")
-        {
-            using (http)
-            {
-                await Assert.ThrowsAsync<ArgumentException>(
-                    () => EzClassifyClient.ConnectAsync(http, context, version, Carrier, options));
-                Assert.True(transport.Total == 0, "a refused client must fail at construction, before any request");
-            }
-            return null;
-        }
-
         var client = await EzClassifyClient.ConnectAsync(http, context, version, Carrier, options);
         transport.ResetCounts();
         return new CachePlanRunner(plan, corpus, denialCase, transport, http, client);
@@ -258,7 +245,7 @@ internal sealed class CachePlanRunner : IAsyncDisposable
         using var http = new HttpClient(transport) { BaseAddress = new Uri("http://plan.invalid/") };
         var context = _plan["client"]!["context"]?.GetValue<string>() ?? "ez-full";
         using var client = await EzClassifyClient.ConnectAsync(
-            http, context, PinnedVersion, Carrier, new ContextCacheOptions(Enabled: false));
+            http, context, PinnedVersion, Carrier, new ContextCacheOptions { Enabled = false });
         var fresh = await CachePlanCalls.InvokeAsync(client, _corpus, outcome.Operation, outcome.Case, reorder: false, CancellationToken.None);
         AssertOk(fresh, "fresh decode");
         return CachePlanMutator.Snapshot(fresh.Value!);

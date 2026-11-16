@@ -16,10 +16,10 @@ namespace EzClassify.Tests;
 public class AssertionRoundTripTests
 {
     private const string Resolution =
-        """{"contextId":"acme-marking","resolvedVersion":"1.0.0","artifacts":[],"sources":[]}""";
+        """{"contextId":"acme-marking","resolvedVersion":"1.0.0","artifacts":[]}""";
 
     private static string Envelope(string result) =>
-        $$"""{"resolution":{{Resolution}},"operationLimitations":[],"result":{{result}}}""";
+        $$"""{"resolution":{{Resolution}},"result":{{result}}}""";
 
     private static JsonNode SentBody(CtxMockHandler handler, string route)
     {
@@ -69,30 +69,22 @@ public class AssertionRoundTripTests
     [Fact]
     public async Task AnAssertionRequestCarriesEveryFieldTheContractDeclares()
     {
-        // Access check reads expiresAt to downgrade a time-bounded marking, so an
-        // assertion projection that drops it silently changes the decision input.
+        // The assertion list is the engine's state transport, so a projection that
+        // drops a field silently changes the next call's input.
         var routes = new Dictionary<string, (HttpStatusCode, string)>
         {
-            ["/access/check"] = (HttpStatusCode.OK, """{ "granted": false, "rules": [] }"""),
+            ["/access/check"] = (HttpStatusCode.OK, """{ "granted": false, "rules": [], "warnings": [] }"""),
         };
-        using var metadata = JsonDocument.Parse("""{"origin":"import","weight":2}""");
-        var provenance = new SourceReference(
-            ProviderId: "idp",
-            Attribution: new Attribution("IdP", "internal", LicenseUrl: "https://example.test/license", Citation: "IdP directory"),
-            Reproducibility: SourceReproducibility.Reproducible,
-            SnapshotId: "snap-1",
-            Locator: "idp://levels/high");
         var assertion = new Assertion(
-            CategoryId: "level",
-            ConceptId: "LEVEL_HIGH",
-            Confidence: Confidence.Repaired,
-            Source: "repair",
-            ExpiresAt: "2030-01-01T00:00:00Z",
-            Metadata: metadata.RootElement.Clone(),
-            Provenance: provenance,
-            ReplacedConceptId: "LEVEL_OLD",
-            SourceRule: "rule-7",
-            Value: "H");
+            categoryId: "level",
+            conceptId: "LEVEL_HIGH",
+            confidence: Confidence.Repaired,
+            source: "repair")
+        {
+            ReplacedConceptId = "LEVEL_OLD",
+            SourceRule = "rule-7",
+            Value = "H",
+        };
 
         var (client, handler) = await CtxClientFactory.ConnectAsync(routes);
         using (client)
@@ -102,11 +94,7 @@ public class AssertionRoundTripTests
             var sent = SentBody(handler, "/access/check")["assertions"]![0]!;
             var expected = JsonNode.Parse("""
                 {"conceptId":"LEVEL_HIGH","categoryId":"level","confidence":"repaired","source":"repair",
-                 "sourceRule":"rule-7","expiresAt":"2030-01-01T00:00:00Z","value":"H",
-                 "metadata":{"origin":"import","weight":2},"replacedConceptId":"LEVEL_OLD",
-                 "provenance":{"providerId":"idp",
-                   "attribution":{"name":"IdP","license":"internal","licenseUrl":"https://example.test/license","citation":"IdP directory"},
-                   "reproducibility":"reproducible","snapshotId":"snap-1","locator":"idp://levels/high"}}
+                 "sourceRule":"rule-7","value":"H","replacedConceptId":"LEVEL_OLD"}
                 """);
             Assert.True(JsonNode.DeepEquals(expected, sent), $"Sent {sent.ToJsonString()}");
         }
@@ -118,13 +106,13 @@ public class AssertionRoundTripTests
         // Negative control: absent optional fields stay off the wire rather than going out as null.
         var routes = new Dictionary<string, (HttpStatusCode, string)>
         {
-            ["/access/check"] = (HttpStatusCode.OK, """{ "granted": false, "rules": [] }"""),
+            ["/access/check"] = (HttpStatusCode.OK, """{ "granted": false, "rules": [], "warnings": [] }"""),
         };
         var (client, handler) = await CtxClientFactory.ConnectAsync(routes);
         using (client)
         {
             await client.Access!.CheckAsync(
-                new[] { new Assertion("level", "LEVEL_HIGH", Confidence.Certain, "parse") }, """{"clearance":"high"}""");
+                new[] { new Assertion(categoryId: "level", conceptId: "LEVEL_HIGH", confidence: Confidence.Certain, source: "parse") }, """{"clearance":"high"}""");
 
             var sent = SentBody(handler, "/access/check")["assertions"]![0]!;
             var expected = JsonNode.Parse(

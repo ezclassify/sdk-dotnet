@@ -131,6 +131,42 @@ public class ContextResultParserTests
     }
 
     [Fact]
+    public void ParseSchemeSummary_ReadsASchemeWithoutADescription()
+    {
+        // A scheme document may have no description; the runtime omits the
+        // member rather than answering with blank prose.
+        var bare = ContextResultParser.ParseSchemeSummary("""
+            {"id":"acme","version":"1.0.0","name":"Acme",
+             "referenceSurfaceLabel":{"singular":"Handbook","plural":"Handbooks"}}
+            """);
+        var described = ContextResultParser.ParseSchemeSummary("""
+            {"id":"acme","version":"1.0.0","name":"Acme","description":"d",
+             "referenceSurfaceLabel":{"singular":"Handbook","plural":"Handbooks"}}
+            """);
+
+        Assert.Null(bare.Description);
+        Assert.Equal("d", described.Description);
+    }
+
+    [Fact]
+    public void ParseSchemeSummary_ReadsTheSchemeDocumentsOwnWholeMarking()
+    {
+        // A scheme document may carry its own whole marking; the summary
+        // reports it as written, and omits it when the document declares none.
+        var marked = ContextResultParser.ParseSchemeSummary("""
+            {"id":"acme","version":"1.0.0","name":"Acme","description":"d","marking":"HIGH",
+             "referenceSurfaceLabel":{"singular":"Handbook","plural":"Handbooks"}}
+            """);
+        var plain = ContextResultParser.ParseSchemeSummary("""
+            {"id":"acme","version":"1.0.0","name":"Acme","description":"d",
+             "referenceSurfaceLabel":{"singular":"Handbook","plural":"Handbooks"}}
+            """);
+
+        Assert.Equal("HIGH", marked.Marking);
+        Assert.Null(plain.Marking);
+    }
+
+    [Fact]
     public void ParseSchemeFormats_ReadsAFormatWithoutAGlobalSeparator()
     {
         var formats = ContextResultParser.ParseSchemeFormats(DemoFormatsBody);
@@ -195,7 +231,8 @@ public class ContextResultParserTests
               "activation":{"matched":true,"assertions":[{"categoryId":"level","conceptId":"HIGH"}],"contextPaths":["distribution.team"]},
               "comparisons":[{"left":{"source":"subject","path":"membership"},"operator":"contains","right":{"source":"literal","value":"HIGH"},"matched":false,"missing":["HIGH"]}],
               "rule":{{Rule}},"reason":"membership required",
-              "modernizedFrom":[{"conceptId":"HIGH","replacedConceptId":"OLD-HIGH","conceptDisplay":"HIGH","replacedConceptDisplay":"OLD HIGH"}]}]}
+              "modernizedFrom":[{"conceptId":"HIGH","replacedConceptId":"OLD-HIGH","conceptDisplay":"HIGH","replacedConceptDisplay":"OLD HIGH"}]}],
+             "warnings":[]}
             """;
         var result = ResultParser.ParseAccessDecision(json);
 
@@ -211,8 +248,7 @@ public class ContextResultParserTests
     public void ParseDocumentAuditEnvelope_PreservesProjectionAndOmittedText()
     {
         var result = ContextResultParser.ParseContextDocumentAuditResult("""
-          {"resolution":{"contextId":"ctx","requestedVersion":"latest","resolvedVersion":"1.0.0","artifacts":[],"sources":[]},
-           "operationLimitations":[],
+          {"resolution":{"contextId":"ctx","requestedVersion":"latest","resolvedVersion":"1.0.0","artifacts":[]},
            "responseProjection":{"profile":"standard","detailsComplete":false,"omittedFields":["/result/unmarkedSpans/0/text"],"counts":{"nominations":1,"evidenceSpans":1,"guideUnits":1,"accessRuleResults":0,"contentRequirements":0,"contextRequirements":0}},
            "result":{"whole":null,"wholes":[],"wholeValidation":null,"parts":[],"wholeCoversParts":null,
              "unmarkedSpans":[{"start":0,"end":4,"offsetEncoding":"utf-8-bytes"}],"proceduralFlags":["missing-whole"],
@@ -225,7 +261,7 @@ public class ContextResultParserTests
         Assert.Equal("banner", result.Result.Vocabulary!["whole"].Singular);
         Assert.Equal("portions", result.Result.Vocabulary["part"].Plural);
         Assert.Contains("/result/unmarkedSpans/0/text", result.ResponseProjection.OmittedFields);
-        Assert.Equal(new DocumentMarkingRequirements(Whole: true, Part: false), result.Result.MarkingRequirements);
+        Assert.Equal(new DocumentMarkingRequirements(whole: true, part: false), result.Result.MarkingRequirements);
     }
 
     [Fact]

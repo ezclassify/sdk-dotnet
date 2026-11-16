@@ -199,11 +199,13 @@ public class CtxRequestBodyTests
             var assertions = new[]
             {
                 new Assertion(
-                    CategoryId: "level",
-                    ConceptId: "LEVEL_HIGH",
-                    Confidence: Confidence.Certain,
-                    Source: "parse",
-                    Value: "H")
+                    categoryId: "level",
+                    conceptId: "LEVEL_HIGH",
+                    confidence: Confidence.Certain,
+                    source: "parse")
+                {
+                    Value = "H",
+                }
             };
             await client.Scheme!.RenderAsync(assertions);
             var body = handler.Requests.Last().Body ?? "";

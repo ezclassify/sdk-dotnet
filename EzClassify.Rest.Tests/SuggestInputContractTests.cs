@@ -107,13 +107,12 @@ public class SuggestInputContractTests
     [InlineData("default")]
     [InlineData("context")]
     [InlineData("repair")]
-    public async Task SourceLabelsAndFactPayloadStayOpenOnTheWire(string source)
+    public async Task SourceLabelsStayOpenOnTheWire(string source)
     {
         var (client, handler) = await CtxClientFactory.ConnectAsync(new() { ["/scheme/suggest"] = (HttpStatusCode.BadRequest, """{"error":"invalid_input","code":"INVALID_INPUT","detail":"fixture-refusal"}""") });
         using (client)
         {
-            using var metadata = JsonDocument.Parse("""{"nested":{"label":"private"}}""");
-            var fact = new Assertion("date", "CALENDAR", Confidence.Certain, source, Metadata: metadata.RootElement.Clone(), SourceRule: "rule-1", Value: "20351231");
+            var fact = new Assertion(categoryId: "date", conceptId: "CALENDAR", confidence: Confidence.Certain, source: source) { SourceRule = "rule-1", Value = "20351231" };
             var error = await Assert.ThrowsAsync<EzClassifyClientException>(() => SuggestFacts(Assert.IsType<ContextSchemeOps>(client.Scheme), new[] { fact }));
             Assert.Equal(400, error.StatusCode);
             Assert.Equal("INVALID_INPUT", error.Code);
@@ -124,7 +123,6 @@ public class SuggestInputContractTests
             Assert.Equal(source, sent.GetProperty("source").GetString());
             Assert.Equal("20351231", sent.GetProperty("value").GetString());
             Assert.Equal("rule-1", sent.GetProperty("sourceRule").GetString());
-            Assert.Equal(metadata.RootElement.GetRawText(), sent.GetProperty("metadata").GetRawText());
             Assert.False(request.RootElement.TryGetProperty("input", out _));
             Assert.False(request.RootElement.TryGetProperty("inputFormat", out _));
         }

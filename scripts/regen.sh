@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Regenerate committed C# wire models from the vendored contract.
+# Regenerate committed C# wire models and the response shape table from the vendored contract.
 # Run via `make regen` from the repo root.
 set -euo pipefail
 
 SCHEMAS_DIR="${1:-vendor/spec/json-schemas}"
-SCRIPT="EzClassify.Rest.Contract/scripts/gen.mjs"
-OUTFILE="EzClassify.Rest.Contract/Models.g.cs"
+SCRIPT="scripts/gen.mjs"
+OUTFILE="EzClassify.Rest.Client/Wire/Models.g.cs"
 OPENAPI_FILE="vendor/spec/openapi.yaml"
 
 if [ ! -d "${SCHEMAS_DIR}" ]; then

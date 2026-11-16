@@ -25,10 +25,10 @@ namespace EzClassify.Tests;
 public class UnknownResponseEnumTests
 {
     private const string Resolution =
-        """{"contextId":"acme-marking","resolvedVersion":"1.0.0","artifacts":[],"sources":[]}""";
+        """{"contextId":"acme-marking","resolvedVersion":"1.0.0","artifacts":[]}""";
 
     private static string Envelope(string result, string resolution = Resolution) =>
-        $$"""{"resolution":{{resolution}},"operationLimitations":[],"result":{{result}}}""";
+        $$"""{"resolution":{{resolution}},"result":{{result}}}""";
 
     private static async Task<(EzClassifyClient Client, CtxMockHandler Handler)> Connect(string route, string body) =>
         await CtxClientFactory.ConnectAsync(new Dictionary<string, (HttpStatusCode, string)>
@@ -40,8 +40,7 @@ public class UnknownResponseEnumTests
     public async Task AnUnknownValueInATopLevelFieldKeepsItsToken()
     {
         var (client, _) = await Connect("/document/audit", """
-            {"resolution":{"contextId":"acme-marking","resolvedVersion":"1.0.0","artifacts":[],"sources":[]},
-             "operationLimitations":[],
+            {"resolution":{"contextId":"acme-marking","resolvedVersion":"1.0.0","artifacts":[]},
              "responseProjection":{"profile":"compact","detailsComplete":false,"omittedFields":[],"counts":{"nominations":0,"evidenceSpans":0,"guideUnits":0,"accessRuleResults":0,"contentRequirements":0,"contextRequirements":0}},
              "result":{"whole":null,"wholes":[],"wholeValidation":null,"parts":[],"wholeCoversParts":null,"unmarkedSpans":[],
                "proceduralFlags":[],"overallVerdict":"needs-review","vocabulary":null,"documentDigest":"sha256:doc",
@@ -65,7 +64,7 @@ public class UnknownResponseEnumTests
         var (client, _) = await Connect("/scheme/process", Envelope("""
             {"valid":false,"rendered":"H","inputWasValid":true,"renders":{},"assessment":{"emitted":[],"omitted":[],"collapsed":[],"conflicts":[],"unrepresentable":[]},"notices":[],
              "assertions":[{"conceptId":"L_H","categoryId":"level","confidence":"probable","source":"parse"}],
-             "errors":[{"constraintId":"c1","message":"m","severity":"fatal"}],
+             "errors":[{"constraintId":"c1","message":"m"}],
              "warnings":[{"kind":"advisory","message":"w"}],
              "appliedFixes":[{"ruleId":"r","action":"merge","message":"m"}],"proposedFixes":[]}
             """));
@@ -76,8 +75,6 @@ public class UnknownResponseEnumTests
             Assert.Equal(new Confidence("probable"), result.Assertions[0].Confidence);
             Assert.False(result.Assertions[0].Confidence.IsKnown);
             Assert.Equal("L_H", result.Assertions[0].ConceptId);
-            Assert.Equal("fatal", result.Errors[0].Severity.ToString());
-            Assert.False(result.Errors[0].Severity!.Value.IsKnown);
             Assert.Equal("advisory", result.Warnings[0].Kind.ToString());
             Assert.Equal("merge", result.AppliedFixes[0].Action.ToString());
             Assert.False(result.AppliedFixes[0].Action.IsKnown);
@@ -92,6 +89,7 @@ public class UnknownResponseEnumTests
                 "result":{"valid":true,"rendered":"H","inputWasValid":true,"assertions":[],"errors":[],"warnings":[],"appliedFixes":[],"notices":[],
                           "assessment":{"emitted":[],"omitted":[],"collapsed":[],"conflicts":[],"unrepresentable":[{"output":"marking/xml","reason":"unwritable-here"}]},
                           "recognition":{"status":"settled","role":"region","unmatched":[]}}}],
+             "unread":[],
              "limits":{"status":"paused","limitHit":"memory","regionsFound":1}}
             """));
         using (client)
@@ -121,8 +119,7 @@ public class UnknownResponseEnumTests
             """{"valid":true,"rendered":"H","inputWasValid":true,"renders":{},"assessment":{"emitted":[],"omitted":[],"collapsed":[],"conflicts":[],"unrepresentable":[]},"notices":[],"assertions":[],"errors":[],"warnings":[],"appliedFixes":[],"proposedFixes":[]}""",
             """
             {"contextId":"acme-marking","resolvedVersion":"1.0.0",
-             "artifacts":[{"kind":"policy","id":"p","version":"1.0.0"}],
-             "sources":[{"providerId":"idp","reproducibility":"pinned","snapshotId":"snap-1","attribution":{"name":"IdP","license":"internal"}}]}
+             "artifacts":[{"kind":"policy","id":"p","version":"1.0.0"}]}
             """));
         using (client)
         {
@@ -130,9 +127,6 @@ public class UnknownResponseEnumTests
 
             Assert.Equal("policy", resolution.Artifacts[0].Kind.ToString());
             Assert.False(resolution.Artifacts[0].Kind.IsKnown);
-            Assert.Equal("pinned", resolution.Sources[0].Reproducibility.ToString());
-            Assert.False(resolution.Sources[0].Reproducibility.IsKnown);
-            Assert.Equal("snap-1", resolution.Sources[0].SnapshotId);
         }
     }
 
@@ -145,8 +139,8 @@ public class UnknownResponseEnumTests
         using (client)
         {
             var determinations = new GuideDeterminationInput(
-                new[] { new GuideFindingDetermination("f1", "sha256:doc", new GuideFindingDecision("deferred"), "r", new DecisionProposalOrigin("imported-by-agent")) },
-                Array.Empty<ManualGuideSelectionInput>());
+                findings: new[] { new GuideFindingDetermination(findingId: "f1", documentDigest: "sha256:doc", decision: new GuideFindingDecision("deferred"), reason: "r") { ProposalOrigin = new DecisionProposalOrigin("imported-by-agent") } },
+                manualSelections: Array.Empty<ManualGuideSelectionInput>());
 
             try
             {
@@ -175,7 +169,7 @@ public class UnknownResponseEnumTests
             try
             {
                 await client.Scheme!.RenderAsync(
-                    new[] { new Assertion("level", "L_H", Confidence.Inferred, "parse") });
+                    new[] { new Assertion(categoryId: "level", conceptId: "L_H", confidence: Confidence.Inferred, source: "parse") });
             }
             catch (Exception e) when (e is not ArgumentException and not InvalidOperationException)
             {
@@ -198,7 +192,7 @@ public class UnknownResponseEnumTests
             var before = handler.Requests.Count;
 
             await Assert.ThrowsAsync<InvalidOperationException>(
-                () => client.Scheme!.RenderAsync(new[] { new Assertion("level", "L_H", default, "parse") }));
+                () => client.Scheme!.RenderAsync(new[] { new Assertion(categoryId: "level", conceptId: "L_H", confidence: default, source: "parse") }));
             Assert.Equal(before, handler.Requests.Count);
         }
     }

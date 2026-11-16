@@ -11,51 +11,43 @@ records the contracts commit, contract hashes, generator inputs, and committed
 generated outputs.
 
 The repository follows the conventional .NET layout: the root
-[`EzClassify.Rest.sln`](EzClassify.Rest.sln) contains two published libraries, the xUnit test project,
-and the [`examples/server-tour/`](examples/server-tour/) application. [`Directory.Build.props`](Directory.Build.props) owns common compiler and
+[`EzClassify.sln`](EzClassify.sln) contains the one published library,
+the xUnit test project, the [`examples/server-tour/`](examples/server-tour/)
+application, and [`EzClassify.Rest.CSharp73/`](EzClassify.Rest.CSharp73/), a
+never-packed C# 7.3 project that builds every request record against the
+netstandard2.0 client so the record shape cannot raise the language floor. [`Directory.Build.props`](Directory.Build.props) owns common compiler and
 package metadata. [`Directory.Packages.props`](Directory.Packages.props) is the only place NuGet dependency
-versions are declared. Each project file keeps only project-specific settings,
+versions are declared. The project file keeps only project-specific settings,
 references, and packaging content.
 
 ## Generated code
 
-[`EzClassify.Rest.Contract/scripts/gen.mjs`](EzClassify.Rest.Contract/scripts/gen.mjs) consumes
-[`vendor/spec/openapi.yaml`](vendor/spec/openapi.yaml), [`vendor/spec/json-schemas/`](vendor/spec/json-schemas/), and these pinned
-templates:
+[`scripts/gen.mjs`](scripts/gen.mjs) consumes
+[`vendor/spec/openapi.yaml`](vendor/spec/openapi.yaml) and [`vendor/spec/json-schemas/`](vendor/spec/json-schemas/).
+It owns the two committed outputs named by [`vendor/spec/MANIFEST.json`](vendor/spec/MANIFEST.json):
 
-- [`EzClassify.Rest.Contract/scripts/templates/ContextEnvelopeModels.g.cs.tmpl`](EzClassify.Rest.Contract/scripts/templates/ContextEnvelopeModels.g.cs.tmpl)
-- [`EzClassify.Rest.Contract/scripts/templates/ContextModels.g.cs.tmpl`](EzClassify.Rest.Contract/scripts/templates/ContextModels.g.cs.tmpl)
-- [`EzClassify.Rest.Contract/scripts/templates/DocumentAssessmentModels.g.cs.tmpl`](EzClassify.Rest.Contract/scripts/templates/DocumentAssessmentModels.g.cs.tmpl)
-- [`EzClassify.Rest.Contract/scripts/templates/WireEnums.g.cs.tmpl`](EzClassify.Rest.Contract/scripts/templates/WireEnums.g.cs.tmpl)
-
-It owns the five committed outputs named by [`vendor/spec/MANIFEST.json`](vendor/spec/MANIFEST.json):
-
-- [`EzClassify.Rest.Contract/ContextEnvelopeModels.g.cs`](EzClassify.Rest.Contract/ContextEnvelopeModels.g.cs)
-- [`EzClassify.Rest.Contract/ContextModels.g.cs`](EzClassify.Rest.Contract/ContextModels.g.cs)
-- [`EzClassify.Rest.Contract/DocumentAssessmentModels.g.cs`](EzClassify.Rest.Contract/DocumentAssessmentModels.g.cs)
-- [`EzClassify.Rest.Contract/Models.g.cs`](EzClassify.Rest.Contract/Models.g.cs)
-- [`EzClassify.Rest.Contract/WireEnums.g.cs`](EzClassify.Rest.Contract/WireEnums.g.cs)
+- [`EzClassify.Rest.Client/Wire/Models.g.cs`](EzClassify.Rest.Client/Wire/Models.g.cs): the schema-driven wire records
+- [`EzClassify.Rest.Client/Wire/ResponseShapes.g.cs`](EzClassify.Rest.Client/Wire/ResponseShapes.g.cs): the required-member table the parsers check
 
 Every output carries a generated ownership header. Do not edit an output
-directly; change the canonical contract or the appropriate generator input and
+directly; change the canonical contract or the generator and
 run `make regen`. `make check-generated` is the non-mutating freshness gate.
 
 ## Handwritten seams
 
 The SDK owns language-native HTTP transport and connection lifecycle in the
 [`EzClassify.Rest.Client/`](EzClassify.Rest.Client/) project directory, and thin Context operation groups over canonical
-endpoints. In the
-[`EzClassify.Rest.Contract/`](EzClassify.Rest.Contract/) project directory, handwritten code is limited to defensive response
-parsers, UTF-8 offset helpers, compatibility support, and public error handling.
+endpoints. In its [`Wire/`](EzClassify.Rest.Client/Wire/) directory, handwritten code is the Context and document
+records, the extensible wire enums, defensive response parsers, and UTF-8 offset helpers.
+The parsers are internal; the records, the enums and the offset helpers are the public wire surface.
 
 Parsers refuse a response that lacks any member the contract requires, at any
 depth, and tolerate optional members. What is required is not decided by hand:
 `gen.mjs` writes a `ResponseShapes` table from the OpenAPI `required` lists into
-`ContextEnvelopeModels.g.cs`, `ResponseCheck` walks it before a parser reads a
+`ResponseShapes.g.cs`, `ResponseCheck` walks it before a parser reads a
 body, and a refusal is a `JsonException` whose `Path` names the missing member.
 The client's own reads of the health, discovery and binding-probe bodies run the
-same check; `InternalsVisibleTo` gives the Client project the Contract
-project's `ResponseCheck`, and nothing flows the other way.
+same check.
 Parsers also preserve opaque engine payloads as `JsonElement`. The contract is open-response and closed-request. Each wire enum
 is an extensible struct over its raw token (the Azure SDK extensible-enum
 pattern), so parsers keep a token this SDK does not know instead of failing, and
@@ -70,30 +62,31 @@ policy implementation.
 
 Do not implement scheme, guide, access-policy, document-assessment, or engine
 evaluation semantics in this repository. Do not recompute Context resolution,
-compose Context results locally, or fuse the three document access scenarios.
+compose Context results locally.
 The client sends canonical inputs and decodes canonical outputs.
 
-Do not add handwritten or shadow DTOs for generated wire types, duplicate a
-generated declaration in another assembly, hand-edit [`vendor/spec/`](vendor/spec/), or put a
-NuGet version in a project file. Dependencies flow from the client
-project toward the shared Contract project, never back toward transport.
+Do not add handwritten or shadow DTOs for generated wire types, declare a
+generated type a second time, hand-edit [`vendor/spec/`](vendor/spec/), or put a
+NuGet version in a project file. Wire models and parsers never reach back into
+the transport.
 
 ## Required gates
 
 - `make check-architecture` rejects shadow wire declarations, multiple compiled
   declaration owners, generated-path drift, and inline package versions.
-- `make check-generated` verifies all five committed outputs against the pinned
-  generator, templates, OpenAPI, and JSON Schemas.
-- `dotnet format EzClassify.Rest.sln --verify-no-changes --no-restore`
-- `dotnet build EzClassify.Rest.sln --no-restore --configuration Release`
-- `dotnet test EzClassify.Rest.sln --no-build --configuration Release --filter "Category!=Live"`
-- `dotnet test EzClassify.Rest.sln --no-build --configuration Release --filter "FullyQualifiedName~PublicApiSurfaceTests"`
-- `dotnet test EzClassify.Rest.sln --no-build --configuration Release --filter "FullyQualifiedName~DocumentSemanticConformanceTests"`
+- `make check-generated` verifies both committed outputs against the pinned
+  generator, OpenAPI, and JSON Schemas.
+- `make check-dependency-age` refuses, right after restore, any third-party
+  package or pinned tool nuget.org published less than seven days ago.
+- `dotnet format EzClassify.sln --verify-no-changes --no-restore`
+- `dotnet build EzClassify.sln --no-restore --configuration Release`
+- `dotnet test EzClassify.sln --no-build --configuration Release --filter "Category!=Live"`
+- `dotnet test EzClassify.sln --no-build --configuration Release --filter "FullyQualifiedName~PublicApiSurfaceTests"`
+- `dotnet test EzClassify.sln --no-build --configuration Release --filter "FullyQualifiedName~DocumentSemanticConformanceTests"`
 - `python3 scripts/gen-notices.py notices --check`
 
 Before compilation CI verifies the OpenAPI and generator hashes the manifest
-records; the templates are covered by `make check-generated`, which reruns the
-pinned generator over them and fails on any difference from the committed
-output. A public surface change requires a deliberate
+records; `make check-generated` reruns the pinned generator and fails on any
+difference from the committed outputs. A public surface change requires a deliberate
 `make api-surface` update; a contract mirror change comes only from
 the spec bot.

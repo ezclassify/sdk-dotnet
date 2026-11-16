@@ -117,7 +117,8 @@ public class ResultParserTests
                 { "name": "Level Check", "granted": true, "skipped": false, "ruleIndex": 0,
                   "activation":{"matched":true,"assertions":[],"contextPaths":[]}, "comparisons":[],
                   "rule":{"artifact":{"kind":"access","id":"a","version":"1.0.0"},"ruleId":"rule-1","ruleDigest":"sha256:r"} }
-              ]
+              ],
+              "warnings": []
             }
             """;
         var decision = ResultParser.ParseAccessDecision(json);

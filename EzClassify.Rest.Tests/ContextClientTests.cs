@@ -32,10 +32,10 @@ internal sealed class CtxMockHandler : HttpMessageHandler
         "/scheme/concepts",
         "/scheme/categories",
         "/scheme/formats",
-        "/scheme/grammar",
         "/scheme/scopes",
         "/scheme/label-presets",
         "/access/rules",
+        "/crosswalk/describe",
     };
 
     public string? ResolvedVersionHeader { get; set; } = "1.0.0";
@@ -77,9 +77,9 @@ internal sealed class CtxMockHandler : HttpMessageHandler
             && (path.Contains("/scheme/") || path.Contains("/guide/") || path.Contains("/access/") || path.Contains("/crosswalk/"))
             && !respBody.Contains("\"resolution\""))
         {
-            respBody = """{"resolution":{"contextId":"acme-marking","resolvedVersion":"1.0.0","artifacts":[],"sources":[]},"result":"""
+            respBody = """{"resolution":{"contextId":"acme-marking","resolvedVersion":"1.0.0","artifacts":[]},"result":"""
                 + respBody
-                + ""","operationLimitations":[]}""";
+                + """}""";
         }
 
         var resp = new HttpResponseMessage(status)
@@ -195,7 +195,7 @@ public class ContextClientTests
             ["/scheme/process"] = (HttpStatusCode.OK, ProcessJson),
         };
         var (client, handler) = await CtxClientFactory.ConnectAsync(
-            routes, cacheOptions: new ContextCacheOptions(Enabled: false));
+            routes, cacheOptions: new ContextCacheOptions { Enabled = false });
         using (client)
         {
             await client.Scheme!.ProcessAsync("H");
@@ -222,12 +222,14 @@ public class ContextClientTests
     }
 
     [Fact]
-    public async Task AccessDecisionsReachServerUnlessPinnedCallerOptsIn()
+    public async Task AccessDecisionsAlwaysReachTheServer()
     {
         var routes = new Dictionary<string, (HttpStatusCode, string)>
         {
-            ["/access/check"] = (HttpStatusCode.OK, """{ "granted": false, "rules": [] }"""),
+            ["/access/check"] = (HttpStatusCode.OK, """{ "granted": false, "rules": [], "warnings": [] }"""),
         };
+        // Caching is on by default. A decision still goes out every time so the
+        // deployment holds an audit record of each one.
         var (client, handler) = await CtxClientFactory.ConnectAsync(routes);
         using (client)
         {
@@ -235,33 +237,6 @@ public class ContextClientTests
             await client.Access.CheckByMarkingAsync("H", "{}");
             Assert.Equal(2, handler.Requests.FindAll(request => request.Path.Contains("/access/check")).Count);
         }
-
-        var (optedIn, optedInHandler) = await CtxClientFactory.ConnectAsync(
-            routes, cacheOptions: new ContextCacheOptions(CacheAccessDecisions: true));
-        using (optedIn)
-        {
-            await optedIn.Access!.CheckByMarkingAsync("H", "{}");
-            await optedIn.Access.CheckByMarkingAsync("H", "{}");
-            Assert.Single(optedInHandler.Requests.FindAll(request => request.Path.Contains("/access/check")));
-        }
-    }
-
-    [Theory]
-    [InlineData("latest")]
-    [InlineData(null)]
-    public async Task AccessDecisionCachingIsRefusedAtConnectionForAnUnpinnedBinding(string? version)
-    {
-        var options = new ContextCacheOptions(CacheAccessDecisions: true);
-
-        var handler = new CtxMockHandler();
-        using var http = new HttpClient(handler) { BaseAddress = new Uri("http://localhost:8080") };
-        var refusal = await Assert.ThrowsAsync<ArgumentException>(() => EzClassifyClient.ConnectAsync(
-            http, "acme-marking", version, RestClientCredentials.None, options));
-        Assert.Equal("cacheOptions", refusal.ParamName);
-        Assert.Empty(handler.Requests);
-
-        await Assert.ThrowsAsync<ArgumentException>(() => EzClassifyClient.ConnectAsync(
-            "http://localhost:8080", "acme-marking", version, RestClientCredentials.None, options));
     }
 
     [Fact]
@@ -384,7 +359,7 @@ public class ContextClientTests
         var (client, handler) = await CtxClientFactory.ConnectAsync(routes);
         using (client)
         {
-            var chosen = new Assertion("level", "level-high", Confidence.Certain, "stated");
+            var chosen = new Assertion(categoryId: "level", conceptId: "level-high", confidence: Confidence.Certain, source: "stated");
             await client.Scheme!.ProcessAsync("high//staff", assertions: new[] { chosen });
             Assert.Equal(
                 """{"input":"high//staff","assertions":[{"conceptId":"level-high","categoryId":"level","confidence":"certain","source":"stated"}]}""",
@@ -566,7 +541,7 @@ public class ContextClientTests
         var (client, handler) = await CtxClientFactory.ConnectAsync(routes);
         using (client)
         {
-            var stated = new Assertion("level", "level-high", Confidence.Certain, "stated");
+            var stated = new Assertion(categoryId: "level", conceptId: "level-high", confidence: Confidence.Certain, source: "stated");
             await client.Scheme!.ValidateAsync(new[] { stated }, surface: "marking", outputFormat: "marking/long",
                 parts: new[] { "(H)" }, contextJson: """{"role":"whole"}""");
 
@@ -684,7 +659,7 @@ public class ContextClientTests
         {
             var assertions = new[]
             {
-                new Assertion(CategoryId: "level", ConceptId: "HIGH", Confidence: Confidence.Certain, Source: "parse"),
+                new Assertion(categoryId: "level", conceptId: "HIGH", confidence: Confidence.Certain, source: "parse"),
             };
             var result = await client.Scheme!.SuggestForCategoriesAsync(
                 assertions, new[] { "level", "audience" }, outputFormat: "banner", surface: "whole");
@@ -768,7 +743,7 @@ public class ContextClientTests
         var (client, handler) = await CtxClientFactory.ConnectAsync(routes);
         using (client)
         {
-            var chosen = new Assertion("level", "level-high", Confidence.Certain, "stated");
+            var chosen = new Assertion(categoryId: "level", conceptId: "level-high", confidence: Confidence.Certain, source: "stated");
             var trace = (await client.Scheme!.ExplainAsync("HIGH", outputFormat: "marking/long", surface: "marking",
                 inputFormat: "long", assertions: new[] { chosen }, contextJson: """{"role":"whole"}""", parts: new[] { "(H)" })).Result;
 
@@ -817,6 +792,7 @@ public class ContextClientTests
                     [ { "marking": "H", "start": 5, "end": 6, "type": "marking", "wrapped": false, "role": "part",
                         "result": { "valid": true, "rendered": "H", "inputWasValid": true, "assertions": [], "errors": [], "warnings": [], "appliedFixes": [], "notices": [],
                                     "assessment": { "emitted": [], "omitted": [], "collapsed": [], "conflicts": [], "unrepresentable": [] } } } ],
+                  "unread": [],
                   "limits": { "status": "complete", "regionsFound": 1 } }
                 """),
         };
@@ -844,7 +820,7 @@ public class ContextClientTests
         var (client, handler) = await CtxClientFactory.ConnectAsync(routes);
         using (client)
         {
-            var assertions = new[] { new Assertion(CategoryId: "level", ConceptId: "LEVEL_HIGH", Confidence: Confidence.Certain, Source: "parse") };
+            var assertions = new[] { new Assertion(categoryId: "level", conceptId: "LEVEL_HIGH", confidence: Confidence.Certain, source: "parse") };
             var rendered = await client.Scheme!.RenderAsync(assertions, "banner", RenderPreservation.Full);
             Assert.Equal("LEVEL-HIGH", rendered.Result.Result);
             Assert.Equal("A&B", rendered.Result.Assessment.Emitted[0].Value);
@@ -876,28 +852,12 @@ public class ContextClientTests
         var (client, _) = await CtxClientFactory.ConnectAsync(routes);
         using (client)
         {
-            var assertion = new Assertion("authority", "AUTH-X", Confidence.Certain, "parse", Value: "A&B");
+            var assertion = new Assertion(categoryId: "authority", conceptId: "AUTH-X", confidence: Confidence.Certain, source: "parse") { Value = "A&B" };
             var ex = await Assert.ThrowsAsync<EzClassifyClientException>(() =>
                 client.Scheme!.RenderAsync(new[] { assertion }, preservation: RenderPreservation.Full));
             Assert.Equal(400, ex.StatusCode);
             Assert.Equal("RENDER_NOT_PRESERVING", ex.Code);
             Assert.Equal("omitted authority AUTH-X=A&B", ex.Detail);
-        }
-    }
-
-    [Fact]
-    public async Task Normalize_UnwrapsResultEnvelope()
-    {
-        var routes = new Dictionary<string, (HttpStatusCode, string)>
-        {
-            ["/scheme/normalize"] = (HttpStatusCode.OK, """{ "result": "LEVEL-HIGH" }"""),
-        };
-        var (client, handler) = await CtxClientFactory.ConnectAsync(routes);
-        using (client)
-        {
-            var normalized = await client.Scheme!.NormalizeAsync("high");
-            Assert.Equal("LEVEL-HIGH", normalized.Result.Result);
-            Assert.Equal("/v1/ctx/acme-marking/1.0.0/scheme/normalize", handler.Requests[^1].Path);
         }
     }
 
@@ -966,27 +926,6 @@ public class ContextClientTests
         }
     }
 
-    [Fact]
-    public async Task FilterConcepts_ParsesCountsAndIds()
-    {
-        var routes = new Dictionary<string, (HttpStatusCode, string)>
-        {
-            ["/scheme/filter-concepts"] = (HttpStatusCode.OK, """
-                { "visibleIds": ["a", "b"], "categoryCounts": { "level": { "visible": 2, "total": 5 } }, "total": { "visible": 2, "total": 9 } }
-                """),
-        };
-        var (client, handler) = await CtxClientFactory.ConnectAsync(routes);
-        using (client)
-        {
-            var result = await client.Scheme!.FilterConceptsAsync("hi");
-            Assert.Equal(2, result.Result.VisibleIds.Count);
-            Assert.Equal(2, result.Result.CategoryCounts["level"].Visible);
-            Assert.Equal(5, result.Result.CategoryCounts["level"].Total);
-            Assert.Equal(9, result.Result.Total.Total);
-            Assert.Equal("/v1/ctx/acme-marking/1.0.0/scheme/filter-concepts", handler.Requests[^1].Path);
-        }
-    }
-
     // The fixture carries a property the contract does not define. Parsing has to
     // ignore it, so a server that adds a field ahead of an SDK release does not
     // break an already-deployed client.
@@ -1002,7 +941,7 @@ public class ContextClientTests
         var (client, handler) = await CtxClientFactory.ConnectAsync(routes);
         using (client)
         {
-            var assertions = new[] { new Assertion(CategoryId: "ctrl", ConceptId: "RD", Confidence: Confidence.Certain, Source: "parse") };
+            var assertions = new[] { new Assertion(categoryId: "ctrl", conceptId: "RD", confidence: Confidence.Certain, source: "parse") };
             var notices = await client.Scheme!.NoticesAsync(assertions);
             Assert.Single(notices.Result);
             Assert.Equal("handling", notices.Result[0].Type);
@@ -1486,25 +1425,6 @@ public class ContextClientTests
     }
 
     [Fact]
-    public async Task SchemeGrammar_ParsesParseRules()
-    {
-        var routes = new Dictionary<string, (HttpStatusCode, string)>
-        {
-            ["/scheme/grammar"] = (HttpStatusCode.OK,
-                """{ "caseSensitive": false, "stripWhitespace": true }"""),
-        };
-        var (client, handler) = await CtxClientFactory.ConnectAsync(routes);
-        using (client)
-        {
-            var grammar = await client.Scheme!.GrammarAsync();
-
-            Assert.False(grammar.CaseSensitive);
-            Assert.True(grammar.StripWhitespace);
-            Assert.Equal("/v1/ctx/acme-marking/1.0.0/scheme/grammar", handler.Requests[^1].Path);
-        }
-    }
-
-    [Fact]
     public async Task SchemeScopes_CarriesOrderedArray()
     {
         var routes = new Dictionary<string, (HttpStatusCode, string)>
@@ -1664,74 +1584,120 @@ public class ContextClientTests
         }
     }
 
-    // These sub-resources take the same optional scheme selector, so the query
-    // plumbing is proved once per route rather than duplicated per assertion.
-    // The label presets and apply-preset take none: the server refuses a query
-    // parameter an operation does not declare.
-    public static TheoryData<string, string> SchemeSelectorRoutes() => new()
-    {
-        { "/1.0.0/scheme", "/v1/ctx/acme-marking/1.0.0/scheme?scheme=source" },
-        { "/scheme/concepts", "/v1/ctx/acme-marking/1.0.0/scheme/concepts?scheme=source" },
-        { "/scheme/categories", "/v1/ctx/acme-marking/1.0.0/scheme/categories?scheme=source" },
-        { "/scheme/formats", "/v1/ctx/acme-marking/1.0.0/scheme/formats?scheme=source" },
-        { "/scheme/grammar", "/v1/ctx/acme-marking/1.0.0/scheme/grammar?scheme=source" },
-        { "/scheme/scopes", "/v1/ctx/acme-marking/1.0.0/scheme/scopes?scheme=source" },
-    };
-
-    [Theory]
-    [MemberData(nameof(SchemeSelectorRoutes))]
-    public async Task SchemeSubResources_SendSchemeSelectorAsQuery(string route, string expectedPath)
-    {
-        var (client, handler) = await CtxClientFactory.ConnectAsync(RoutesFor(route));
-        using (client)
+    // --- scheme views --------------------------------------------------------
+    //
+    // Every scheme operation and read, with the route it posts or gets. A view
+    // bound to a key must address that scheme on every one of them, and the
+    // primary view on none, so the wire behavior is proved once per call rather
+    // than per assertion. Only the request matters here: the stub answers with
+    // bodies most parsers reject.
+    private static readonly IReadOnlyDictionary<string, Func<ContextSchemeOps, Task>> SchemeCalls =
+        new Dictionary<string, Func<ContextSchemeOps, Task>>(StringComparer.Ordinal)
         {
-            await InvokeSubResource(client, route, scheme: "source");
-            Assert.Equal(expectedPath, handler.Requests[^1].Path);
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(SchemeSelectorRoutes))]
-    public async Task SchemeSubResources_OmitSchemeSelectorWhenNotSupplied(string route, string expectedPath)
-    {
-        var (client, handler) = await CtxClientFactory.ConnectAsync(RoutesFor(route));
-        using (client)
-        {
-            await InvokeSubResource(client, route, scheme: null);
-            Assert.Equal(expectedPath.Replace("?scheme=source", ""), handler.Requests[^1].Path);
-            Assert.DoesNotContain("scheme=", handler.Requests[^1].Path);
-        }
-    }
-
-    [Fact]
-    public async Task LabelPresetsAndApplyPreset_SendNoQuery()
-    {
-        var routes = new Dictionary<string, (HttpStatusCode, string)>
-        {
-            ["/scheme/label-presets"] = (HttpStatusCode.OK, "[]"),
-            ["/scheme/apply-preset"] = (HttpStatusCode.OK, ValidateJson),
+            ["scheme/process"] = ops => ops.ProcessAsync("H"),
+            ["scheme/validate"] = ops => ops.ValidateAsync("H"),
+            ["scheme/explain"] = ops => ops.ExplainAsync("H"),
+            ["scheme/suggest"] = ops => ops.SuggestAsync("H//"),
+            ["scheme/suggest-for-categories"] = ops => ops.SuggestForCategoriesAsync(Array.Empty<Assertion>(), new[] { "level" }),
+            ["scheme/aggregate"] = ops => ops.AggregateAsync(new[] { "H", "L" }),
+            ["scheme/scan"] = ops => ops.ScanAsync("text H text"),
+            ["scheme/render"] = ops => ops.RenderAsync(Array.Empty<Assertion>()),
+            ["scheme/check-coverage"] = ops => ops.CheckCoverageAsync(new[] { "L" }, "H"),
+            ["scheme/describe-concept"] = ops => ops.DescribeConceptAsync("HIGH", "level"),
+            ["scheme/diff"] = ops => ops.DiffAsync("H", "L"),
+            ["scheme/notices"] = ops => ops.NoticesAsync(Array.Empty<Assertion>()),
+            ["scheme/view"] = ops => ops.ViewAsync(),
+            ["scheme"] = ops => ops.SummaryAsync(),
+            ["scheme/concepts"] = ops => ops.ConceptsAsync(),
+            ["scheme/categories"] = ops => ops.CategoriesAsync(),
+            ["scheme/formats"] = ops => ops.FormatsAsync(),
+            ["scheme/scopes"] = ops => ops.ScopesAsync(),
+            ["scheme/label-presets"] = ops => ops.LabelPresetsAsync(),
+            ["scheme/apply-preset"] = ops => ops.ApplyPresetAsync("default-label"),
         };
-        var (client, handler) = await CtxClientFactory.ConnectAsync(routes);
+
+    public static IEnumerable<object[]> SchemeCallRoutes() => SchemeCalls.Keys.Select(route => new object[] { route });
+
+    private static async Task<string> SentPathAsync(CtxMockHandler handler, Func<Task> invoke)
+    {
+        var before = handler.Requests.Count;
+        try
+        {
+            await invoke();
+        }
+        catch (Exception)
+        {
+            // The stub body fails most parsers. The request already went out,
+            // and the count below proves exactly one did.
+        }
+        var sent = handler.Requests.Skip(before).ToList();
+        Assert.Single(sent);
+        return sent[0].Path;
+    }
+
+    private static (string Route, string[] Query) Split(string path)
+    {
+        const string prefix = "/v1/ctx/acme-marking/1.0.0/";
+        Assert.StartsWith(prefix, path);
+        var rest = path[prefix.Length..];
+        var at = rest.IndexOf('?');
+        return at < 0
+            ? (rest, Array.Empty<string>())
+            : (rest[..at], rest[(at + 1)..].Split('&'));
+    }
+
+    [Theory]
+    [MemberData(nameof(SchemeCallRoutes))]
+    public async Task SchemeView_AddressesItsSchemeOnEveryCall(string route)
+    {
+        var (client, handler) = await CtxClientFactory.ConnectAsync();
         using (client)
         {
-            await client.Scheme!.LabelPresetsAsync();
-            await client.Scheme.ApplyPresetAsync("default-label", "portion");
-            var sent = handler.Requests.Skip(1).Select(request => request.Path).ToArray();
-            Assert.Equal(new[]
-            {
-                "/v1/ctx/acme-marking/1.0.0/scheme/label-presets",
-                "/v1/ctx/acme-marking/1.0.0/scheme/apply-preset",
-            }, sent);
+            var path = await SentPathAsync(handler, () => SchemeCalls[route](client.Schemes!.Get("source")));
+            var (sentRoute, query) = Split(path);
+            Assert.Equal(route, sentRoute);
+            Assert.Single(query, pair => pair.StartsWith("scheme=", StringComparison.Ordinal));
+            Assert.Contains("scheme=source", query);
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(SchemeCallRoutes))]
+    public async Task PrimaryView_SendsNoSchemeKey(string route)
+    {
+        var (client, handler) = await CtxClientFactory.ConnectAsync();
+        using (client)
+        {
+            var path = await SentPathAsync(handler, () => SchemeCalls[route](client.Scheme!));
+            var (sentRoute, query) = Split(path);
+            Assert.Equal(route, sentRoute);
+            Assert.DoesNotContain(query, pair => pair.StartsWith("scheme=", StringComparison.Ordinal));
         }
     }
 
     [Fact]
-    public async Task SchemeSubResources_EscapeSchemeSelector()
+    public async Task SchemeView_KeepsTheQueryACallAlreadyCarries()
     {
-        var (client, handler) = await CtxClientFactory.ConnectAsync(RoutesFor("/scheme/concepts"));
+        var (client, handler) = await CtxClientFactory.ConnectAsync();
         using (client)
         {
-            await client.Scheme!.ConceptsAsync("acme/target v2");
+            var path = await SentPathAsync(handler, () => client.Schemes!.Get("source").DescribeConceptAsync("HIGH", "level", view: "short"));
+            Assert.Equal(
+                "/v1/ctx/acme-marking/1.0.0/scheme/describe-concept?conceptId=HIGH&categoryId=level&view=short&scheme=source",
+                path);
+        }
+    }
+
+    [Fact]
+    public async Task SchemesGet_EscapesTheKey()
+    {
+        var (client, handler) = await CtxClientFactory.ConnectAsync(new Dictionary<string, (HttpStatusCode, string)>
+        {
+            ["/scheme/concepts"] = (HttpStatusCode.OK, "[]"),
+        });
+        using (client)
+        {
+            await client.Schemes!.Get("acme/target v2").ConceptsAsync();
             Assert.Equal(
                 "/v1/ctx/acme-marking/1.0.0/scheme/concepts?scheme=acme%2Ftarget%20v2",
                 handler.Requests[^1].Path);
@@ -1739,37 +1705,84 @@ public class ContextClientTests
     }
 
     [Fact]
-    public async Task SchemeSubResources_BlankSchemeSelectorIsTreatedAsAbsent()
+    public async Task SchemesGet_IsOneViewPerKey()
     {
-        var (client, handler) = await CtxClientFactory.ConnectAsync(RoutesFor("/scheme/concepts"));
+        var (client, _) = await CtxClientFactory.ConnectAsync();
         using (client)
         {
-            await client.Scheme!.ConceptsAsync("   ");
-            Assert.Equal("/v1/ctx/acme-marking/1.0.0/scheme/concepts", handler.Requests[^1].Path);
+            Assert.Same(client.Schemes!.Get("source"), client.Schemes!.Get("source"));
+            Assert.NotSame(client.Schemes!.Get("source"), client.Schemes!.Get("target"));
+            Assert.NotSame(client.Scheme, client.Schemes!.Get("source"));
         }
     }
 
-    private static Dictionary<string, (HttpStatusCode, string)> RoutesFor(string route) => new()
+    [Fact]
+    public async Task SchemesGet_CachesResultsPerKey()
     {
-        [route] = (HttpStatusCode.OK, route switch
+        var routes = new Dictionary<string, (HttpStatusCode, string)>
         {
-            "/1.0.0/scheme" => SummaryJson,
-            "/scheme/grammar" => """{ "caseSensitive": false, "stripWhitespace": true }""",
-            "/scheme/apply-preset" => ValidateJson,
-            _ => "[]",
-        }),
-    };
+            ["/scheme/process"] = (HttpStatusCode.OK, ProcessJson),
+        };
+        var (client, handler) = await CtxClientFactory.ConnectAsync(routes);
+        using (client)
+        {
+            foreach (var _ in Enumerable.Range(0, 2))
+            {
+                await client.Scheme!.ProcessAsync("H");
+                await client.Schemes!.Get("source").ProcessAsync("H");
+                await client.Schemes!.Get("target").ProcessAsync("H");
+            }
 
-    private static Task InvokeSubResource(EzClassifyClient client, string route, string? scheme) => route switch
+            var sent = handler.Requests.Where(request => request.Path.Contains("/scheme/process")).Select(request => request.Path).ToArray();
+            Assert.Equal(new[]
+            {
+                "/v1/ctx/acme-marking/1.0.0/scheme/process",
+                "/v1/ctx/acme-marking/1.0.0/scheme/process?scheme=source",
+                "/v1/ctx/acme-marking/1.0.0/scheme/process?scheme=target",
+            }, sent);
+        }
+    }
+
+    [Fact]
+    public async Task SchemesGet_UnknownKeyFailsWithTheServersNotFoundAndNoFallback()
     {
-        "/1.0.0/scheme" => client.Scheme!.SummaryAsync(scheme),
-        "/scheme/concepts" => client.Scheme!.ConceptsAsync(scheme),
-        "/scheme/categories" => client.Scheme!.CategoriesAsync(scheme),
-        "/scheme/formats" => client.Scheme!.FormatsAsync(scheme),
-        "/scheme/grammar" => client.Scheme!.GrammarAsync(scheme),
-        "/scheme/scopes" => client.Scheme!.ScopesAsync(scheme),
-        _ => throw new ArgumentOutOfRangeException(nameof(route), route, "Unmapped sub-resource route"),
-    };
+        var routes = new Dictionary<string, (HttpStatusCode, string)>
+        {
+            ["scheme=missing"] = (HttpStatusCode.NotFound, """{ "error": "not_found", "code": "scheme_not_found", "detail": "scheme: missing" }"""),
+            ["/scheme/process"] = (HttpStatusCode.OK, ProcessJson),
+        };
+        var (client, handler) = await CtxClientFactory.ConnectAsync(routes);
+        using (client)
+        {
+            var error = await Assert.ThrowsAsync<EzClassifyClientException>(() => client.Schemes!.Get("missing").ProcessAsync("H"));
+            Assert.Equal(404, error.StatusCode);
+            Assert.Equal("scheme_not_found", error.Code);
+            var sent = handler.Requests.Skip(1).Select(request => request.Path).ToArray();
+            Assert.Equal(new[] { "/v1/ctx/acme-marking/1.0.0/scheme/process?scheme=missing" }, sent);
+        }
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task SchemesGet_RefusesABlankKey(string key)
+    {
+        var (client, handler) = await CtxClientFactory.ConnectAsync();
+        using (client)
+        {
+            Assert.Throws<ArgumentException>(() => client.Schemes!.Get(key));
+            Assert.Throws<ArgumentNullException>(() => client.Schemes!.Get(null!));
+            Assert.Single(handler.Requests);
+        }
+    }
+
+    [Fact]
+    public void Schemes_IsNullOnTheRootClient()
+    {
+        using var http = new HttpClient(new CtxMockHandler()) { BaseAddress = new Uri("http://localhost:8080") };
+        using var root = new EzClassifyClient(http);
+        Assert.Null(root.Schemes);
+    }
 
     // --- guide ops ---------------------------------------------------------
 
@@ -1816,7 +1829,7 @@ public class ContextClientTests
     }
 
     [Fact]
-    public async Task GuideEvaluateMany_SendsAggregateScope()
+    public async Task GuideEvaluateMany_SendsEachSelectionWithItsGuide()
     {
         var routes = new Dictionary<string, (HttpStatusCode, string)>
         {
@@ -1827,52 +1840,52 @@ public class ContextClientTests
         var (client, handler) = await CtxClientFactory.ConnectAsync(routes);
         using (client)
         {
-            var result = await client.Guide!.EvaluateManyAsync(new[] { "r2" });
+            var result = await client.Guide!.EvaluateManyAsync(new[]
+            {
+                new GuideRuleSelection(guideId: "g1", ruleId: "r2"),
+                new GuideRuleSelection(guideId: "g2", ruleId: "r2"),
+            });
             Assert.Equal("H", result.Result.AggregatedMarking);
             var (_, path, body) = handler.Requests[^1];
             Assert.Equal("/v1/ctx/acme-marking/1.0.0/guide/evaluate", path);
-            Assert.Contains("\"allGuides\":true", body);
-            Assert.Contains("\"selectedRuleIds\":[\"r2\"]", body);
-            Assert.DoesNotContain("guideId", body);
+            Assert.Equal(
+                "{\"selections\":[{\"guideId\":\"g1\",\"ruleId\":\"r2\"},{\"guideId\":\"g2\",\"ruleId\":\"r2\"}]}",
+                body);
         }
     }
 
     [Fact]
-    public async Task GuideFilterRules_ParsesResult()
+    public async Task GuideEvaluateMany_RefusesABlankGuideBeforeSending()
+    {
+        var (client, handler) = await CtxClientFactory.ConnectAsync(new Dictionary<string, (HttpStatusCode, string)>());
+        using (client)
+        {
+            var sent = handler.Requests.Count;
+            await Assert.ThrowsAsync<ArgumentException>(() =>
+                client.Guide!.EvaluateManyAsync(new[] { new GuideRuleSelection(guideId: " ", ruleId: "r2") }));
+            Assert.Equal(sent, handler.Requests.Count);
+        }
+    }
+
+    [Fact]
+    public async Task CrosswalkDescribe_ReadsTheFlatInventory()
     {
         var routes = new Dictionary<string, (HttpStatusCode, string)>
         {
-            ["/guide/filter-rules"] = (HttpStatusCode.OK, """
-                { "visibleIds": ["r1"], "categoryCounts": {}, "total": { "visible": 1, "total": 3 } }
+            ["/crosswalk/describe"] = (HttpStatusCode.OK, """
+                { "crosswalks": [ { "id": "a-to-b", "version": "1.0.0", "name": "A to B", "source": "a", "target": "b", "mappings": [], "selections": [] } ] }
                 """),
         };
         var (client, handler) = await CtxClientFactory.ConnectAsync(routes);
         using (client)
         {
-            var result = await client.Guide!.FilterRulesAsync("sec");
-            Assert.Single(result.Result.VisibleIds);
-            Assert.Equal(3, result.Result.Total.Total);
-            Assert.Equal("/v1/ctx/acme-marking/1.0.0/guide/filter-rules", handler.Requests[^1].Path);
-        }
-    }
-
-    [Fact]
-    public async Task GuideDescribeRule_ParsesResult()
-    {
-        var routes = new Dictionary<string, (HttpStatusCode, string)>
-        {
-            ["/guide/describe-rule"] = (HttpStatusCode.OK, """
-                { "rule":{"artifact":{"kind":"guide","id":"g1","version":"1.0.0"},"ruleId":"r1","ruleDigest":"sha256:r1"}, "guide":{"kind":"guide","id":"g1","version":"1.0.0"}, "name": "Rule", "outcomeText": "marks H", "isComputed": false, "dependsOn": [], "overrides": [], "lines": ["Rule — marks H"] }
-                """),
-        };
-        var (client, handler) = await CtxClientFactory.ConnectAsync(routes);
-        using (client)
-        {
-            var desc = await client.Guide!.DescribeRuleAsync("r1", "g1");
-            Assert.Equal("Rule", desc.Result.Name);
-            Assert.Equal("marks H", desc.Result.OutcomeText);
-            Assert.False(desc.Result.IsComputed);
-            Assert.Equal("/v1/ctx/acme-marking/1.0.0/guide/describe-rule", handler.Requests[^1].Path);
+            var crosswalks = await client.Crosswalk!.DescribeAsync();
+            var (method, path, _) = handler.Requests[^1];
+            Assert.Equal("GET", method);
+            Assert.Equal("/v1/ctx/acme-marking/1.0.0/crosswalk/describe", path);
+            var crosswalk = Assert.Single(crosswalks);
+            Assert.Equal("a-to-b", crosswalk.GetProperty("id").GetString());
+            Assert.Equal("a", crosswalk.GetProperty("source").GetString());
         }
     }
 
@@ -1902,12 +1915,12 @@ public class ContextClientTests
     {
         var routes = new Dictionary<string, (HttpStatusCode, string)>
         {
-            ["/access/check"] = (HttpStatusCode.OK, """{ "granted": true, "rules": [ { "name": "Membership", "granted": true, "skipped": false, "ruleIndex": 0, "activation":{"matched":true,"assertions":[],"contextPaths":[]}, "comparisons":[], "rule":{"artifact":{"kind":"access","id":"ap","version":"1.0.0"},"ruleId":"r1","ruleDigest":"sha256:r1"} } ] }"""),
+            ["/access/check"] = (HttpStatusCode.OK, """{ "granted": true, "rules": [ { "name": "Membership", "granted": true, "skipped": false, "ruleIndex": 0, "activation":{"matched":true,"assertions":[],"contextPaths":[]}, "comparisons":[], "rule":{"artifact":{"kind":"access","id":"ap","version":"1.0.0"},"ruleId":"r1","ruleDigest":"sha256:r1"} } ], "warnings": [] }"""),
         };
         var (client, handler) = await CtxClientFactory.ConnectAsync(routes);
         using (client)
         {
-            var assertions = new[] { new Assertion(CategoryId: "level", ConceptId: "LEVEL_HIGH", Confidence: Confidence.Certain, Source: "parse") };
+            var assertions = new[] { new Assertion(categoryId: "level", conceptId: "LEVEL_HIGH", confidence: Confidence.Certain, source: "parse") };
             var decision = await client.Access!.CheckAsync(assertions, """{"membership":"HIGH"}""");
             Assert.True(decision.Result.Granted);
             Assert.Single(decision.Result.Rules);
@@ -1925,7 +1938,7 @@ public class ContextClientTests
     {
         var routes = new Dictionary<string, (HttpStatusCode, string)>
         {
-            ["/access/check"] = (HttpStatusCode.OK, """{ "granted": false, "rules": [] }"""),
+            ["/access/check"] = (HttpStatusCode.OK, """{ "granted": false, "rules": [], "warnings": [] }"""),
         };
         var (client, handler) = await CtxClientFactory.ConnectAsync(routes);
         using (client)
@@ -1979,7 +1992,7 @@ public class ContextClientTests
         {
             var assertions = new[]
             {
-                new Assertion(CategoryId: "level", ConceptId: "HIGH", Confidence: Confidence.Certain, Source: "parse"),
+                new Assertion(categoryId: "level", conceptId: "HIGH", confidence: Confidence.Certain, source: "parse"),
             };
 
             await client.Access!.DescribeRequirementsAsync(assertions);
@@ -2000,25 +2013,6 @@ public class ContextClientTests
         {
             await Assert.ThrowsAsync<ArgumentException>(
                 () => client.Access!.DescribeRequirementsAsync(Array.Empty<Assertion>()));
-        }
-    }
-
-    [Fact]
-    public async Task AccessDescribeRule_ParsesResult()
-    {
-        var routes = new Dictionary<string, (HttpStatusCode, string)>
-        {
-            ["/access/describe-rule"] = (HttpStatusCode.OK, """
-                { "rule":{"artifact":{"kind":"access","id":"ap","version":"1.0.0"},"ruleId":"r1","ruleDigest":"sha256:r1"}, "access":{"kind":"access","id":"ap","version":"1.0.0"}, "scheme":{"kind":"scheme","id":"s","version":"1.0.0"}, "name": "SO", "requirementText": "Staff only", "attributesNeeded": ["nationality"], "dependsOn": [], "overrides": [], "lines": [] }
-                """),
-        };
-        var (client, handler) = await CtxClientFactory.ConnectAsync(routes);
-        using (client)
-        {
-            var rule = await client.Access!.DescribeRuleAsync("r1");
-            Assert.Equal("SO", rule.Result.Name);
-            Assert.Single(rule.Result.AttributesNeeded);
-            Assert.Equal("/v1/ctx/acme-marking/1.0.0/access/describe-rule", handler.Requests[^1].Path);
         }
     }
 
@@ -2050,6 +2044,36 @@ public class ContextClientTests
     }
 
     [Fact]
+    public async Task AccessMarking_ComesFromTheRulesResponseInOneRequest()
+    {
+        var routes = new Dictionary<string, (HttpStatusCode, string)>
+        {
+            ["/access/rules"] = (HttpStatusCode.OK, """{ "marking": "UNCLASSIFIED", "rules": [] }"""),
+        };
+        var (client, handler) = await CtxClientFactory.ConnectAsync(routes);
+        using (client)
+        {
+            Assert.Equal("UNCLASSIFIED", await client.Access!.MarkingAsync());
+            Assert.Empty(await client.Access.RulesAsync());
+            Assert.Single(handler.Requests.FindAll(request => request.Path == "/v1/ctx/acme-marking/1.0.0/access/rules"));
+        }
+    }
+
+    [Fact]
+    public async Task AccessMarking_IsNullWhenThePolicyDeclaresNone()
+    {
+        var routes = new Dictionary<string, (HttpStatusCode, string)>
+        {
+            ["/access/rules"] = (HttpStatusCode.OK, """{ "rules": [] }"""),
+        };
+        var (client, _) = await CtxClientFactory.ConnectAsync(routes);
+        using (client)
+        {
+            Assert.Null(await client.Access!.MarkingAsync());
+        }
+    }
+
+    [Fact]
     public async Task CrosswalkTranslate_SupportsMarkingAndStructuredSources()
     {
         var routes = new Dictionary<string, (HttpStatusCode, string)>
@@ -2070,7 +2094,7 @@ public class ContextClientTests
 
             var source = new[]
             {
-                new Assertion(CategoryId: "level", ConceptId: "HIGH", Confidence: Confidence.Certain, Source: "parse"),
+                new Assertion(categoryId: "level", conceptId: "HIGH", confidence: Confidence.Certain, source: "parse"),
             };
             await client.Crosswalk.TranslateAsync("x", source);
             Assert.Contains("\"assertions\"", handler.Requests[^1].Body);
@@ -2101,8 +2125,7 @@ public class ContextClientTests
         var routes = new Dictionary<string, (HttpStatusCode, string)>
         {
             ["/document/audit"] = (HttpStatusCode.OK, """
-                { "resolution":{"contextId":"acme-marking","requestedVersion":"1.0.0","resolvedVersion":"1.0.0","artifacts":[],"sources":[]},
-                  "operationLimitations":[], "responseProjection":{"profile":"standard","detailsComplete":false,"omittedFields":["/result/unmarkedSpans/0/text"],"counts":{"nominations":0,"evidenceSpans":0,"guideUnits":0,"accessRuleResults":0,"contentRequirements":0,"contextRequirements":0}},
+                { "resolution":{"contextId":"acme-marking","requestedVersion":"1.0.0","resolvedVersion":"1.0.0","artifacts":[]}, "responseProjection":{"profile":"standard","detailsComplete":false,"omittedFields":["/result/unmarkedSpans/0/text"],"counts":{"nominations":0,"evidenceSpans":0,"guideUnits":0,"accessRuleResults":0,"contentRequirements":0,"contextRequirements":0}},
                   "result": { "whole": "RS/SO",
                   "wholes": [ { "marking": "RS/SO", "start": 0, "end": 6, "offsetEncoding":"utf-8-bytes" } ],
                   "wholeValidation": { "assertions": [ { "categoryId": "level", "conceptId": "RS", "confidence": "certain", "source": "parse" } ],
@@ -2147,37 +2170,6 @@ public class ContextClientTests
             var (_, path, body) = handler.Requests[^1];
             Assert.Equal("/v1/ctx/acme-marking/1.0.0/document/audit", path);
             Assert.Contains("\"text\":\"a document\"", body);
-        }
-    }
-
-    [Fact]
-    public async Task DocumentAssessAccess_RoutesProfileContextAndParsesScenarios()
-    {
-        const string audit = """{"whole":null,"wholes":[],"wholeValidation":null,"parts":[],"wholeCoversParts":null,"unmarkedSpans":[],"proceduralFlags":[],"overallVerdict":"pass","vocabulary":null,"documentDigest":"sha256:d","guideAssessment":null,"markingRequirements":{"whole":false,"part":false},"limitations":[]}""";
-        var response = """
-          {"resolution":{"contextId":"acme-marking","resolvedVersion":"1.0.0","artifacts":[],"sources":[]},"operationLimitations":[],
-           "responseProjection":{"profile":"summary","detailsComplete":false,"omittedFields":["/result/authored/decision"],"counts":{"nominations":0,"evidenceSpans":0,"guideUnits":0,"accessRuleResults":0,"contentRequirements":0,"contextRequirements":0}},
-           "result":{"audit":AUDIT,"authored":{"basis":"authored","advisory":false,"status":"not-evaluated","target":null,"limitations":[]},
-             "authoritative":{"basis":"authoritative","advisory":false,"status":"not-evaluated","target":null,"limitations":[]},"projected":null}}
-          """.Replace("AUDIT", audit);
-        var routes = new Dictionary<string, (HttpStatusCode, string)>
-        {
-            ["/document/assess-access"] = (HttpStatusCode.OK, response),
-        };
-        var (client, handler) = await CtxClientFactory.ConnectAsync(routes);
-        using (client)
-        {
-            var result = await client.Document!.AssessAccessAsync(
-                "document", """{"clearance":"high"}""", """{"team":"a"}""",
-                responseProfile: DocumentResponseProfile.Summary);
-            Assert.Equal(AccessScenarioStatus.NotEvaluated, result.Result.Authored.Status);
-            Assert.Null(result.Result.Projected);
-            Assert.Equal(DocumentResponseProfile.Summary, result.ResponseProjection!.Profile);
-            var (_, path, body) = handler.Requests[^1];
-            Assert.Equal("/v1/ctx/acme-marking/1.0.0/document/assess-access", path);
-            Assert.Contains("\"userAttributes\":{\"clearance\":\"high\"}", body);
-            Assert.Contains("\"context\":{\"team\":\"a\"}", body);
-            Assert.Contains("\"responseProfile\":\"summary\"", body);
         }
     }
 
@@ -2354,18 +2346,6 @@ public class ConnectOwnedClientDisposalTests
     }
 
     [Fact]
-    public async Task ConnectOwned_UnpinnedAccessCaching_DisposesOwnedClientWithoutProbing()
-    {
-        var handler = new DisposalTrackingHandler(HttpStatusCode.OK);
-        var http = new HttpClient(handler) { BaseAddress = new Uri("http://localhost:8080") };
-
-        await Assert.ThrowsAsync<ArgumentException>(() => EzClassifyClient.ConnectOwnedAsync(
-            http, "ctx-demo", "latest", RestClientCredentials.None,
-            new ContextCacheOptions(CacheAccessDecisions: true), CancellationToken.None));
-        Assert.True(handler.Disposed);
-    }
-
-    [Fact]
     public async Task ConnectOwned_Success_ReturnsUsableClientAndDisposesOnlyOnClientDispose()
     {
         var handler = new DisposalTrackingHandler(HttpStatusCode.OK);
@@ -2441,7 +2421,7 @@ public class ContextClientJsonArgumentGuardTests
         using var client = await ConnectAsync();
         var assertions = new[]
         {
-            new Assertion(CategoryId: "level", ConceptId: "LEVEL_HIGH", Confidence: Confidence.Certain, Source: "parse"),
+            new Assertion(categoryId: "level", conceptId: "LEVEL_HIGH", confidence: Confidence.Certain, source: "parse"),
         };
 
         var error = await Assert.ThrowsAsync<ArgumentException>(
@@ -2465,7 +2445,7 @@ public class ContextClientJsonArgumentGuardTests
         {
             var assertions = new[]
             {
-                new Assertion(CategoryId: "level", ConceptId: "LEVEL_HIGH", Confidence: Confidence.Certain, Source: "parse"),
+                new Assertion(categoryId: "level", conceptId: "LEVEL_HIGH", confidence: Confidence.Certain, source: "parse"),
             };
 
             await client.Access!.DescribeRequirementsAsync("", assertions);
@@ -2475,13 +2455,4 @@ public class ContextClientJsonArgumentGuardTests
         }
     }
 
-    [Fact]
-    public async Task AssessAccess_RejectsNonObjectContext()
-    {
-        using var client = await ConnectAsync();
-
-        var error = await Assert.ThrowsAsync<ArgumentException>(
-            () => client.Document!.AssessAccessAsync("text", """{"membership":"HIGH"}""", contextJson: "7"));
-        Assert.Equal("contextJson", error.ParamName);
-    }
 }

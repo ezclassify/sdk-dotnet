@@ -20,14 +20,15 @@ make test   # dotnet test --filter "Category!=Live"
 
 ## Building and Testing
 
-Standard `dotnet` CLI against [`EzClassify.Rest.sln`](EzClassify.Rest.sln); the `Makefile` wraps the
+Standard `dotnet` CLI against [`EzClassify.sln`](EzClassify.sln); the `Makefile` wraps the
 same commands for parity with the other SDKs.
 
 | Action | Native command | Notes |
 |--------|----------------|-------|
 | Build | `dotnet build` | or `make build`. Builds every project in the solution. |
 | Generate API reference | `make docs` | Builds the solution and generates HTML at `artifacts/docs/index.html`. |
-| Test | `dotnet test --filter "Category!=Live"` | or `make test` (`make test-verbose` for detailed output). `make smoke URL=<server-url>` runs the `Live` category against a running, content-configured REST deployment. |
+| Test | `dotnet test --filter "Category!=Live"` | or `make test` (`make test-verbose` for detailed output). `make smoke URL=<server-url>` runs the `Live` category against a running, content-configured REST runtime (the `ghcr.io/ezclassify/rest-api` image with its license and bundles mounted, or the `ezclassify-rest-api` binary). |
+| Dependency quarantine | `make check-dependency-age` | After a restore. Fails on any third-party package or pinned tool nuget.org published less than seven days ago (`EZCLASSIFY_DEPENDENCY_AGE_DAYS` changes the window), and when nuget.org cannot be read. |
 | Regenerate generated models | `make regen` | Rewrites the committed `*.g.cs` models after a spec-update PR. Wrapper-only changes don't touch [`vendor/`](vendor/). |
 | Format | `dotnet format` | Ships with the SDK; CI runs `dotnet format --verify-no-changes`. |
 | Package the NuGet | `dotnet pack -c Release` | Produces the `.nupkg` under each project's `bin/Release/`. |
@@ -45,7 +46,7 @@ documentation generation requires no live REST deployment.
 ## What to Know Before Changing Things
 
 - **The spec is vendored, not authored here.** The model records in
-  `EzClassify.Rest.Contract` are generated from the OpenAPI spec under
+  `EzClassify.Rest.Client/Wire` are generated from the OpenAPI spec under
   [`vendor/spec/`](vendor/spec/). That mirror is owned by [ezclassify/contracts](https://github.com/ezclassify/contracts) and written into
   this repo by the EzClassify spec bot;
   `vendor-readonly.yml` rejects a vendor commit from anyone else.

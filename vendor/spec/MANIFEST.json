@@ -1,48 +1,28 @@
 {
   "openapiVersion": "1.0.0-dev.30",
-  "openapiSha256": "cf1679c6bae46071cec779c7864802568a3f517aea6b3cc7a2a634de512c6e61",
-  "specBundleSha256": "28b76ee0c0525b0962eadf31ab9eb91a1ea92fe892e75ba0127acb41a04cc0c5",
-  "specDigest": "6147143891dad12cd371f83d3ce5fcf6de796f58d66d91b98f39e587ff9de399",
-  "contractsSha": "8fb77d1299f537cfe13d50eb26b41ff4bc881766",
+  "openapiSha256": "5b10dd61da6005025820a3e39c406756e2a7c280db6e16f1325c289fa6217353",
+  "specBundleSha256": "a1bdfc3b23ebb435defc8a3c653cf6d67e06eff2355a56102f27ea7a901bffb0",
+  "specDigest": "53e6a026ef2ebb0689e1abfb7928dc3e436d93acb943312a59cc1704eeb637c1",
+  "contractsSha": "efd69569397aaa3ad99b87df03121f2e233dd2e1",
   "sourcePackages": {
     "@ezclassify/openapi": "1.0.0-dev.30",
     "@ezclassify/schemas": "1.0.0-dev.30",
     "@ezclassify/conformance": "1.0.0-dev.30"
   },
-  "generatedAt": "2026-11-03T16:15:23.000Z",
+  "generatedAt": "2026-11-15T21:50:55.000Z",
   "generators": {
     "dotnet": {
       "binary": "node",
-      "script": "EzClassify.Rest.Contract/scripts/gen.mjs",
+      "script": "scripts/gen.mjs",
       "version": "node",
-      "sha256": "5cf243baa1066cacdc9db5123130bfc7cc034a1a04ecc014f5cbca1e4f02e6ba",
-      "additionalInputs": [
-        {
-          "path": "EzClassify.Rest.Contract/scripts/templates/ContextEnvelopeModels.g.cs.tmpl",
-          "sha256": "caa543eb12029e6e5c00d5cdde5a6f6ec9c3fbec37f64fa6cff8c4d473560852"
-        },
-        {
-          "path": "EzClassify.Rest.Contract/scripts/templates/ContextModels.g.cs.tmpl",
-          "sha256": "5e164410e8d5722acc107fa8302578646155ba02fa75480cc88a29bbb17ce24e"
-        },
-        {
-          "path": "EzClassify.Rest.Contract/scripts/templates/DocumentAssessmentModels.g.cs.tmpl",
-          "sha256": "40183cd8a914b1fe7f229ca0c094220c1ba79afab0a421f9b83263d749a90db4"
-        },
-        {
-          "path": "EzClassify.Rest.Contract/scripts/templates/WireEnums.g.cs.tmpl",
-          "sha256": "ef68d722f3eb8b3e01a26dd21d64f846229b54c4f8f141a15029d53d32a86fa0"
-        }
-      ],
-      "note": "sha256 is of EzClassify.Rest.Contract/scripts/gen.mjs - changes here mean template was modified",
-      "jsonSchemasSha256": "a6e48772d5f835151c6a63811b2addd81197e6a4d2f7199837a3ac9290ebb3c1"
+      "sha256": "75f2fcb0c19a039775bfff57328b8295df0840efe327ff36e7f5a6965b31b13c",
+      "additionalInputs": [],
+      "note": "sha256 is of scripts/gen.mjs; the generator reads only the vendored schemas and OpenAPI",
+      "jsonSchemasSha256": "7acf4ec48e8b4d2ffbf1cb843c2c0cf2103b9f3c126f3d89f8cb0b018f36a1f5"
     }
   },
   "generatedPaths": [
-    "EzClassify.Rest.Contract/ContextEnvelopeModels.g.cs",
-    "EzClassify.Rest.Contract/ContextModels.g.cs",
-    "EzClassify.Rest.Contract/DocumentAssessmentModels.g.cs",
-    "EzClassify.Rest.Contract/Models.g.cs",
-    "EzClassify.Rest.Contract/WireEnums.g.cs"
+    "EzClassify.Rest.Client/Wire/Models.g.cs",
+    "EzClassify.Rest.Client/Wire/ResponseShapes.g.cs"
   ]
 }

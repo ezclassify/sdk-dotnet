@@ -1,11 +1,11 @@
 # <img src="assets/icon.svg" alt="" width="32"> EzClassify .NET SDK
 
-[![CI](https://github.com/ezclassify/client-dotnet/actions/workflows/ci.yml/badge.svg)](https://github.com/ezclassify/client-dotnet/actions/workflows/ci.yml)
+[![CI](https://github.com/ezclassify/sdk-dotnet/actions/workflows/ci.yml/badge.svg)](https://github.com/ezclassify/sdk-dotnet/actions/workflows/ci.yml)
 [![NuGet](https://img.shields.io/nuget/v/EzClassify.Rest.Client?label=EzClassify.Rest.Client)](https://www.nuget.org/packages/EzClassify.Rest.Client)
 [![license: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
-[![.NET](https://img.shields.io/badge/.NET-netstandard2.0%20%7C%20net8.0-512BD4.svg)](EzClassify.Rest.sln)
+[![.NET](https://img.shields.io/badge/.NET-netstandard2.0%20%7C%20net8.0-512BD4.svg)](EzClassify.sln)
 
-Apache-licensed HTTP client for a licensed EzClassify REST runtime. It contains generated models and client ergonomics, not the proprietary engine or enterprise content. Most apps only need `EzClassify.Rest.Client`, which pulls in `EzClassify.Rest.Contract`.
+Apache-licensed HTTP client for a licensed EzClassify REST runtime. It contains the wire models and client ergonomics, not the proprietary engine or enterprise content. `EzClassify.Rest.Client` is the one package.
 
 The [ezclassify/contracts](https://github.com/ezclassify/contracts) repository owns
 document and wire types; EzClassify Runtime owns
@@ -19,23 +19,23 @@ health and Context discovery use the deployment endpoint.
 dotnet add package EzClassify.Rest.Client
 ```
 
-`EzClassify.Rest.Contract` comes in as a dependency; add it directly if you only need the model records. Both packages target `netstandard2.0`, and `Client` also ships a `net8.0` build. CI builds and tests on .NET 10; the `netstandard2.0` output is what a .NET Framework 4.7.2+ host would load, but no job exercises it there.
+The package targets `netstandard2.0` and also ships a `net8.0` build. CI builds and tests on .NET 10; the `netstandard2.0` output is what a .NET Framework 4.7.2+ host would load, but no job exercises it there.
 
 ## Quick start
 
-Start the Cedar Valley replay server. It serves recorded responses for the Cedar Valley teaching Context, so you can prove your integration works before you have a runtime. Node.js 22 or 24 is needed only for this server, not for the client.
+Start the free developer runtime. It is one container that serves the built-in Contexts, such as `capco-demo` and `cedar-valley`, over real HTTP, with no license, credentials or account.
 
 ```sh
-npx @ezclassify/conformance-server --scenario cedar-valley --port 4010
+docker run --rm -p 3000:8080 ghcr.io/ezclassify/developer-runtime
 ```
 
-Then connect with the normal client. The Context is `cedar-valley`, version `1.0.0`, and the server asks for no credentials by default.
+Then connect with the normal client. The Context is `cedar-valley`, version `1.0.0`, and the runtime asks for no credentials.
 
 ```csharp
 using EzClassify;
 
 using var ctx = await EzClassifyClient.ConnectAsync(
-    "http://127.0.0.1:4010", "cedar-valley", "1.0.0");
+    "http://localhost:3000", "cedar-valley", "1.0.0");
 
 var result = (await ctx.Scheme!.ProcessAsync("INTERNAL")).Result;
 Console.WriteLine($"{result.Rendered} valid={result.Valid}");
@@ -49,14 +49,11 @@ INTERNAL valid=True
 granted=False
 ```
 
-The server replays a finite set of recordings, so use inputs from its
-[Cedar Valley catalog](https://github.com/ezclassify/contracts/tree/main/packages/conformance-server#testing-an-application-integration):
-markings such as `PUBLIC`, `INTERNAL`, and `CONFIDENTIAL`, plus the recorded access, guide, and
-aggregate requests. Anything unrecorded returns a 501 diagnostic rather than a computed answer.
+`cedar-valley` is a fictional school district policy for teaching, so use synthetic markings with it. `GET /v1/ctx` on the runtime lists every built-in Context.
 
 ### Swap to your runtime
 
-Change the base URL and supply the credentials your runtime administrator issued: `EZC_ACCESS_TOKEN` (caller identity) and `EZC_CONTEXT_TOKEN` (signed Context credential). The calls stay the same. Use the Context id your runtime publishes, and omit the version to let the server choose: the token's default, or the newest published.
+Four values change: the base URL, the Context, your application id and the caller token. The calls stay the same. Your runtime administrator issues the credentials: `EZC_ACCESS_TOKEN` (caller identity) and `EZC_CONTEXT_TOKEN` (signed Context credential). Use the Context id your runtime publishes, and omit the version to let the server choose: the token's default, or the newest published.
 
 ```csharp
 using EzClassify;
@@ -66,7 +63,8 @@ var credentials = new RestClientCredentials(
     Environment.GetEnvironmentVariable("EZC_ACCESS_TOKEN")
         ?? throw new InvalidOperationException("Set EZC_ACCESS_TOKEN."),
     Environment.GetEnvironmentVariable("EZC_CONTEXT_TOKEN")
-        ?? throw new InvalidOperationException("Set EZC_CONTEXT_TOKEN."));
+        ?? throw new InvalidOperationException("Set EZC_CONTEXT_TOKEN."),
+    applicationId: "your-application-id");
 var baseUrl = Environment.GetEnvironmentVariable("EZC_API_URL")
     ?? throw new InvalidOperationException("Set EZC_API_URL.");
 
@@ -83,36 +81,25 @@ Console.WriteLine($"{result.Rendered} {result.Valid}");
 Console.WriteLine($"resolved: {ctx.ResolvedVersion}");
 ```
 
-For application access, supply the opaque application credential instead of a Context token. If the application definition requires a verified user, also supply that caller's access token from your customer identity provider:
+The `applicationId` above names your application in the runtime's usage counts; it is the id the application is registered under, passed as the third argument:
 
 ```csharp
-string? userAccessToken = null; // Set from this caller when the published policy requires a verified user.
-var credentials = new RestClientCredentials(
-    accessToken: userAccessToken,
-    contextToken: null,
-    applicationCredential: Environment.GetEnvironmentVariable("EZC_APPLICATION_CREDENTIAL")
-        ?? throw new InvalidOperationException("Set EZC_APPLICATION_CREDENTIAL."));
+var credentials = new RestClientCredentials(accessToken, contextToken, applicationId: "case-intake-portal");
 ```
 
-The SDK sends `X-EzClassify-Application-Grant` only to Context discovery, version, binding and operation routes. Health requests omit it. A supplied caller token travels independently as `Authorization: Bearer`. The SDK does not decode, renew or replay credentials. An application grant cannot be combined with a Context token or duplicate authentication defaults on a supplied `HttpClient`; supply the caller token through `RestClientCredentials`. SDK-owned transports disable redirects in this mode. If you supply an `HttpClient`, configure its handler with `AllowAutoRedirect = false`; you own its handler behavior, base address and subsequent mutations. Keep one client and its caches per caller; your application owns user sign-in and token refresh.
+An id is 1 to 128 printable ASCII characters (0x21 to 0x7E) with no spaces, and the constructor throws `ArgumentException` for any other value. The SDK sends it as the `x-ezclassify-application-id` header on Context requests only, never on health. The id is not a credential and authorizes nothing: a request without it, or with an id the deployment has not registered, is served the same way. Keep one client and its caches per caller; your application owns user sign-in and token refresh.
 
 Pass a concrete version to pin one, or omit the version to let the server choose: the token's default, or the newest published. An omitted version binds the same way as `latest`, and the concrete immutable version the server resolved is on `ResolvedVersion`. The bound groups are `Scheme`, `Guide`, `Access`, `Crosswalk`, and `Document`; they are null on the root discovery client, hence the `!`.
 
-The bound client caches repeated scheme `Process`, `Validate`, `Explain`, `Suggest`, `SuggestForCategories`, `Aggregate`, `AggregateAssertions`, `Scan`, `Render`, `Normalize`, `DescribeConcept`, `Diff`, and `ApplyPreset` results, plus `Access.Rules`. Everything else reaches the server on every call: the guide operations, `CheckCoverage`, `Notices`, `FilterConcepts`, the scheme views and reads (`SummaryAsync`, `ConceptsAsync`, and the rest of the scheme resources), `DescribeRule`, `DescribeRequirements`, crosswalk translation, and document audit and assessment.
+The bound client caches repeated scheme `Process`, `Validate`, `Explain`, `Suggest`, `SuggestForCategories`, `Aggregate`, `AggregateAssertions`, `Scan`, `Render`, `DescribeConcept`, `Diff`, and `ApplyPreset` results, plus `Access.Rules` and `Crosswalk.DescribeAsync`. Everything else reaches the server on every call: the guide operations, `CheckCoverage`, `Notices`, `ViewAsync` and the scheme reads (`SummaryAsync`, `ConceptsAsync`, and the rest of the scheme resources), `DescribeRequirements`, crosswalk translation, and document audit and assessment.
 
 Every field of a request is part of its cache key, so two `ProcessAsync` calls that name different `outputs` or `suggestFor` are two entries. The operation is part of the key too: `ExplainAsync` and `ProcessAsync` never share an entry, and neither do `Access.CheckAsync` and `Access.CheckByMarkingAsync`. Identical concurrent calls share one request. Canceling one caller's `CancellationToken` settles only that caller; the request itself is canceled when its last caller has gone, and a cancellation after the answer arrived evicts nothing. A failed call is not cached, and neither is a 200 that is missing a member the contract requires: the next call retries. Results are read-only, so changing the collections in one caller's result cannot change what another caller, or a later cached read, receives.
 
-Each client holds up to 500 results. A concrete Context version keeps results until eviction. An omitted version or `latest` bounds their lifetime instead: five minutes generally, two minutes for scan, and one hour for concept descriptions and access rules. A 401, the 404 with exactly `{"error":"not_found"}` that a deployment running authentication sends an unauthenticated caller, or a new resolved version on a `latest` binding clears the cache. A 404 that names a missing resource leaves it alone. Call `ctx.ClearCache()` for a fresh read, or pass `new ContextCacheOptions(Enabled: false)` when you connect to disable caching for that client.
+Each client holds up to 500 results. A concrete Context version keeps results until eviction. An omitted version or `latest` bounds their lifetime instead: five minutes generally, two minutes for scan, and one hour for concept descriptions, access rules and the crosswalk inventory. A 401, the 404 with exactly `{"error":"not_found"}` that a deployment running authentication sends an unauthenticated caller, or a new resolved version on a `latest` binding clears the cache. A 404 that names a missing resource leaves it alone. Call `ctx.ClearCache()` for a fresh read, or pass `new ContextCacheOptions { Enabled = false }` when you connect to disable caching for that client.
 
 `await ctx.DescribeContextAsync()` returns what the Context is made of: the composed scheme, every scheme it holds with its selector and roles, the guides, the access policy, and the crosswalks, each with the version the Context declares and the concrete version that answered. Record these when you need to say which artifacts a decision was made against. The description is read on first use and held for the life of the client, so `ClearCache()` does not drop it; on a `latest` binding it is read again after the composition moves.
 
-Access and document decisions reach the server every time by default so each decision has its audit record. On a concrete Context version, connecting with `new ContextCacheOptions(CacheAccessDecisions: true)` explicitly caches the two single-target access checks. Cache hits then have no server audit record. Connecting with the option and `latest` (or no version) throws `ArgumentException`. Document audit and assessment, access requirements, and crosswalk translation are never cached, with or without the option.
-
-```csharp
-using var ctx = await EzClassifyClient.ConnectAsync(
-    baseUrl, "your-context-id", "1.0.0", RestClientCredentials.None,
-    new ContextCacheOptions(CacheAccessDecisions: true));
-```
+Access and document decisions reach the server every time, so each decision has its audit record. Document audit and assessment, access requirements, and crosswalk translation are never cached, and neither are the access checks.
 
 Cache options are fixed when the client connects. Scope each client to one caller identity, including when an HTTP handler supplies credentials from request context.
 
@@ -122,23 +109,24 @@ Cache options are fixed when the client connects. Scope each client to one calle
 |---|---|
 | health / Context discovery | root `PingAsync`, `ListContextsAsync`, `ListContextVersionsAsync` |
 | validate / process / explain / suggest / aggregate / scan | `Scheme.*` |
-| render / normalize / diff / coverage / concept describe | `Scheme.*` |
-| scheme reads: summary, concepts, categories, formats, grammar, scopes, label presets | `Scheme.SummaryAsync`, `ConceptsAsync`, `CategoriesAsync`, `FormatsAsync`, `GrammarAsync`, `ScopesAsync`, `LabelPresetsAsync` |
-| access checks / requirements / rule discovery | `Access.*` |
-| guide scan / evaluate / rule describe | `Guide.*` |
-| crosswalk translation | `Crosswalk.TranslateAsync` |
+| render / diff / coverage / concept describe | `Scheme.*` |
+| scheme reads: summary, concepts, categories, formats, scopes, label presets | `Scheme.SummaryAsync`, `ConceptsAsync`, `CategoriesAsync`, `FormatsAsync`, `ScopesAsync`, `LabelPresetsAsync` |
+| the same operations and reads on another scheme the Context holds | `Schemes.Get(key).*` |
+| access checks / requirements / rule list, and the policy's own marking | `Access.*`, `Access.MarkingAsync` |
+| guide scan / evaluate / view | `Guide.*` |
+| crosswalk translation, and the crosswalks the Context holds | `Crosswalk.TranslateAsync`, `Crosswalk.DescribeAsync` |
 | Context composition and component versions | `DescribeContextAsync` |
 | document audit and access assessment | `Document.*` |
 
 Results that describe a marking carry everything cheap to compute alongside it. `ValidateResult`, `ProcessResult` and `AggregateResult` each expose a `Notices` list, always present and empty when the marking carries none, so reading the notices for a marking does not take a second round trip. `Scheme.NoticesAsync` remains for the case where you hold assertions without a result.
 
-Scheme operations that read a marking take their format choices as named options, under the same names the wire uses. `inputFormat` says what the input is read as: one of the scheme's formats, or for a scheme that declares surfaces, a view, a `surface/view` address, or one of a view's forms. Leave it out and recognition works it out, then reports what it read the text as in `Recognition.InputFormat` and, for a scheme that declares surfaces, whether the text is spelled as a whole or a part in `Recognition.Role`. `outputFormat` picks the output the result is written in. A scheme without surfaces defaults to its default format. A scheme that declares surfaces names its outputs `surface/view`, such as `sensitivity/short`, and leaving `outputFormat` out writes each surface in its default for the marking's role, so a part and a whole can come back in different views. `surface` names which of the scheme's scopes the input is, for a fragment such as a portion; leave it out and the input is treated as a whole marking. `RenderAsync` and `ApplyPresetAsync` only produce output, so they take `outputFormat` alone.
+Scheme operations that read a marking take their format choices as named options, under the same names the wire uses. `inputFormat` says what the input is read as: one of the scheme's formats, or for a scheme that declares surfaces, a view, a `surface/view` address, or one of a view's forms. Leave it out and recognition works it out, then reports what it read the text as in `Recognition.InputFormat` and, for a scheme that declares surfaces, whether the text is spelled as a whole or a part in `Recognition.Role`. `outputFormat` picks the output the result is written in. A scheme without surfaces defaults to its default format. A scheme that declares surfaces names its outputs `surface/view`, such as `sensitivity/short`, and leaving `outputFormat` out writes each surface in its default for the marking's role, so a part and a whole can come back in different views, unless one default writes every other surface's scope beside its own, which is then written alone. An output you name is always written alone. `surface` names which of the scheme's scopes the input is, for a fragment such as a portion; leave it out and the input is treated as a whole marking. `RenderAsync` and `ApplyPresetAsync` only produce output, so they take `outputFormat` alone.
 
 The defaults are in the scheme's metadata, so a picker does not have to guess them. For a scheme that declares surfaces, `SummaryAsync()` reports `DefaultPartRenderFormat` and `DefaultWholeRenderFormat`, and each entry `FormatsAsync()` returns lists in `DefaultFor` the roles it is the default for and in `Role` the role it is a view of. A scheme without surfaces has one default, `DefaultRenderFormat`, and its formats carry neither.
 
 The rest of each request's optional fields are named options too, under their wire names: `assertions`, `outputs`, and `suggestFor` on `ProcessAsync`; `assertions` on `ExplainAsync`; and `includeGated` on both `SuggestAsync` overloads. Fields that carry a JSON object take it as a JSON string, the way `userAttributesJson` does, so `contextJson` on validate, process, explain, aggregate, and the access checks is forwarded as written. `ValidateAsync`, `ProcessAsync`, and `ExplainAsync` also take `parts`, the part markings the whole must cover: a part the whole does not cover is an error, and every proposed fix and rank floor is worked out against the whole and those parts together. An option you leave null stays off the wire and the server applies its default; `false` is sent.
 
-The scheme reads answer with the view types a local engine's scheme view carries: `ConceptsAsync` returns `ConceptView`, `CategoriesAsync` returns `CategoryView`, `FormatsAsync` returns `FormatView`, `LabelPresetsAsync` returns `LabelPresetView`, and `ScopesAsync` returns `SchemeScope` entries in declaration order, empty when the scheme declares none. All but `LabelPresetsAsync` take an optional `scheme` key that selects one of the Context's schemes, such as a crosswalk's source or target. Label presets are the primary scheme's, the one `ApplyPresetAsync` expands them in, and the client sends no scheme key for either.
+The scheme reads answer with the view types a local engine's scheme view carries: `ConceptsAsync` returns `ConceptView`, `CategoriesAsync` returns `CategoryView`, `FormatsAsync` returns `FormatView`, `LabelPresetsAsync` returns `LabelPresetView`, and `ScopesAsync` returns `SchemeScope` entries in declaration order, empty when the scheme declares none. They read the scheme of the view they are called on.
 
 Requests are closed. The server answers 400 with code `INVALID_INPUT` to a query parameter or body field the operation does not declare, and `Detail` names it, as in `query: scheme`. The client sends only declared ones.
 
@@ -160,14 +148,27 @@ When you pass a base URL, the client creates and owns its `HttpClient`. On `net8
 
 Every call finishes within the request timeout, which is the `HttpClient.Timeout` of the transport: 100 seconds on the client it creates for a base URL, and whatever your own `HttpClient` is set to when you hand it over. The client reads it once, at construction. If your `HttpClient` has no timeout (`Timeout.InfiniteTimeSpan`), as in a common `IHttpClientFactory` setup where Polly or another resilience handler owns the per-try timeouts, the whole request still gets the same 100 seconds. The deadline covers the whole request: sending it, waiting for the response, and reading the full body, so a server that sends its headers and then stalls fails on time, and so does a handler that ignores cancellation. A call that runs past it throws `EzClassifyClientException` with a `TimeoutException` as its `InnerException`. Your own `CancellationToken` still wins when it fires first, and that surfaces as `OperationCanceledException`. A handler that gives up sooner wins the same way. When a resilience pipeline stops trying before the deadline, the call ends then, with the handler's own exception (Polly's `TimeoutRejectedException`, for example) or, if the handler lets its cancellation through, an `EzClassifyClientException` that says the transport canceled the request.
 
+### Marking in another scheme the Context holds
+
+A Context with crosswalks holds more than one scheme. `Scheme` works in the primary one. `Schemes.Get(key)` returns the same operations and reads bound to another, by the key `DescribeContextAsync` lists for it as its selector:
+
+```csharp
+var description = await ctx.DescribeContextAsync();
+var other = description.Schemes[1].Selector;
+
+var result = await ctx.Schemes!.Get(other).ProcessAsync(markingText);
+```
+
+Every call on the view sends the key as `?scheme=`, including the label presets and `ApplyPresetAsync`, so a marking is read and written in that scheme. Its cached results are kept apart from every other scheme's, and the same key returns the same view. A key the Context does not hold is not replaced with the primary: each call fails with the server's 404, code `scheme_not_found`.
+
 ## Reading a marking and writing one
 
-Two operations answer about one marking, and they are split by who is asking. The first two examples below run against the Cedar Valley replay server from the [quick start](#quick-start), and their output is what it answers. The third shows a composer's request, which the replay server has no recording for; run it against a live runtime.
+Two operations answer about one marking, and they are split by who is asking. The first two examples below run against the developer runtime from the [quick start](#quick-start), and their output is what it answers. The third shows a composer's request.
 
 `ValidateAsync` is the reader's call. Code that displays a marking, gates on it, stores it, or hands its facts to an access check calls it, with the text or with the facts a document states:
 
 ```csharp
-using var ctx = await EzClassifyClient.ConnectAsync("http://127.0.0.1:4010", "cedar-valley", "1.0.0");
+using var ctx = await EzClassifyClient.ConnectAsync("http://localhost:3000", "cedar-valley", "1.0.0");
 
 var read = (await ctx.Scheme!.ValidateAsync("INTERNAL")).Result;
 Console.WriteLine($"{read.Rendered} valid={read.Valid} asWritten={read.InputWasValid}");
@@ -204,7 +205,10 @@ A composer sends what was typed together with the facts already picked, names th
 
 ```csharp
 var typed = "FINANCIAL INFORMATION";
-var pickedSoFar = new[] { new Assertion("level", "CONFIDENTIAL", Confidence.Certain, "user") };
+var pickedSoFar = new[]
+{
+    new Assertion("level", "CONFIDENTIAL", Confidence.Certain, "user"),
+};
 
 var keystroke = (await ctx.Scheme.ProcessAsync(
     typed,
@@ -217,6 +221,8 @@ var options = keystroke.SuggestionsFor!["level"].Suggestions;
 ```
 
 `Renders` holds only the outputs you name, and `SuggestionsFor` is null unless you name categories. Outputs are spelled the way the scheme declares them: a format id here, a `surface/view` address for a scheme that declares surfaces. `SuggestForCategoriesAsync` answers the same map on its own, for a picker that needs options without processing the marking.
+
+Inputs and results are sealed records. The members a record requires go through its constructor, as `Assertion` is built above, and a reference-typed one refuses null. The optional members are settable properties that start null; set them in an object initializer. A member a later release adds is optional, so code that builds these records keeps compiling. Building and reading them works from C# 7.3, the default for a .NET Framework project.
 
 An error about text the engine could not read may carry `DidYouMean`, the ids of the concepts the text was likely meant as, for a program to act on. The message says the same in words. It is a hint, not a fix: only `ProposedFixes` are proven.
 
@@ -234,13 +240,11 @@ SDK `major.minor` tracks the rest-api `major.minor`; patch versions may drift. `
 
 ## Demo
 
-[`examples/server-tour`](examples/server-tour/README.md) walks the main client calls and runs as written against the Cedar Valley replay server from the [quick start](#quick-start). It requires the .NET 10 SDK. Its README shows the expected output and how to point it at your runtime.
+[`examples/server-tour`](examples/server-tour/README.md) walks the main client calls and runs against the developer runtime from the [quick start](#quick-start) once `EZC_API_URL` is set to `http://localhost:3000`. It requires the .NET 10 SDK. Its README shows the expected output and how to point it at your runtime.
 
 ## Integration testing
 
-The [quick start](#quick-start) server also serves what your application needs to test connectivity, response handling, and access-decision logging. See the
-[replay server guide](https://github.com/ezclassify/contracts/tree/main/packages/conformance-server#testing-an-application-integration)
-for the full request catalog, CORS options for browser UIs, and credential testing with `--auth simulated`.
+The [quick start](#quick-start) runtime also evaluates what your application needs to test connectivity, response handling, and access-decision logging.
 
 A denied access decision is a successful response with `granted: false`; handle transport or authentication failures separately. The access example below logs the outcome and rule explanations without copying subject attributes or credentials. In your backend, derive attributes from trusted identity data and add your application's correlation ID and resource reference. Apply your log retention and redaction policy to returned explanations too.
 
@@ -250,7 +254,7 @@ using EzClassify;
 try
 {
     using var ctx = await EzClassifyClient.ConnectAsync(
-        "http://127.0.0.1:4010", "cedar-valley", "1.0.0");
+        "http://localhost:3000", "cedar-valley", "1.0.0");
     var decision = (await ctx.Access!.CheckByMarkingAsync("CONFIDENTIAL", "{}")).Result;
     Console.WriteLine($"granted={decision.Granted}");
     foreach (var rule in decision.Rules)
@@ -262,13 +266,7 @@ catch (EzClassifyClientException error)
 }
 ```
 
-Restart with `--scenario transient-error`, `rate-limit`, `unavailable`,
-`slow-response`, `disconnected`, `malformed-json`, or `malformed-envelope` to
-exercise failures on the recorded process request. Clear the client response
-cache or create a new client between runs so an earlier answer does not hide
-the scenario. The guide lists authentication, validation, empty-result, and
-complex access cases. These recordings test your integration, not the
-correctness of a production authorization policy.
+To rehearse transport failures such as a 429, a dropped connection or a malformed body, run the Apache-2.0 [conformance server](https://github.com/ezclassify/contracts/tree/main/packages/conformance-server#testing-an-application-integration) (Node.js 22 or 24). It replays recorded failures on demand, which the developer runtime does not produce. Clear the client response cache or create a new client between runs so an earlier answer does not hide the scenario.
 
 ## Reporting issues
 

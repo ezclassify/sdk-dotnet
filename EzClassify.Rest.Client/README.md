@@ -1,8 +1,8 @@
 # EzClassify.Rest.Client
 
 HTTP client for the EzClassify REST API, using `System.Net.Http` and
-`System.Text.Json`. It depends on `EzClassify.Rest.Contract` for wire models
-and uses no third-party HTTP stack.
+`System.Text.Json`. The one package holds the client, the wire models and the
+response parsers, and uses no third-party HTTP stack.
 
 ## Install
 
@@ -12,27 +12,33 @@ dotnet add package EzClassify.Rest.Client
 
 ## Quick start
 
-Start the Cedar Valley replay server, which serves recorded responses so you can prove your integration works before you have a runtime. Node.js 22 or 24 is needed only for this server.
+Start the free developer runtime. It is one container that serves the built-in Contexts, such as `capco-demo` and `cedar-valley`, over real HTTP, with no license, credentials or account.
 
 ```sh
-npx @ezclassify/conformance-server --scenario cedar-valley --port 4010
+docker run --rm -p 3000:8080 ghcr.io/ezclassify/developer-runtime
 ```
+
+Then connect with the normal client. The Context is `cedar-valley`, version `1.0.0`, and the runtime asks for no credentials.
 
 ```csharp
 using EzClassify;
 
 using var ctx = await EzClassifyClient.ConnectAsync(
-    "http://127.0.0.1:4010", "cedar-valley", "1.0.0");
+    "http://localhost:3000", "cedar-valley", "1.0.0");
 
 var result = (await ctx.Scheme!.ProcessAsync("INTERNAL")).Result;
 Console.WriteLine($"{result.Rendered} valid={result.Valid}");
+
+var decision = (await ctx.Access!.CheckByMarkingAsync("CONFIDENTIAL", "{}")).Result;
+Console.WriteLine($"granted={decision.Granted}");
 ```
 
 ```text
 INTERNAL valid=True
+granted=False
 ```
 
-The server replays a finite set of recorded requests, such as the markings `PUBLIC`, `INTERNAL`, and `CONFIDENTIAL`. Anything unrecorded returns a 501 diagnostic.
+`cedar-valley` is a fictional school district policy for teaching, so use synthetic markings with it. `GET /v1/ctx` on the runtime lists every built-in Context.
 
 ## Swap to your runtime
 
@@ -61,23 +67,19 @@ var result = (await ctx.Scheme!.ProcessAsync("your marking")).Result;
 Console.WriteLine($"{result.Rendered} {result.Valid}");
 ```
 
-For application access, supply the opaque credential by itself instead of the two tokens:
+To name your application in the runtime's usage counts, pass the id it is registered under as the third argument:
 
 ```csharp
-var credentials = new RestClientCredentials(
-    accessToken: null,
-    contextToken: null,
-    applicationCredential: Environment.GetEnvironmentVariable("EZC_APPLICATION_CREDENTIAL")
-        ?? throw new InvalidOperationException("Set EZC_APPLICATION_CREDENTIAL."));
+var credentials = new RestClientCredentials(accessToken, contextToken, applicationId: "case-intake-portal");
 ```
 
-The SDK sends `X-EzClassify-Application-Grant` only to Context discovery, version, binding and operation routes. Health requests omit it. It does not decode, renew or replay the credential. Application credentials cannot be combined with bearer or Context tokens, including default authentication headers on a supplied `HttpClient`. SDK-owned transports disable redirects in this mode. If you supply an `HttpClient`, configure its handler with `AllowAutoRedirect = false`; you own its handler behavior, base address and subsequent mutations. Keep one client per credential.
+An id is 1 to 128 printable ASCII characters (0x21 to 0x7E) with no spaces, and the constructor throws `ArgumentException` for any other value. The SDK sends it as the `x-ezclassify-application-id` header on Context requests only, never on health. The id is not a credential and authorizes nothing: a request without it, or with an id the deployment has not registered, is served the same way.
 
 Failures surface as `EzClassifyClientException` with the HTTP status. When the server rate limits a request (429, which any operation can answer), `RetryAfter` holds the wait it asks for, read from the `Retry-After` header or the body's `retryAfter`. The client never retries by itself.
 
 Every call finishes within the request timeout, the `HttpClient.Timeout` of the transport (100 seconds unless you supply an `HttpClient` set otherwise), including the full response body. An `HttpClient` with an infinite timeout, a common setup when Polly owns per-try timeouts, gets the 100 seconds too, and a resilience pipeline that gives up sooner still ends the call then. A call past the deadline throws `EzClassifyClientException` with a `TimeoutException` inside; canceling your own token throws `OperationCanceledException`.
 
-Repeated scheme reads and access-rule lists share a bounded response cache on the bound client. Identical concurrent calls share one request, and canceling one caller's token leaves the others running. Failed calls and malformed 200 responses are never cached. A 200 that lacks a member the contract requires, at any depth, throws `JsonException` whose `Path` names the member (such as `$.result.assessment`), and the next call asks the server again. A concrete Context version keeps answers until eviction; an omitted version or `latest` bounds their lifetime to at most an hour and clears them when the resolved version changes. A 401 or the denial-shaped 404 `{"error":"not_found"}` clears them too. Use `ctx.ClearCache()` for a fresh read or pass `new ContextCacheOptions(Enabled: false)` when you connect to disable caching for that client. Access checks, crosswalk translation and document decisions call the server every time by default to preserve their audit records. `new ContextCacheOptions(CacheAccessDecisions: true)`, passed to `ConnectAsync` together with credentials, explicitly caches single-target checks under a concrete version and omits audit records for cache hits; connecting with it and `latest` or an omitted version throws `ArgumentException`. Translation and document decisions are never cached. Cache options are fixed when the client connects. Use one client instance for one caller identity.
+Repeated scheme reads and access-rule lists share a bounded response cache on the bound client. Identical concurrent calls share one request, and canceling one caller's token leaves the others running. Failed calls and malformed 200 responses are never cached. A 200 that lacks a member the contract requires, at any depth, throws `JsonException` whose `Path` names the member (such as `$.result.assessment`), and the next call asks the server again. A concrete Context version keeps answers until eviction; an omitted version or `latest` bounds their lifetime to at most an hour and clears them when the resolved version changes. A 401 or the denial-shaped 404 `{"error":"not_found"}` clears them too. Use `ctx.ClearCache()` for a fresh read or pass `new ContextCacheOptions { Enabled = false }` when you connect to disable caching for that client. Access checks, crosswalk translation and document decisions call the server every time, so each decision reaches the audit record. Cache options are fixed when the client connects. Use one client instance for one caller identity.
 
 `await ctx.DescribeContextAsync()` returns the Context's composition: the scheme, every scheme it holds, the guides, the access policy and the crosswalks, each with its declared and resolved version. It is read once and held, and `ClearCache()` does not drop it.
 

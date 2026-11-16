@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Builds every record a caller sends to the runtime the way a .NET
+       Framework project does by default: C# 7.3, no nullable annotations,
+       against the netstandard2.0 build of the client. A record shape that
+       needs a newer compiler to construct fails this build. Never packed. -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>7.3</LangVersion>
+    <Nullable>disable</Nullable>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>EzClassify.CSharp73</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\EzClassify.Rest.Client\EzClassify.Rest.Client.csproj" />
+  </ItemGroup>
+</Project>

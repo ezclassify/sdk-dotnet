@@ -7,16 +7,13 @@ import { fileURLToPath } from 'url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const manifest = JSON.parse(fs.readFileSync(path.join(root, 'vendor/spec/MANIFEST.json'), 'utf8'));
 const expectedGenerated = [
-  'EzClassify.Rest.Contract/ContextEnvelopeModels.g.cs',
-  'EzClassify.Rest.Contract/ContextModels.g.cs',
-  'EzClassify.Rest.Contract/DocumentAssessmentModels.g.cs',
-  'EzClassify.Rest.Contract/Models.g.cs',
-  'EzClassify.Rest.Contract/WireEnums.g.cs',
+  'EzClassify.Rest.Client/Wire/Models.g.cs',
+  'EzClassify.Rest.Client/Wire/ResponseShapes.g.cs',
 ];
 const errors = [];
 
 if (JSON.stringify(manifest.generatedPaths) !== JSON.stringify(expectedGenerated)) {
-  errors.push('vendor/spec/MANIFEST.json must name exactly the five canonical generated C# outputs.');
+  errors.push('vendor/spec/MANIFEST.json must name exactly the two canonical generated C# outputs.');
 }
 
 const declarationPattern = /^\s*public\s+(?:(?:sealed|readonly)\s+)*(?:record(?:\s+(?:class|struct))?|enum|struct)\s+([A-Za-z_]\w*)/gm;
@@ -64,9 +61,6 @@ for (const absolute of walk(root, '.cs')) {
     if (owners.has(match[1])) {
       errors.push(`Shadow declaration for generated ${match[1]} in ${relative}.`);
       reportedShadows.add(match[1]);
-    }
-    if (relative.startsWith('EzClassify.Rest.Contract/')) {
-      errors.push(`Wire declaration ${match[1]} must be generator-owned, not declared in ${relative}.`);
     }
   }
   for (const match of source.matchAll(classPattern)) {

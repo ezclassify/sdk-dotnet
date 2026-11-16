@@ -13,7 +13,7 @@ namespace EzClassify.Tests;
 /// <summary>
 /// 1.0 public-surface freeze gate.
 ///
-/// Reflects over the two shipped assemblies (Contract and Client), renders every public and protected type and member in a stable
+/// Reflects over the shipped assembly (EzClassify.Rest.Client), renders every public and protected type and member in a stable
 /// sorted text form, and diffs the result against the committed golden file
 /// EzClassify.Rest.Tests/PublicApiSurface.golden.txt.
 ///
@@ -30,10 +30,9 @@ public class PublicApiSurfaceTests
     private const string GoldenRelativePath = "PublicApiSurface.golden.txt";
 
     // One representative type per shipped assembly; the reflection walk covers
-    // the whole assembly each type lives in.
+    // the whole assembly the type lives in.
     private static readonly Type[] AssemblyAnchors =
     {
-        typeof(EzClassify.ResultParser),           // EzClassify.Rest.Contract
         typeof(EzClassify.EzClassifyClient),       // EzClassify.Rest.Client
     };
 
@@ -110,11 +109,11 @@ public class PublicApiSurfaceTests
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
         while (dir != null)
         {
-            if (File.Exists(Path.Combine(dir.FullName, "EzClassify.Rest.sln")))
+            if (File.Exists(Path.Combine(dir.FullName, "EzClassify.sln")))
                 return dir.FullName;
             dir = dir.Parent;
         }
-        throw new DirectoryNotFoundException("Cannot locate EzClassify.Rest.sln");
+        throw new DirectoryNotFoundException("Cannot locate EzClassify.sln");
     }
 
     // ---- surface rendering -------------------------------------------------
@@ -246,7 +245,8 @@ public class PublicApiSurfaceTests
                 ? $"this[{RenderParams(p.GetIndexParameters())}]"
                 : p.Name;
             var anyAccessor = accessors[0].m;
-            lines.Add((2, $"property {mostVisible}{MethodMods(anyAccessor, t)} {RenderType(p.PropertyType)} "
+            var required = IsRequiredMember(p) ? " required" : "";
+            lines.Add((2, $"property {mostVisible}{MethodMods(anyAccessor, t)}{required} {RenderType(p.PropertyType)} "
                 + $"{name} {{ {string.Join(" ", rendered)} }}"));
         }
 
@@ -283,7 +283,7 @@ public class PublicApiSurfaceTests
     private static string Visibility(FieldInfo f) => f.IsPublic ? "public" : "protected";
 
     // Record synthesis (Clone, PrintMembers, EqualityContract, equality members)
-    // derives entirely from the positional property list, which the dump already
+    // derives entirely from the property list, which the dump already
     // captures. Skipping it keeps the golden focused on hand-authored surface.
     private static bool IsCompilerNoise(MethodBase m) =>
         m.Name.Contains('<')
@@ -298,6 +298,11 @@ public class PublicApiSurfaceTests
         else if (m.IsVirtual && !m.IsFinal) mods += " virtual";
         return mods;
     }
+
+    // Matched by name: the netstandard2.0 build carries its own copy of the
+    // attribute, and the net8.0 build uses the BCL's.
+    private static bool IsRequiredMember(PropertyInfo p) =>
+        p.CustomAttributes.Any(a => a.AttributeType.FullName == "System.Runtime.CompilerServices.RequiredMemberAttribute");
 
     private static bool IsInitOnly(MethodInfo setter) =>
         setter.ReturnParameter.GetRequiredCustomModifiers()
