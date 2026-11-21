@@ -1301,6 +1301,7 @@ class sealed EzClassify.Suggestion : System.IEquatable<EzClassify.Suggestion>
   property public System.Collections.Generic.IReadOnlyList<System.String> Requires { get; set; }
   property public System.Collections.Generic.IReadOnlyList<System.String> RequiresDisplay { get; set; }
   property public System.Int32 Order { get; }
+  property public System.Int32? Depth { get; set; }
   property public System.String CategoryId { get; }
   property public System.String ConceptId { get; }
   property public System.String Description { get; }
