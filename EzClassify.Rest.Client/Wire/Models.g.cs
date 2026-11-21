@@ -1,4 +1,4 @@
-// Code generated from json-schemas@e91619af5677f35dec3553d8f1fc2fabb7fc59393bd91363550b4bd1d586f182 by gen.mjs@75f2fcb0c19a039775bfff57328b8295df0840efe327ff36e7f5a6965b31b13c. DO NOT EDIT.
+// Code generated from json-schemas@a0a95bcd6b408714391af8ef6cdb990a8afd8edbc7acfc786e6d7ee569b7776a by gen.mjs@75f2fcb0c19a039775bfff57328b8295df0840efe327ff36e7f5a6965b31b13c. DO NOT EDIT.
 // Re-run via: make regen
 #nullable enable
 
@@ -121,7 +121,7 @@ public sealed record Suggestion
     /// <param name="group">Category label for UI grouping.</param>
     /// <param name="label">Primary display label in the current render format.</param>
     /// <param name="name">Human-readable concept name.</param>
-    /// <param name="order">Sort order.</param>
+    /// <param name="order">The concept's authored position.</param>
     /// <param name="selected">True if this concept is already in the current marking.</param>
     /// <param name="views">All views for this concept.</param>
     public Suggestion(string categoryId, string conceptId, string description, string group, string label, string name, int order, bool selected, IReadOnlyDictionary<string, string> views)
@@ -155,7 +155,7 @@ public sealed record Suggestion
     /// <summary>Human-readable concept name.</summary>
     public string Name { get; }
 
-    /// <summary>Sort order.</summary>
+    /// <summary>The concept's authored position.</summary>
     public int Order { get; }
 
     /// <summary>True if this concept is already in the current marking.</summary>
@@ -163,6 +163,9 @@ public sealed record Suggestion
 
     /// <summary>All views for this concept.</summary>
     public IReadOnlyDictionary<string, string> Views { get; }
+
+    /// <summary>Zero-based indentation level in the returned browse order. Omitted when the result supplies no hierarchy for the suggestion.</summary>
+    public int? Depth { get; set; }
 
     /// <summary>True when this concept matches the active filter but is currently gated by the scheme's rules (a rule prerequisite is unmet, or a constraint forbids it). Gated suggestions are surfaced as non-selectable, explanatory rows so the user can see why the concept is unavailable. Only populated when the caller passes <c>includeGated: true</c> and a filter is active.</summary>
     public bool? Gated { get; set; }
