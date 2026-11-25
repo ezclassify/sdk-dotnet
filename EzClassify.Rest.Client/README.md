@@ -36,6 +36,8 @@ INTERNAL valid=True
 granted=False
 ```
 
+`cedar-valley` is a fictional school district policy for teaching, so use synthetic markings with it. `GET /v1/ctx` on the runtime lists every built-in Context.
+
 ### Validate, roll up and check access
 
 The `capco-demo` Context on the developer runtime is a demo subset of CAPCO. It validates a marking, rolls several markings up into one overall marking, and checks access for a user. The guides and access rules in it are notional demo content.
@@ -73,9 +75,6 @@ granted=False
 ```
 
 A SECRET-cleared user with a GBR nationality claim is denied a NOFORN document.
-
-
-`cedar-valley` is a fictional school district policy for teaching, so use synthetic markings with it. `GET /v1/ctx` on the runtime lists every built-in Context.
 
 ## Swap to your runtime
 
