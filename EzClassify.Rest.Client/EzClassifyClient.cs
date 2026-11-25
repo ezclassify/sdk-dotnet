@@ -45,6 +45,19 @@ public sealed record ContextCacheOptions
 /// <para>Uses the remote server's GET discovery and read endpoints and JSON POST
 /// operation endpoints; no local runtime is required.</para>
 ///
+/// <para>Example against the <c>capco-demo</c> Context of the free developer runtime, a demo
+/// subset of IC Classification and Control Markings (CAPCO):</para>
+/// <code>
+/// using var ctx = await EzClassifyClient.ConnectAsync("http://localhost:3000", "capco-demo", "1.0.0");
+/// var read = (await ctx.Scheme!.ValidateAsync("SECRET//NOFORN")).Result;   // read.Valid is true
+/// var overall = (await ctx.Scheme.AggregateAsync(new[] {
+///     "SECRET//REL TO USA, GBR, CAN", "CONFIDENTIAL//REL TO USA, GBR", "UNCLASSIFIED" })).Result;
+/// // overall.Rendered is "SECRET//REL TO USA, GBR"
+/// var decision = (await ctx.Access!.CheckByMarkingAsync(
+///     "SECRET//NOFORN", """{"clearance":"SECRET","nationality":"GBR"}""")).Result;
+/// // decision.Granted is false
+/// </code>
+///
 /// <para>The root client provides server discovery and health operations.
 /// <see cref="ConnectAsync(string, string, string?, CancellationToken)"/> returns a client bound
 /// to a server-resolved Context for classification operations, pinned to a
