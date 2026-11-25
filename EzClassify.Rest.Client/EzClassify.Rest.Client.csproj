@@ -8,7 +8,7 @@
     <PackageId>EzClassify.Rest.Client</PackageId>
     <Version>1.0.0-dev.30</Version>
     <Description>.NET client library for the EzClassify REST API: a marking parser, validator, rollup and need-to-know access checks for security markings and sensitivity labels. CAPCO, CUI, TLP 2.0, CVSS or your own rules. Needs an EzClassify runtime.</Description>
-    <PackageTags>classification-marking portion-marking sensitivity-label data-classification capco cui tlp cvss marking-parser marking-validator classification-parser classification-validator classification-marking-parser security-marking portion-mark ism-xml cui-marking tlp-validator cvss-validator need-to-know access-control abac releasability classification marking library sdk</PackageTags>
+    <PackageTags>classification-marking portion-marking sensitivity-label data-classification capco cui tlp cvss marking-parser marking-validator classification-parser classification-validator classification-marking-parser security-marking portion-mark ism-xml cui-marking tlp-validator cvss-validator need-to-know access-control abac releasability classification marking library sdk module package client api</PackageTags>
     <PackageProjectUrl>https://ezclassify.com/</PackageProjectUrl>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
