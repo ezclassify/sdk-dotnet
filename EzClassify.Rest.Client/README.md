@@ -1,6 +1,8 @@
 # EzClassify.Rest.Client
 
-`EzClassify.Rest.Client` is the .NET client library for the EzClassify REST API, installed as a NuGet package. Use it to parse and validate security markings and sensitivity labels, roll portion marks up into an overall marking, and check need-to-know access, from any .NET application. Markings follow a scheme: IC Classification and Control Markings (CAPCO), Controlled Unclassified Information (CUI), Traffic Light Protocol (TLP) 2.0, Common Vulnerability Scoring System (CVSS), or rules you write yourself. The client needs a running EzClassify runtime; it does not contain the engine or any scheme content. The free developer runtime includes TLP 2.0, CVSS and demo subsets of CAPCO and CUI. The full CAPCO and CUI schemes are licensed content. The one package holds the client, the wire models and the response parsers, and uses no third-party HTTP stack.
+.NET client library for the EzClassify REST API, installed as a NuGet package. It is a classification marking parser, validator and rollup with need-to-know access checks: it validates security markings and sensitivity labels, combines portion marks into an overall marking, and checks who may access a marked document. It works with IC Classification and Control Markings (CAPCO), Controlled Unclassified Information (CUI), Traffic Light Protocol (TLP) 2.0, Common Vulnerability Scoring System (CVSS), or marking rules you write yourself. It needs a running EzClassify runtime. The free developer runtime includes TLP 2.0, CVSS and demo subsets of CAPCO and CUI; the full CAPCO and CUI schemes are licensed content.
+
+The one package holds the client, the wire models and the response parsers, uses no third-party HTTP stack, and contains no engine or scheme content.
 
 ## Install
 
