@@ -1,8 +1,6 @@
 # EzClassify.Rest.Client
 
-HTTP client for the EzClassify REST API, using `System.Net.Http` and
-`System.Text.Json`. The one package holds the client, the wire models and the
-response parsers, and uses no third-party HTTP stack.
+`EzClassify.Rest.Client` is the .NET client for the EzClassify REST API. Use it to parse and validate security markings and sensitivity labels, roll portion marks up into an overall marking, and check need-to-know access, from any .NET application. Markings follow a scheme: IC Classification and Control Markings (CAPCO), Controlled Unclassified Information (CUI), Traffic Light Protocol (TLP) 2.0, Common Vulnerability Scoring System (CVSS), or rules you write yourself. The client needs a running EzClassify runtime; it does not contain the engine or any scheme content. The free developer runtime includes TLP 2.0, CVSS and demo subsets of CAPCO and CUI. The full CAPCO and CUI schemes are licensed content. The one package holds the client, the wire models and the response parsers, and uses no third-party HTTP stack.
 
 ## Install
 
@@ -37,6 +35,45 @@ Console.WriteLine($"granted={decision.Granted}");
 INTERNAL valid=True
 granted=False
 ```
+
+### Validate, roll up and check access
+
+The `capco-demo` Context on the developer runtime is a demo subset of CAPCO. It validates a marking, rolls several markings up into one overall marking, and checks access for a user. The guides and access rules in it are notional demo content.
+
+```csharp
+using EzClassify;
+
+using var ctx = await EzClassifyClient.ConnectAsync(
+    "http://localhost:3000", "capco-demo", "1.0.0");
+
+var read = (await ctx.Scheme!.ValidateAsync("SECRET//NOFORN")).Result;
+Console.WriteLine($"{read.Rendered} valid={read.Valid}");
+
+var overall = (await ctx.Scheme.AggregateAsync(new[]
+{
+    "SECRET//REL TO USA, GBR, CAN",
+    "CONFIDENTIAL//REL TO USA, GBR",
+    "UNCLASSIFIED",
+})).Result;
+Console.WriteLine(overall.Rendered);
+
+var decision = (await ctx.Access!.CheckByMarkingAsync(
+    "SECRET//NOFORN", """{"clearance":"SECRET","nationality":"GBR"}""")).Result;
+Console.WriteLine($"granted={decision.Granted}");
+foreach (var rule in decision.Rules)
+    if (!rule.Skipped) Console.WriteLine($"  {rule.Name}: {rule.Granted}");
+```
+
+```text
+SECRET//NOFORN valid=True
+SECRET//REL TO USA, GBR
+granted=False
+  Clearance level: True
+  NOFORN: USA nationality claim required (demo): False
+```
+
+A SECRET-cleared user with a GBR nationality claim is denied a NOFORN document.
+
 
 `cedar-valley` is a fictional school district policy for teaching, so use synthetic markings with it. `GET /v1/ctx` on the runtime lists every built-in Context.
 
