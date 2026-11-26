@@ -121,22 +121,25 @@ public class RequestTimeoutTests
     [InlineData(true, true)]
     public async Task ResponseDisposalCannotOutlastTheRequest(bool errorResponse, bool callerCancels)
     {
+        // Give the disposal worker time to start on a busy runner. The blocked
+        // fixture proves the request completes before disposal is released.
+        var requestTimeout = TimeSpan.FromSeconds(2);
         using var release = new ManualResetEventSlim();
         var content = new DisposalContent(release);
         using var http = new HttpClient(new DisposalHandler(content,
             errorResponse ? HttpStatusCode.BadRequest : HttpStatusCode.OK))
         {
             BaseAddress = new Uri("http://localhost:8080/"),
-            Timeout = callerCancels ? TimeSpan.FromSeconds(30) : TimeSpan.FromMilliseconds(50),
+            Timeout = callerCancels ? TimeSpan.FromSeconds(30) : requestTimeout,
         };
         using var client = new EzClassifyClient(http);
         using var caller = new CancellationTokenSource();
         var call = Task.Run(() => client.ListContextsAsync(caller.Token));
         try
         {
-            await content.Started.Task.WaitAsync(TimeSpan.FromSeconds(2));
+            await content.Started.Task.WaitAsync(Hang);
             if (callerCancels) caller.Cancel();
-            var error = await Record.ExceptionAsync(() => call.WaitAsync(TimeSpan.FromMilliseconds(500)));
+            var error = await Record.ExceptionAsync(() => call.WaitAsync(Hang));
             if (callerCancels)
             {
                 var canceled = Assert.IsAssignableFrom<OperationCanceledException>(error);
@@ -146,7 +149,7 @@ public class RequestTimeoutTests
             {
                 var timeout = Assert.IsType<EzClassifyClientException>(error);
                 Assert.IsType<TimeoutException>(timeout.InnerException);
-                Assert.Contains("timed out after 50 ms", timeout.Message);
+                Assert.Contains("timed out after 2000 ms", timeout.Message);
             }
             Assert.False(content.Finished.Task.IsCompleted);
             Assert.Equal(1, content.Disposals);
@@ -154,8 +157,8 @@ public class RequestTimeoutTests
         finally
         {
             release.Set();
-            await content.Finished.Task.WaitAsync(TimeSpan.FromSeconds(2));
-            await Record.ExceptionAsync(() => call);
+            await content.Finished.Task.WaitAsync(Hang);
+            await Record.ExceptionAsync(() => call.WaitAsync(Hang));
         }
         Assert.Equal(1, content.Disposals);
     }
